@@ -9,6 +9,10 @@ describe("mediaPublicUrl", () => {
   it("encodes each path segment", () => {
     expect(mediaPublicUrl("2021/10/my photo #1.jpg")).toBe("/media/2021/10/my%20photo%20%231.jpg");
   });
+
+  it("keeps the stable application route for PostgreSQL blog media", () => {
+    expect(mediaPublicUrl("/api/blog/media/42")).toBe("/api/blog/media/42");
+  });
 });
 
 describe("resolveGalleryIds", () => {

@@ -7,6 +7,7 @@ import type { MediaRow } from "@/data/types";
  * symbols still resolve.
  */
 export function mediaPublicUrl(storagePath: string): string {
+  if (/^\/api\/blog\/media\/[1-9]\d*$/.test(storagePath)) return storagePath;
   const path = storagePath
     .replace(/^\/+/, "")
     .split("/")

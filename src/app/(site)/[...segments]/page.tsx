@@ -6,11 +6,6 @@ import { mediaPublicUrl } from "@/shared/media/media";
 import EditorialTemplate from "@/components/templates/EditorialTemplate";
 import { getEditorialData, postCoverPath } from "@/modules/content/server/editorial";
 
-async function postCoverUrl(featuredMediaId: number | null): Promise<string | null> {
-  const path = await postCoverPath(featuredMediaId);
-  return path ? mediaPublicUrl(path) : null;
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -35,7 +30,9 @@ export async function generateMetadata({
     const [year, month, day, slug] = segments;
     const post = await getPostBySlugAndDate(year, month, day, slug);
     if (!post) return { title: "Not Found" };
-    const cover = await postCoverUrl(post.featured_media_id);
+    const coverPath = "coverPath" in post ? post.coverPath : await postCoverPath(post.featured_media_id);
+    const cover = coverPath ? mediaPublicUrl(coverPath) : null;
+    const contentHtml = "content_html" in post ? post.content_html : "";
     return {
       title: post.seo_title || post.title || "Getaways El Salvador",
       // The excerpt is the editor's own one-line summary of the post. It was
@@ -48,7 +45,7 @@ export async function generateMetadata({
       description:
         post.seo_description ||
         post.excerpt ||
-        descriptionFromHtml(post.content_html) ||
+        descriptionFromHtml(contentHtml) ||
         "Guides and stories from the coast of El Salvador.",
       alternates: { canonical: `/${segments.join("/")}` },
       // The post's OWN photograph. Without this every post fell back to the
@@ -60,7 +57,7 @@ export async function generateMetadata({
         title: post.seo_title || post.title,
         url: `/${segments.join("/")}`,
         ...(post.published_at ? { publishedTime: post.published_at } : {}),
-        ...(cover ? { images: [{ url: cover, alt: post.title }] } : {}),
+      ...(cover ? { images: [{ url: cover, alt: ("coverAlt" in post ? post.coverAlt : null) || post.title }] } : {}),
       },
     };
   }

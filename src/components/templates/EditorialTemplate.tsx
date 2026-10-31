@@ -4,7 +4,7 @@ import type { EditorialData } from "@/modules/content/server/editorial";
 import { breadcrumbSchema, contactPageSchema } from "@/shared/seo/structured-data";
 
 export default function EditorialTemplate({ data }: { data: EditorialData }) {
-  const { title, path, html, isContact, article, kind } = data;
+  const { title, path, html, body, isContact, article, kind } = data;
   return (
     <article>
       {article && <JsonLd data={article} />}
@@ -16,7 +16,7 @@ export default function EditorialTemplate({ data }: { data: EditorialData }) {
       {isContact && <JsonLd data={contactPageSchema()} />}
       {isContact ? <ContactSection title={title} /> : <>
         <h1>{title}</h1>
-        <div dangerouslySetInnerHTML={{ __html: html }} />
+        {html !== null ? <div dangerouslySetInnerHTML={{ __html: html }} /> : body}
       </>}
     </article>
   );

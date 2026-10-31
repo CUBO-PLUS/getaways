@@ -1,0 +1,44 @@
+[
+  {
+    "id": "column.public.BlogPost.firstPublishedAt",
+    "label": "Add column \"firstPublishedAt\" to \"BlogPost\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "firstPublishedAt",
+        "table": "BlogPost"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"firstPublishedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "BlogPost",
+          "firstPublishedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"firstPublishedAt\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPost\" ADD COLUMN \"firstPublishedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"firstPublishedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "BlogPost",
+          "firstPublishedAt"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,125 @@
+[
+  {
+    "id": "table.BlogImportMapping",
+    "label": "Create table \"BlogImportMapping\"",
+    "summary": "Creates table \"BlogImportMapping\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "BlogImportMapping"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"BlogImportMapping\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogImportMapping\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"BlogImportMapping\"",
+        "sql": "CREATE TABLE \"public\".\"BlogImportMapping\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"fingerprint\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"source\" text NOT NULL,\n  \"sourceId\" text NOT NULL,\n  \"targetId\" int4 NOT NULL,\n  \"targetKind\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"BlogImportMapping\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogImportMapping\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.BlogImportMapping.BlogImportMapping_source_sourceId_key",
+    "label": "Add unique constraint on \"BlogImportMapping\" (source, sourceId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "BlogImportMapping_source_sourceId_key",
+        "table": "BlogImportMapping"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"BlogImportMapping_source_sourceId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogImportMapping_source_sourceId_key",
+          "public",
+          "\"public\".\"BlogImportMapping\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"BlogImportMapping_source_sourceId_key\"",
+        "sql": "ALTER TABLE \"public\".\"BlogImportMapping\" ADD CONSTRAINT \"BlogImportMapping_source_sourceId_key\" UNIQUE (\"source\", \"sourceId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"BlogImportMapping_source_sourceId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogImportMapping_source_sourceId_key",
+          "public",
+          "\"public\".\"BlogImportMapping\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.BlogImportMapping.BlogImportMapping_targetKind_targetId_key",
+    "label": "Add unique constraint on \"BlogImportMapping\" (targetKind, targetId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "BlogImportMapping_targetKind_targetId_key",
+        "table": "BlogImportMapping"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"BlogImportMapping_targetKind_targetId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogImportMapping_targetKind_targetId_key",
+          "public",
+          "\"public\".\"BlogImportMapping\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"BlogImportMapping_targetKind_targetId_key\"",
+        "sql": "ALTER TABLE \"public\".\"BlogImportMapping\" ADD CONSTRAINT \"BlogImportMapping_targetKind_targetId_key\" UNIQUE (\"targetKind\", \"targetId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"BlogImportMapping_targetKind_targetId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogImportMapping_targetKind_targetId_key",
+          "public",
+          "\"public\".\"BlogImportMapping\""
+        ]
+      }
+    ]
+  }
+]

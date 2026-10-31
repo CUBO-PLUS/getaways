@@ -35,6 +35,16 @@ pnpm test:db
 
 `.env.local` contains the development `DATABASE_URL` for `127.0.0.1:5432`. Prisma CLI loads the same `.env*` files as Next.js. If you override the Compose PostgreSQL credentials or port in `.env`, update `.env.local` to match. Inside the Compose app container, `DATABASE_URL` already points to `db:5432` and takes precedence.
 
+### Local RustFS for blog media
+
+Copy `.env.example` to `.env` and replace both RustFS root and application credential placeholders with unique random values. The root identity is only for the local RustFS service/one-shot bucket initializer; never put it in the app's S3 variables. `S3_BUCKET` defaults to `blog-media`; if changed, update **both** bucket ARNs in `infrastructure/storage/blog-media-policy.json` to match before provisioning the application identity. Then use the RustFS console at `http://127.0.0.1:9001` to create a user with that policy (it grants only list/location and object read/write/delete in the configured bucket). Put that user's credentials in `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` in `.env` and `.env.local` as applicable. Do not expose these variables with a `NEXT_PUBLIC_` prefix.
+
+```bash
+docker compose -f compose.dev.yaml up -d --wait
+```
+
+Compose binds the S3 API and console to loopback; the app container uses `http://rustfs:9000`, while a process running on the host uses `http://127.0.0.1:9000`. `rustfs-init` idempotently creates the private `blog-media` bucket. No anonymous/public-read policy is applied. RustFS persists data in the `rustfs_data` volume; a volume is not a backup. Back up PostgreSQL and RustFS objects together and test restoring both. Production endpoint, TLS, private networking, credentials, and backup schedule must be configured by the operator; they are not verifiable from this repository.
+
 The contract is `infrastructure/prisma/contract.prisma`; the server-only client is exported as `db` from `@/infrastructure/prisma/db`. Prisma 8 uses `@prisma/orm-postgres`, not `@prisma/client`. Commit the emitted `contract.json` and `contract.d.ts` alongside the contract. The contract starts empty: no application data or booking storage has been migrated.
 
 After editing the contract, run `pnpm db:generate` and `pnpm db:update` for local development. For versioned migrations, use `pnpm exec prisma migration plan --name <name>`, review the files under `infrastructure/prisma/migrations/`, then run `pnpm db:migrate`. Builds emit the contract automatically. After a contract change, restart the dev server to refresh the cached client.

@@ -3,8 +3,10 @@ import "server-only";
 import type { TermSummary } from "@/data/types/taxonomies";
 import { hasPublicSupabaseConfig, publicSupabaseClient } from "@/infrastructure/data/local-client";
 import { getMediaByIds } from "@/shared/media/server/media";
-import { isBlogDatePath } from "@/modules/content/paths";
+import { blogUtcDayRange } from "@/modules/content/paths";
 import { parseSiteContent, SITE_CONTENT_SLUG, type SiteContent } from "@/modules/content/site-content";
+import { resolveBlogContentSource } from "@/modules/content/blog-source";
+import { connection } from "next/server";
 
 // Draft/private pages must not be served at public permalinks.
 export async function getPageBySlug(slug: string) {
@@ -25,19 +27,30 @@ export async function getPageBySlug(slug: string) {
 
 const PUBLISHED = "published";
 
+/** Static remains the default until the reviewed import and deployment cutover. */
+export function blogContentSource(): "static" | "postgres" {
+  return resolveBlogContentSource(process.env.BLOG_CONTENT_SOURCE);
+}
+
+async function postgresContent() {
+  // A DB read below must happen per request, not during prerender/build.
+  await connection();
+  return import("@/modules/content/server/content-postgres");
+}
+
 export async function getPostBySlugAndDate(year: string, month: string, day: string, slug: string) {
+  if (blogContentSource() === "postgres") return (await postgresContent()).getPostBySlugAndDate(year, month, day, slug);
   if (!hasPublicSupabaseConfig()) return null;
-  if (!isBlogDatePath(year, month, day)) return null;
+  const range = blogUtcDayRange(year, month, day);
+  if (!range) return null;
   const supabase = publicSupabaseClient();
-  const dayStart = `${year}-${month}-${day}T00:00:00Z`;
-  const dayEnd = `${year}-${month}-${day}T23:59:59Z`;
   const { data, error } = await supabase
     .from("posts")
     .select("*")
     .eq("status", PUBLISHED)
     .eq("slug", slug)
-    .gte("published_at", dayStart)
-    .lte("published_at", dayEnd)
+    .gte("published_at", range.start)
+    .lt("published_at", range.endExclusive)
     .single();
   if (error) {
     if (error.code === "PGRST116") return null;
@@ -92,6 +105,7 @@ async function attachPostCardData<T extends { id: number; featured_media_id: num
 
 // Count only published posts and order by count, then name.
 export async function getPostCategoriesWithCounts() {
+  if (blogContentSource() === "postgres") return (await postgresContent()).getPostCategoriesWithCounts();
   const posts = await getAllPosts();
   const byslug = new Map<string, { name: string; slug: string; count: number }>();
   for (const post of posts) {
@@ -105,11 +119,12 @@ export async function getPostCategoriesWithCounts() {
 }
 
 export async function getAllPosts() {
+  if (blogContentSource() === "postgres") return (await postgresContent()).getAllPosts();
   if (!hasPublicSupabaseConfig()) return [];
   const supabase = publicSupabaseClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("*")
+    .select("id, slug, title, published_at, featured_media_id")
     .eq("status", PUBLISHED)
     .order("published_at", { ascending: false });
   if (error) {
@@ -120,11 +135,12 @@ export async function getAllPosts() {
 
 // An existing category with no posts is an empty archive, not a missing route.
 export async function getPostsByCategory(slug: string) {
+  if (blogContentSource() === "postgres") return (await postgresContent()).getPostsByCategory(slug);
   if (!hasPublicSupabaseConfig()) return null;
   const supabase = publicSupabaseClient();
   const { data: term, error: termError } = await supabase
     .from("terms")
-    .select("*")
+    .select("id, name, slug")
     .eq("taxonomy", "category")
     .eq("slug", slug)
     .single();
@@ -145,7 +161,7 @@ export async function getPostsByCategory(slug: string) {
   if (postIds.length === 0) return { term, posts: [] };
   const { data: posts, error: postsError } = await supabase
     .from("posts")
-    .select("*")
+    .select("id, slug, title, published_at, featured_media_id")
     .eq("status", PUBLISHED)
     .in("id", postIds)
     .order("published_at", { ascending: false });
@@ -158,11 +174,12 @@ export async function getPostsByCategory(slug: string) {
 }
 
 export async function getRecentPosts(limit = 3) {
+  if (blogContentSource() === "postgres") return (await postgresContent()).getRecentPosts(limit);
   if (!hasPublicSupabaseConfig()) return [];
   const supabase = publicSupabaseClient();
   const { data: posts, error: postsError } = await supabase
     .from("posts")
-    .select("*")
+    .select("id, slug, title, published_at, featured_media_id")
     .eq("status", PUBLISHED)
     .order("published_at", { ascending: false })
     .limit(limit);

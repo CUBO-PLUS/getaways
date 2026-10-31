@@ -1,0 +1,929 @@
+[
+  {
+    "id": "table.BlogCategory",
+    "label": "Create table \"BlogCategory\"",
+    "summary": "Creates table \"BlogCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "BlogCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"BlogCategory\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogCategory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"BlogCategory\"",
+        "sql": "CREATE TABLE \"public\".\"BlogCategory\" (\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"slug\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"BlogCategory\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogCategory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.BlogPost",
+    "label": "Create table \"BlogPost\"",
+    "summary": "Creates table \"BlogPost\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "BlogPost"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"BlogPost\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPost\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"BlogPost\"",
+        "sql": "CREATE TABLE \"public\".\"BlogPost\" (\n  \"coverAlt\" text,\n  \"coverMediaId\" int4,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"document\" jsonb NOT NULL,\n  \"documentSchemaVersion\" int4 NOT NULL,\n  \"excerpt\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"seoDescription\" text,\n  \"seoTitle\" text,\n  \"slug\" text NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"version\" int4 DEFAULT 1 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"BlogPost\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPost\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.BlogPostCategory",
+    "label": "Create table \"BlogPostCategory\"",
+    "summary": "Creates table \"BlogPostCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "BlogPostCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"BlogPostCategory\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPostCategory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"BlogPostCategory\"",
+        "sql": "CREATE TABLE \"public\".\"BlogPostCategory\" (\n  \"categoryId\" int4 NOT NULL,\n  \"postId\" int4 NOT NULL,\n  PRIMARY KEY (\"postId\", \"categoryId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"BlogPostCategory\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPostCategory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.BlogPublication",
+    "label": "Create table \"BlogPublication\"",
+    "summary": "Creates table \"BlogPublication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "BlogPublication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"BlogPublication\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublication\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"BlogPublication\"",
+        "sql": "CREATE TABLE \"public\".\"BlogPublication\" (\n  \"coverAlt\" text,\n  \"coverMediaId\" int4,\n  \"document\" jsonb NOT NULL,\n  \"documentSchemaVersion\" int4 NOT NULL,\n  \"excerpt\" text NOT NULL,\n  \"postId\" int4 NOT NULL,\n  \"publishedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"seoDescription\" text,\n  \"seoTitle\" text,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"postId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"BlogPublication\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublication\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.BlogPublicationCategory",
+    "label": "Create table \"BlogPublicationCategory\"",
+    "summary": "Creates table \"BlogPublicationCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "BlogPublicationCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"BlogPublicationCategory\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublicationCategory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"BlogPublicationCategory\"",
+        "sql": "CREATE TABLE \"public\".\"BlogPublicationCategory\" (\n  \"categoryId\" int4 NOT NULL,\n  \"publicationPostId\" int4 NOT NULL,\n  PRIMARY KEY (\"publicationPostId\", \"categoryId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"BlogPublicationCategory\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublicationCategory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.MediaAsset",
+    "label": "Create table \"MediaAsset\"",
+    "summary": "Creates table \"MediaAsset\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "MediaAsset"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"MediaAsset\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MediaAsset\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"MediaAsset\"",
+        "sql": "CREATE TABLE \"public\".\"MediaAsset\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"defaultAlt\" text,\n  \"height\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"mimeType\" text NOT NULL,\n  \"objectKey\" text NOT NULL,\n  \"originalName\" text NOT NULL,\n  \"sizeBytes\" int8 NOT NULL,\n  \"width\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"MediaAsset\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MediaAsset\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.BlogCategory.BlogCategory_slug_key",
+    "label": "Add unique constraint on \"BlogCategory\" (slug)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "BlogCategory_slug_key",
+        "table": "BlogCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"BlogCategory_slug_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogCategory_slug_key",
+          "public",
+          "\"public\".\"BlogCategory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"BlogCategory_slug_key\"",
+        "sql": "ALTER TABLE \"public\".\"BlogCategory\" ADD CONSTRAINT \"BlogCategory_slug_key\" UNIQUE (\"slug\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"BlogCategory_slug_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogCategory_slug_key",
+          "public",
+          "\"public\".\"BlogCategory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.BlogPost.BlogPost_slug_key",
+    "label": "Add unique constraint on \"BlogPost\" (slug)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "BlogPost_slug_key",
+        "table": "BlogPost"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"BlogPost_slug_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPost_slug_key",
+          "public",
+          "\"public\".\"BlogPost\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"BlogPost_slug_key\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPost\" ADD CONSTRAINT \"BlogPost_slug_key\" UNIQUE (\"slug\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"BlogPost_slug_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPost_slug_key",
+          "public",
+          "\"public\".\"BlogPost\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.MediaAsset.MediaAsset_objectKey_key",
+    "label": "Add unique constraint on \"MediaAsset\" (objectKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "MediaAsset_objectKey_key",
+        "table": "MediaAsset"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"MediaAsset_objectKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MediaAsset_objectKey_key",
+          "public",
+          "\"public\".\"MediaAsset\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"MediaAsset_objectKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"MediaAsset\" ADD CONSTRAINT \"MediaAsset_objectKey_key\" UNIQUE (\"objectKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"MediaAsset_objectKey_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MediaAsset_objectKey_key",
+          "public",
+          "\"public\".\"MediaAsset\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BlogPost.BlogPost_coverMediaId_idx_a9883159",
+    "label": "Create index \"BlogPost_coverMediaId_idx_a9883159\" on \"BlogPost\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BlogPost_coverMediaId_idx_a9883159",
+        "table": "BlogPost"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BlogPost_coverMediaId_idx_a9883159\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPost_coverMediaId_idx_a9883159\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BlogPost_coverMediaId_idx_a9883159\"",
+        "sql": "CREATE INDEX \"BlogPost_coverMediaId_idx_a9883159\" ON \"public\".\"BlogPost\" (\"coverMediaId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BlogPost_coverMediaId_idx_a9883159\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPost_coverMediaId_idx_a9883159\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BlogPostCategory.BlogPostCategory_categoryId_idx_15c304f2",
+    "label": "Create index \"BlogPostCategory_categoryId_idx_15c304f2\" on \"BlogPostCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BlogPostCategory_categoryId_idx_15c304f2",
+        "table": "BlogPostCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BlogPostCategory_categoryId_idx_15c304f2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPostCategory_categoryId_idx_15c304f2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BlogPostCategory_categoryId_idx_15c304f2\"",
+        "sql": "CREATE INDEX \"BlogPostCategory_categoryId_idx_15c304f2\" ON \"public\".\"BlogPostCategory\" (\"categoryId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BlogPostCategory_categoryId_idx_15c304f2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPostCategory_categoryId_idx_15c304f2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BlogPostCategory.BlogPostCategory_postId_idx_a7a72715",
+    "label": "Create index \"BlogPostCategory_postId_idx_a7a72715\" on \"BlogPostCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BlogPostCategory_postId_idx_a7a72715",
+        "table": "BlogPostCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BlogPostCategory_postId_idx_a7a72715\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPostCategory_postId_idx_a7a72715\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BlogPostCategory_postId_idx_a7a72715\"",
+        "sql": "CREATE INDEX \"BlogPostCategory_postId_idx_a7a72715\" ON \"public\".\"BlogPostCategory\" (\"postId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BlogPostCategory_postId_idx_a7a72715\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPostCategory_postId_idx_a7a72715\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BlogPublication.BlogPublication_coverMediaId_idx_a9883159",
+    "label": "Create index \"BlogPublication_coverMediaId_idx_a9883159\" on \"BlogPublication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BlogPublication_coverMediaId_idx_a9883159",
+        "table": "BlogPublication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BlogPublication_coverMediaId_idx_a9883159\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublication_coverMediaId_idx_a9883159\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BlogPublication_coverMediaId_idx_a9883159\"",
+        "sql": "CREATE INDEX \"BlogPublication_coverMediaId_idx_a9883159\" ON \"public\".\"BlogPublication\" (\"coverMediaId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BlogPublication_coverMediaId_idx_a9883159\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublication_coverMediaId_idx_a9883159\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BlogPublication.BlogPublication_publishedAt_idx_36121b91",
+    "label": "Create index \"BlogPublication_publishedAt_idx_36121b91\" on \"BlogPublication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BlogPublication_publishedAt_idx_36121b91",
+        "table": "BlogPublication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BlogPublication_publishedAt_idx_36121b91\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublication_publishedAt_idx_36121b91\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BlogPublication_publishedAt_idx_36121b91\"",
+        "sql": "CREATE INDEX \"BlogPublication_publishedAt_idx_36121b91\" ON \"public\".\"BlogPublication\" (\"publishedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BlogPublication_publishedAt_idx_36121b91\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublication_publishedAt_idx_36121b91\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BlogPublicationCategory.BlogPublicationCategory_categoryId_idx_15c304f2",
+    "label": "Create index \"BlogPublicationCategory_categoryId_idx_15c304f2\" on \"BlogPublicationCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BlogPublicationCategory_categoryId_idx_15c304f2",
+        "table": "BlogPublicationCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BlogPublicationCategory_categoryId_idx_15c304f2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublicationCategory_categoryId_idx_15c304f2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BlogPublicationCategory_categoryId_idx_15c304f2\"",
+        "sql": "CREATE INDEX \"BlogPublicationCategory_categoryId_idx_15c304f2\" ON \"public\".\"BlogPublicationCategory\" (\"categoryId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BlogPublicationCategory_categoryId_idx_15c304f2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublicationCategory_categoryId_idx_15c304f2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BlogPublicationCategory.BlogPublicationCategory_publicationPostId_idx_80488ebb",
+    "label": "Create index \"BlogPublicationCategory_publicationPostId_idx_80488ebb\" on \"BlogPublicationCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BlogPublicationCategory_publicationPostId_idx_80488ebb",
+        "table": "BlogPublicationCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BlogPublicationCategory_publicationPostId_idx_80488ebb\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublicationCategory_publicationPostId_idx_80488ebb\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BlogPublicationCategory_publicationPostId_idx_80488ebb\"",
+        "sql": "CREATE INDEX \"BlogPublicationCategory_publicationPostId_idx_80488ebb\" ON \"public\".\"BlogPublicationCategory\" (\"publicationPostId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BlogPublicationCategory_publicationPostId_idx_80488ebb\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogPublicationCategory_publicationPostId_idx_80488ebb\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.BlogPost.BlogPost_coverMediaId_fkey",
+    "label": "Add foreign key \"BlogPost_coverMediaId_fkey\" on \"BlogPost\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "BlogPost_coverMediaId_fkey",
+        "table": "BlogPost"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"BlogPost_coverMediaId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPost_coverMediaId_fkey",
+          "public",
+          "\"public\".\"BlogPost\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"BlogPost_coverMediaId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPost\"\nADD CONSTRAINT \"BlogPost_coverMediaId_fkey\"\nFOREIGN KEY (\"coverMediaId\")\nREFERENCES \"public\".\"MediaAsset\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"BlogPost_coverMediaId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPost_coverMediaId_fkey",
+          "public",
+          "\"public\".\"BlogPost\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.BlogPostCategory.BlogPostCategory_postId_fkey",
+    "label": "Add foreign key \"BlogPostCategory_postId_fkey\" on \"BlogPostCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "BlogPostCategory_postId_fkey",
+        "table": "BlogPostCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"BlogPostCategory_postId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPostCategory_postId_fkey",
+          "public",
+          "\"public\".\"BlogPostCategory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"BlogPostCategory_postId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPostCategory\"\nADD CONSTRAINT \"BlogPostCategory_postId_fkey\"\nFOREIGN KEY (\"postId\")\nREFERENCES \"public\".\"BlogPost\" (\"id\")\nON DELETE CASCADE\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"BlogPostCategory_postId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPostCategory_postId_fkey",
+          "public",
+          "\"public\".\"BlogPostCategory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.BlogPostCategory.BlogPostCategory_categoryId_fkey",
+    "label": "Add foreign key \"BlogPostCategory_categoryId_fkey\" on \"BlogPostCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "BlogPostCategory_categoryId_fkey",
+        "table": "BlogPostCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"BlogPostCategory_categoryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPostCategory_categoryId_fkey",
+          "public",
+          "\"public\".\"BlogPostCategory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"BlogPostCategory_categoryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPostCategory\"\nADD CONSTRAINT \"BlogPostCategory_categoryId_fkey\"\nFOREIGN KEY (\"categoryId\")\nREFERENCES \"public\".\"BlogCategory\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"BlogPostCategory_categoryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPostCategory_categoryId_fkey",
+          "public",
+          "\"public\".\"BlogPostCategory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.BlogPublication.BlogPublication_postId_fkey",
+    "label": "Add foreign key \"BlogPublication_postId_fkey\" on \"BlogPublication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "BlogPublication_postId_fkey",
+        "table": "BlogPublication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"BlogPublication_postId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPublication_postId_fkey",
+          "public",
+          "\"public\".\"BlogPublication\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"BlogPublication_postId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPublication\"\nADD CONSTRAINT \"BlogPublication_postId_fkey\"\nFOREIGN KEY (\"postId\")\nREFERENCES \"public\".\"BlogPost\" (\"id\")\nON DELETE CASCADE\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"BlogPublication_postId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPublication_postId_fkey",
+          "public",
+          "\"public\".\"BlogPublication\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.BlogPublication.BlogPublication_coverMediaId_fkey",
+    "label": "Add foreign key \"BlogPublication_coverMediaId_fkey\" on \"BlogPublication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "BlogPublication_coverMediaId_fkey",
+        "table": "BlogPublication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"BlogPublication_coverMediaId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPublication_coverMediaId_fkey",
+          "public",
+          "\"public\".\"BlogPublication\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"BlogPublication_coverMediaId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPublication\"\nADD CONSTRAINT \"BlogPublication_coverMediaId_fkey\"\nFOREIGN KEY (\"coverMediaId\")\nREFERENCES \"public\".\"MediaAsset\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"BlogPublication_coverMediaId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPublication_coverMediaId_fkey",
+          "public",
+          "\"public\".\"BlogPublication\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.BlogPublicationCategory.BlogPublicationCategory_publicationPostId_fkey",
+    "label": "Add foreign key \"BlogPublicationCategory_publicationPostId_fkey\" on \"BlogPublicationCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "BlogPublicationCategory_publicationPostId_fkey",
+        "table": "BlogPublicationCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"BlogPublicationCategory_publicationPostId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPublicationCategory_publicationPostId_fkey",
+          "public",
+          "\"public\".\"BlogPublicationCategory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"BlogPublicationCategory_publicationPostId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPublicationCategory\"\nADD CONSTRAINT \"BlogPublicationCategory_publicationPostId_fkey\"\nFOREIGN KEY (\"publicationPostId\")\nREFERENCES \"public\".\"BlogPublication\" (\"postId\")\nON DELETE CASCADE\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"BlogPublicationCategory_publicationPostId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPublicationCategory_publicationPostId_fkey",
+          "public",
+          "\"public\".\"BlogPublicationCategory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.BlogPublicationCategory.BlogPublicationCategory_categoryId_fkey",
+    "label": "Add foreign key \"BlogPublicationCategory_categoryId_fkey\" on \"BlogPublicationCategory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "BlogPublicationCategory_categoryId_fkey",
+        "table": "BlogPublicationCategory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"BlogPublicationCategory_categoryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPublicationCategory_categoryId_fkey",
+          "public",
+          "\"public\".\"BlogPublicationCategory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"BlogPublicationCategory_categoryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"BlogPublicationCategory\"\nADD CONSTRAINT \"BlogPublicationCategory_categoryId_fkey\"\nFOREIGN KEY (\"categoryId\")\nREFERENCES \"public\".\"BlogCategory\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"BlogPublicationCategory_categoryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogPublicationCategory_categoryId_fkey",
+          "public",
+          "\"public\".\"BlogPublicationCategory\""
+        ]
+      }
+    ]
+  }
+]

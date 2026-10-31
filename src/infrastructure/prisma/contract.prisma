@@ -14,3 +14,100 @@ model ReferralAttribution {
   status       String   @default("pending")
   createdAt    DateTime @default(now())
 }
+
+model BlogPost {
+  id                    Int                 @id @default(autoincrement())
+  slug                  String              @unique
+  title                 String
+  excerpt               String
+  document              Jsonb
+  documentSchemaVersion Int
+  coverMediaId          Int?
+  coverAlt              String?
+  seoTitle              String?
+  seoDescription        String?
+  version               Int                 @default(1)
+  createdAt             DateTime            @default(now())
+  updatedAt             temporal.updatedAt()
+  firstPublishedAt      DateTime?
+  coverMedia            MediaAsset?         @relation(fields: [coverMediaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  publication           BlogPublication?
+  categories            BlogPostCategory[]
+
+  @@index([coverMediaId])
+}
+
+model BlogPublication {
+  postId                Int                         @id
+  title                 String
+  excerpt               String
+  document              Jsonb
+  documentSchemaVersion Int
+  coverMediaId          Int?
+  coverAlt              String?
+  seoTitle              String?
+  seoDescription        String?
+  publishedAt           DateTime                    @default(now())
+  updatedAt             temporal.updatedAt()
+  post                  BlogPost                    @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  coverMedia            MediaAsset?                 @relation(fields: [coverMediaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  categories            BlogPublicationCategory[]
+
+  @@index([publishedAt])
+  @@index([coverMediaId])
+}
+
+model MediaAsset {
+  id           Int               @id @default(autoincrement())
+  objectKey    String            @unique
+  originalName String
+  mimeType     String
+  sizeBytes    BigInt
+  width        Int
+  height       Int
+  defaultAlt   String?
+  createdAt    DateTime          @default(now())
+  draftCovers  BlogPost[]
+  liveCovers   BlogPublication[]
+}
+
+model BlogCategory {
+  id            Int                         @id @default(autoincrement())
+  name          String
+  slug          String                      @unique
+  posts         BlogPostCategory[]
+  publications  BlogPublicationCategory[]
+}
+
+model BlogPostCategory {
+  postId     Int
+  categoryId Int
+  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([postId, categoryId])
+  @@index([categoryId])
+}
+
+model BlogPublicationCategory {
+  publicationPostId Int
+  categoryId        Int
+  publication       BlogPublication @relation(fields: [publicationPostId], references: [postId], onDelete: Cascade, onUpdate: Restrict)
+  category          BlogCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([publicationPostId, categoryId])
+  @@index([categoryId])
+}
+
+model BlogImportMapping {
+  id          Int      @id @default(autoincrement())
+  source      String
+  sourceId    String
+  targetKind  String
+  targetId    Int
+  fingerprint String
+  createdAt   DateTime @default(now())
+
+  @@unique([source, sourceId])
+  @@unique([targetKind, targetId])
+}

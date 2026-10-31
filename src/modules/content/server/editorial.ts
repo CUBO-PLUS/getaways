@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { ReactNode } from "react";
 import { descriptionFromHtml } from "@/modules/content/description";
 import { getMediaByIds } from "@/shared/media/server/media";
 import { getPageBySlug, getPostBySlugAndDate } from "@/modules/content/server/content";
@@ -31,19 +32,25 @@ export async function getEditorialData(segments: string[]) {
     const post = await getPostBySlugAndDate(year, month, day, slug);
     if (!post) return null;
     const path = `/${segments.join("/")}`;
-    const coverPath = await postCoverPath(post.featured_media_id);
+    const isPublication = "document" in post;
+    const coverPath = isPublication ? post.coverPath : await postCoverPath(post.featured_media_id);
+    const body: ReactNode = isPublication
+      ? await (await import("@/modules/content/server/content-postgres")).renderPublicationDocument(post.document)
+      : null;
+    const contentHtml = "content_html" in post ? post.content_html : "";
     return {
       kind: "post" as const,
       title: post.title,
       path,
       isContact: false,
-      html: sanitizeContentHtml(post.content_html),
+      html: isPublication ? null : sanitizeContentHtml(contentHtml),
+      body,
       article: articleSchema({
         title: post.title,
         slug: post.slug,
         path,
         published_at: post.published_at ?? null,
-        description: post.seo_description || post.excerpt || descriptionFromHtml(post.content_html),
+        description: post.seo_description || post.excerpt || (contentHtml ? descriptionFromHtml(contentHtml) : ""),
         imagePath: coverPath,
       }),
     };

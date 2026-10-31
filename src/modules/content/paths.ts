@@ -17,3 +17,11 @@ export function isBlogDatePath(year: string, month: string, day: string): boolea
     date.getUTCDate() === Number(day)
   );
 }
+
+export function blogUtcDayRange(year: string, month: string, day: string) {
+  if (!isBlogDatePath(year, month, day)) return null;
+  const start = new Date(`${year}-${month}-${day}T00:00:00Z`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start: start.toISOString(), endExclusive: end.toISOString() };
+}

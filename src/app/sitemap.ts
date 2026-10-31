@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
 
 import { getAllListings, getListingCategoriesWithCounts } from "@/modules/listings/server/listings";
-import { getRecentPosts } from "@/modules/content/server/content";
+import { getAllPosts, getPostCategoriesWithCounts } from "@/modules/content/server/content";
 import { visibleListingCategories } from "@/modules/listings/categories";
 import { collectDestinations } from "@/modules/listings/locations";
 import { blogPostPath } from "@/modules/content/paths";
+import { blogCategorySitemapEntries } from "@/modules/content/sitemap";
 
 /*
  * The site served no sitemap at all -- /sitemap.xml was a 404 -- so every URL
@@ -26,10 +27,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
   const now = new Date();
 
-  const [listings, categories, posts] = await Promise.all([
+  const [listings, categories, posts, blogCategories] = await Promise.all([
     getAllListings(),
     getListingCategoriesWithCounts(),
-    getRecentPosts(100),
+    getAllPosts(),
+    getPostCategoriesWithCounts(),
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -80,5 +82,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
     .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
-  return [...staticPages, ...destinations, ...listingPages, ...categoryPages, ...postPages];
+  const blogCategoryPages = blogCategorySitemapEntries(blogCategories, base, now);
+
+  return [...staticPages, ...destinations, ...listingPages, ...categoryPages, ...blogCategoryPages, ...postPages];
 }
