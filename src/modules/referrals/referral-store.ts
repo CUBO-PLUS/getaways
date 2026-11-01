@@ -2,28 +2,21 @@ import "server-only";
 
 import { db } from "@/infrastructure/prisma/db";
 import { getBookingById } from "@/modules/bookings/server/bookings";
+import { normalizeReferralCode } from "./referral-rules";
 
 export async function findActiveReferral(input: string) {
-  const code = input.trim().toUpperCase();
-
-  if (!/^[A-Z0-9-]{4,24}$/.test(code)) {
-    return null;
-  }
+  const code = normalizeReferralCode(input);
+  if (!code) return null;
 
   const referral = await db.orm.public.ReferralCode
     .where({ code, active: true })
     .first();
 
-  if (!referral) {
-    return null;
-  }
-
-  return {
-    id: referral.id,
-    code: referral.code,
-  };
+  if (!referral) return null;
+  return { id: referral.id, code: referral.code };
 }
 
+/** Only called internally after a real pending booking has been created. */
 export async function recordReferralForBooking(
   bookingId: number,
   inputCode: string
@@ -32,52 +25,35 @@ export async function recordReferralForBooking(
     return { ok: false, reason: "invalid_booking_id" };
   }
 
-  const code = inputCode.trim().toUpperCase();
+  const code = normalizeReferralCode(inputCode);
+  if (!code) return { ok: false, reason: "invalid_referral" };
 
-  // Check whether an attribution already exists.
   const existing = await db.orm.public.ReferralAttribution
     .where({ bookingId })
     .first();
 
   if (existing) {
     if (existing.referralCode === code) {
-      return {
-        ok: true,
-        alreadyRecorded: true,
-        bookingId,
-        code,
-      };
+      return { ok: true, alreadyRecorded: true, bookingId, code };
     }
-
     return { ok: false, reason: "already_attributed" };
   }
 
-  // Verify the booking exists and is pending.
   const booking = await getBookingById(bookingId);
-
-  if (!booking) {
-    return { ok: false, reason: "booking_not_found" };
-  }
-
+  if (!booking) return { ok: false, reason: "booking_not_found" };
   if (booking.status !== "pending_payment") {
     return { ok: false, reason: "booking_not_pending" };
   }
 
-  // Validate the referral against PostgreSQL.
   const referral = await findActiveReferral(code);
-
-  if (!referral) {
-    return { ok: false, reason: "invalid_referral" };
-  }
+  if (!referral) return { ok: false, reason: "invalid_referral" };
 
   try {
-    const attribution = await db.orm.public.ReferralAttribution
-      .create({
-        bookingId,
-        referralCode: referral.code,
-        status: "pending",
-      });
-
+    const attribution = await db.orm.public.ReferralAttribution.create({
+      bookingId,
+      referralCode: referral.code,
+      status: "pending",
+    });
     return {
       ok: true,
       alreadyRecorded: false,
@@ -85,25 +61,15 @@ export async function recordReferralForBooking(
       code: attribution.referralCode,
     };
   } catch (error) {
-    // Another request may have inserted the attribution first.
+    // A concurrent request may already have attributed this booking.
     const saved = await db.orm.public.ReferralAttribution
       .where({ bookingId })
       .first();
 
-    // If nothing was saved, propagate the original error.
-    if (!saved) {
-      throw error;
+    if (!saved) throw error;
+    if (saved.referralCode !== referral.code) {
+      return { ok: false, reason: "already_attributed" };
     }
-
-    if (saved.referralCode === referral.code) {
-      return {
-        ok: true,
-        alreadyRecorded: true,
-        bookingId,
-        code: referral.code,
-      };
-    }
-
-    return { ok: false, reason: "already_attributed" };
+    return { ok: true, alreadyRecorded: true, bookingId, code: referral.code };
   }
 }

@@ -4,6 +4,7 @@ import { getBookingBySessionId, getListing } from "@/modules/bookings/server/boo
 import { markPaid, updateBooking } from "@/modules/bookings/server/booking-store";
 import { isCheckoutSessionId } from "@/modules/checkout/checkout-session";
 import { activePaymentProvider } from "@/modules/payments";
+import { syncReferralStatusForBooking } from "@/modules/referrals/referral-lifecycle";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,15 @@ export const dynamic = "force-dynamic";
 
 function badSession() {
   return NextResponse.json({ ok: false, error: "Invalid checkout session." }, { status: 400 });
+}
+
+// Referral persistence is best-effort: never block a successful payment transition.
+async function trySyncReferral(bookingId: number, status: "pending_payment" | "confirmed" | "cancelled") {
+  try {
+    await syncReferralStatusForBooking(bookingId, status);
+  } catch (error) {
+    console.error("Unable to sync referral attribution after payment:", error);
+  }
 }
 
 export async function POST(request: Request) {
@@ -48,6 +58,7 @@ export async function POST(request: Request) {
     if (!result.found) {
       return NextResponse.json({ ok: false, error: "Payment not found." }, { status: 404 });
     }
+    await trySyncReferral(result.booking.id, result.booking.status);
     return NextResponse.json({ ok: true, data: { status: result.booking.status } });
   }
 
@@ -92,6 +103,11 @@ export async function GET(request: Request) {
     }
 
     const current = await getBookingBySessionId(sessionId);
+    // Also repairs a missed referral update when status is polled again.
+    if (current && current.status !== "pending_payment") {
+      await trySyncReferral(current.id, current.status);
+    }
+
     return NextResponse.json({
       ok: true,
       data: {
