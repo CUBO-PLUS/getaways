@@ -2,6 +2,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { assertSameOrigin, isBlogAdmin } from "@/modules/content/server/blog-auth";
 import { BlogConflict, unpublishBlogDraft } from "@/modules/content/server/blog-operations";
 import { parseBlogId } from "@/modules/content/blog-ids";
+import { blogPostPath } from "@/modules/content/paths";
 
 export const runtime = "nodejs";
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!body || typeof body !== "object" || !Number.isSafeInteger((body as { version?: unknown }).version)) return Response.json({ error: "invalid_input" }, { status: 400 });
     const result = await unpublishBlogDraft(id, (body as { version: number }).version);
     if (!result) return new Response(null, { status: 404 });
-    revalidatePath(`/blog/${result.slug}`);
+    if (result.publishedAt) revalidatePath(blogPostPath(result.publishedAt.toString(), result.slug));
     revalidatePath("/blog");
     revalidateTag("blog-publications", "max");
     return Response.json(result, { headers: { "Cache-Control": "private, no-store" } });

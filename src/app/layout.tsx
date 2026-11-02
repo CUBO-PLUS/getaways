@@ -93,8 +93,8 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={` ${inter.variable} ${lexend.variable} ${montserrat.variable} h-full max-w-screen overflow-x-hidden`}>
-      <body className="flex min-h-full max-w-screen flex-col overflow-x-hidden bg-background font-body text-[16px] leading-[30px] text-body-text antialiased">{children}</body>
+    <html lang="en" className={` ${inter.variable} ${lexend.variable} ${montserrat.variable} h-full max-w-screen overflow-x-hidden has-[[data-blog-editor]]:overflow-x-clip`}>
+      <body className="flex min-h-full max-w-screen flex-col overflow-x-hidden bg-background font-body text-[16px] leading-[30px] text-body-text antialiased has-[[data-blog-editor]]:overflow-x-clip">{children}</body>
     </html>
   );
 }

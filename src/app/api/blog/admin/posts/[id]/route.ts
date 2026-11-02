@@ -12,7 +12,18 @@ export async function GET(request: Request, { params }: Context) {
   const id = parseBlogId((await params).id);
   if (!id) return new Response(null, { status: 404 });
   const post = await db.orm.public.BlogPost.where({ id }).include("categories").include("publication").first();
-  return post ? Response.json(post, { headers: privateHeaders }) : new Response(null, { status: 404, headers: privateHeaders });
+  if (!post) return new Response(null, { status: 404, headers: privateHeaders });
+  const publication = post.publication;
+  let hasUnpublishedChanges = false;
+  if (publication) {
+    const publishedCategories = await db.orm.public.BlogPublicationCategory.where({ publicationPostId: id }).all();
+    const draftCategoryIds = post.categories.map(({ categoryId }) => categoryId).sort((a, b) => a - b);
+    const publishedCategoryIds = publishedCategories.map(({ categoryId }) => categoryId).sort((a, b) => a - b);
+    const fields = ["title", "excerpt", "document", "documentSchemaVersion", "coverMediaId", "coverAlt", "seoTitle", "seoDescription"] as const;
+    hasUnpublishedChanges = fields.some((field) => JSON.stringify(post[field]) !== JSON.stringify(publication[field]))
+      || JSON.stringify(draftCategoryIds) !== JSON.stringify(publishedCategoryIds);
+  }
+  return Response.json({ ...post, hasUnpublishedChanges }, { headers: privateHeaders });
 }
 
 export async function PUT(request: Request, { params }: Context) {

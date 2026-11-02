@@ -2,6 +2,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { assertSameOrigin, isBlogAdmin } from "@/modules/content/server/blog-auth";
 import { BlogConflict, publishBlogDraft } from "@/modules/content/server/blog-operations";
 import { parseBlogId } from "@/modules/content/blog-ids";
+import { blogPostPath } from "@/modules/content/paths";
 
 export const runtime = "nodejs";
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!publication) return new Response(null, { status: 404 });
     revalidatePath("/blog");
     revalidateTag("blog-publications", "max");
-    revalidatePath(`/blog/${publication.slug}`);
+    revalidatePath(blogPostPath(publication.publishedAt.toString(), publication.slug));
     return Response.json(publication, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof BlogConflict) return Response.json({ error: "version_conflict", currentVersion: error.currentVersion }, { status: 409, headers: { "Cache-Control": "private, no-store" } });

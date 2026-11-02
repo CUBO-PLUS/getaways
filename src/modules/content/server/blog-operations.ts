@@ -83,7 +83,7 @@ export async function publishBlogDraft(id: number, expectedVersion: number) {
     const publication = await tx.orm.public.BlogPublication.create({ postId: id, title: post.title, excerpt: post.excerpt, document: post.document, documentSchemaVersion: post.documentSchemaVersion, coverMediaId: post.coverMediaId, coverAlt: post.coverAlt, seoTitle: post.seoTitle, seoDescription: post.seoDescription, publishedAt });
     for (const category of categories) await tx.orm.public.BlogPublicationCategory.create({ publicationPostId: id, categoryId: category.categoryId });
     if (!post.firstPublishedAt) await tx.orm.public.BlogPost.where({ id }).update({ firstPublishedAt: now });
-    return { id, slug: post.slug, publishedAt: publication.publishedAt };
+    return { id, slug: post.slug, publishedAt: publication.publishedAt, firstPublishedAt: publishedAt, publication, hasUnpublishedChanges: false };
   });
 }
 
@@ -93,7 +93,8 @@ export async function unpublishBlogDraft(id: number, expectedVersion: number) {
     const post = await tx.orm.public.BlogPost.where({ id }).forUpdate().first();
     if (!post) return null;
     if (post.version !== expectedVersion) throw new BlogConflict(post.version);
+    const publication = await tx.orm.public.BlogPublication.where({ postId: id }).first();
     await tx.orm.public.BlogPublication.where({ postId: id }).deleteAll();
-    return { id, slug: post.slug, version: post.version };
+    return { id, slug: post.slug, version: post.version, publishedAt: publication?.publishedAt ?? null, firstPublishedAt: post.firstPublishedAt, publication: null, hasUnpublishedChanges: false };
   });
 }

@@ -1,4 +1,4 @@
-import type { JSONContent } from "@tiptap/core";
+import type { Attributes, JSONContent } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
@@ -47,13 +47,24 @@ const BlogImage = Image.extend({
   },
 }).configure({ inline: false, allowBase64: false });
 
+const BlogLink = Link.extend({
+  addAttributes() {
+    // Keep the editor's JSON within the editorial schema, including when loading imported links.
+    const attributes: Attributes = this.parent?.() ?? {};
+    return { href: attributes.href, target: attributes.target, rel: attributes.rel };
+  },
+}).configure({
+  openOnClick: false, autolink: false, linkOnPaste: false,
+  HTMLAttributes: { rel: "noopener noreferrer" },
+});
+
 export const BLOG_CONTENT_EXTENSIONS = [
   StarterKit.configure({
     heading: { levels: [2, 3] }, link: false, code: false, codeBlock: false,
     strike: false, underline: false, dropcursor: false, gapcursor: false,
-    undoRedo: false, listKeymap: false, trailingNode: false,
+    listKeymap: false, trailingNode: false,
   }),
-  Link.configure({ openOnClick: false, autolink: false, linkOnPaste: false }),
+  BlogLink,
   BlogImage,
 ];
 

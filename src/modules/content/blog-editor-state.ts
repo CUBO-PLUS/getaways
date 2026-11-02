@@ -1,14 +1,10 @@
-export function withPublicationState<T extends { publication: unknown | null }>(draft: T, published: boolean): T {
-  return { ...draft, publication: published ? {} : null };
-}
-
-export function mergeReconciledPublication<T extends { version: number; publication: unknown | null }>(
+export function mergeReconciledPublication<T extends { version: number; publication: unknown | null; firstPublishedAt: string | null; hasUnpublishedChanges: boolean }>(
   local: T,
   remote: T,
   expectedVersion: number,
 ): T | null {
   if (local.version !== expectedVersion || remote.version !== expectedVersion) return null;
-  return { ...local, publication: remote.publication };
+  return { ...local, publication: remote.publication, firstPublishedAt: remote.firstPublishedAt, hasUnpublishedChanges: remote.hasUnpublishedChanges };
 }
 
 export function imageAttributesFromChoice(
