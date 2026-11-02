@@ -122,16 +122,22 @@ export async function importBlog(root: string, conversionBytes: Uint8Array, appr
   if (new Set(conversion.articles.map(({ source }) => source.slug)).size !== conversion.articles.length) throw new Error("conversion contains duplicate slugs");
 
   const prepared: PreparedMedia[] = [];
+  const usedObjectKeys = new Set<string>();
   for (const item of sourceMedia) {
     const bytes = sourceMediaSnapshot.bytesById.get(item.id);
     if (!bytes) throw new Error(`source media was not included in the verified snapshot: ${item.id}`);
     const metadata = await sharp(bytes, { limitInputPixels: 100_000_000 }).metadata();
     const formats = { jpeg: ["jpg", "image/jpeg"], png: ["png", "image/png"], webp: ["webp", "image/webp"] } as const;
     const format = metadata.format as keyof typeof formats;
-    const descriptor = formats[format];
+    const descriptor = metadata.format === "heif" && metadata.compression === "av1"
+      ? ["avif", "image/avif"] as const
+      : formats[format];
     if (!descriptor || !metadata.width || !metadata.height) throw new Error(`unsupported/corrupt source media ${item.storage_path}`);
     const hash = digest(bytes);
-    prepared.push({ source: item, bytes, hash, sourceFingerprint: fingerprint({ id: item.id, wpId: item.wp_id, storagePath: item.storage_path, filename: item.original_filename, alt: item.alt_text, hash }), key: `blog-import/sha256/${hash}.${descriptor[0]}`, mime: descriptor[1], width: metadata.width, height: metadata.height });
+    let key = `blog-import/sha256/${hash}.${descriptor[0]}`;
+    if (usedObjectKeys.has(key)) key = `blog-import/source/${item.id}/sha256/${hash}.${descriptor[0]}`;
+    usedObjectKeys.add(key);
+    prepared.push({ source: item, bytes, hash, sourceFingerprint: fingerprint({ id: item.id, wpId: item.wp_id, storagePath: item.storage_path, filename: item.original_filename, alt: item.alt_text, hash }), key, mime: descriptor[1], width: metadata.width, height: metadata.height });
   }
 
   // Resolve existing IDs and reject all collisions before the first object upload.
