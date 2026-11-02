@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateReferral } from "../referral-rules";
+import { normalizeReferralCode, validateReferral } from "../referral-rules";
 
 const referrals = [
   { code: "ROGER10", active: true },
@@ -27,4 +27,10 @@ describe("Referral validation", () => {
     ).toBeNull();
   });
 
+});
+
+it("normalizes case and rejects malformed codes without database access", () => {
+  expect(normalizeReferralCode("  getawaysdemo  ")).toBe("GETAWAYSDEMO");
+  expect(normalizeReferralCode("x")).toBeNull();
+  expect(normalizeReferralCode("bad code")).toBeNull();
 });
