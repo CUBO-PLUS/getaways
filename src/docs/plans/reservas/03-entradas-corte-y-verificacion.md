@@ -39,6 +39,9 @@ una base aislada; configurar y verificar conexión y bucket según la guía com�
 - [ ] Completar las comprobaciones aplicables de [verificación y aceptación](../comunes/verificacion-y-aceptacion.md).
 - [ ] Ensayar restauración y ejecutar importación final y corte según el [hito B2](../comunes/transicion-y-recuperacion.md).
 - [ ] Probar checkout, confirmación, disponibilidad, referidos y dos procesos usando la misma fuente.
+- [ ] Revisar la integración de referidos vigente al implementar (incluida la PR #1 si se integró): comprobar con PostgreSQL real que una reserva con código activo crea una sola atribución pendiente, que confirmar o cancelar sincroniza su estado y que los reintentos no duplican registros. Verificar también que un código inválido o inactivo no impide reservar ni crea atribución.
+- [ ] Conciliar las atribuciones existentes con las reservas importadas por `bookingId`; identificar y resolver o registrar explícitamente los huérfanos y conflictos de IDs antes del corte. Evaluar una FK solo después de esa revisión, sin borrar historial ni introducir cascadas.
+- [ ] Comprobar que un fallo de sincronización de referidos no revierte el pago y que existe un mecanismo de recuperación verificable para corregir el estado; no depender de un GET si su efecto se trasladó a la reconciliación indicada arriba.
 
 ## Cierre del hito de persistencia B2
 
