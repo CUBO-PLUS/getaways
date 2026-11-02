@@ -3,6 +3,17 @@
 [Plan del blog](README.md). Dependencia: B.2 aprobada. Todas las rutas y comandos
 son relativos a `src/`; verificar opciones reales del importador antes de ejecutarlo.
 
+Estado al 2026-11-02: se registra una importación local de nueve artículos y 64
+medios, con aprobación y respaldos privados; ver [evidencia y límites](README.md#estado-comprobado-y-límites).
+No se marca cerrada ninguna tarea compuesta a partir de esos artefactos: faltan
+evidencias de ensayo aislado, repetición, recuperación, recorrido real y aceptación.
+No volver a importar para completar casillas sin nueva autorización y respaldo.
+
+- [x] Cierre de contenido posterior a la importación local: nueve artículos y
+  presentación aceptados, nueve portadas y 56 imágenes con alt, 27 pies preservados
+  y nueve URL comprobadas. [Evidencia](revision-editorial.md). No sustituye las
+  verificaciones técnicas compuestas que siguen pendientes debajo.
+
 ## Ensayo aislado
 
 - [ ] Ensayar importación aprobada en PostgreSQL y bucket aislados; conservar IDs
