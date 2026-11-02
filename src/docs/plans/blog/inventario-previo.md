@@ -1,6 +1,6 @@
 # Inventario previo a migración del blog
 
-Estado: inspección estática del árbol del proyecto; no se modificaron datos ni lectores. Fecha del inventario: 2026-10-31.
+Estado: inspección histórica del árbol del proyecto; no se modificaron datos ni lectores. Fecha del inventario: 2026-10-31. Algunas observaciones sobre autenticación y servicios ya no reflejan el estado actual; verificarlas antes de actuar.
 
 ## Consumidores y contratos observados
 

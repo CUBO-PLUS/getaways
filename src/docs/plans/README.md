@@ -87,8 +87,8 @@ antes de implementar, volver a verificar versiones y documentación correspondie
   `migration-model.md` y `queries-postgres.md`.
 - [Claims en jose 6.2.14](https://github.com/panva/jose/blob/v6.2.14/docs/types/interfaces/JWTClaimVerificationOptions.md).
 - [Seguridad y API de bcryptjs](https://github.com/dcodeIO/bcrypt.js#security-considerations).
-- [Plan previo del blog](../plan-implementacion-blog.md) y
-  [revisión editorial pendiente](../revision-migracion-blog.md).
+- [Plan previo del blog](blog/propuesta-original.md) y
+  [revisión editorial pendiente](blog/revision-editorial.md).
 
 El worktree del blog conserva cambios locales no incluidos en el merge:
 `src/compose.dev.yaml` y `src/docs/levantamiento-local-20261031.md`. No descartarlos

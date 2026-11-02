@@ -1,6 +1,8 @@
 # Plan de implementación del blog: Tiptap, PostgreSQL y RustFS
 
-Estado: propuesta pendiente de implementación.
+**Documento histórico:** el seguimiento actualizado para completar la entrega está en
+[plan del blog](README.md). Las secciones siguientes conservan la propuesta
+original; no acreditan que sus pasos se hayan completado ni autorizado.
 
 ## Objetivo y alcance
 
