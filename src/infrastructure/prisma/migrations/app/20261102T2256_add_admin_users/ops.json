@@ -1,0 +1,161 @@
+[
+  {
+    "id": "table.AdminLoginThrottle",
+    "label": "Create table \"AdminLoginThrottle\"",
+    "summary": "Creates table \"AdminLoginThrottle\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AdminLoginThrottle"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AdminLoginThrottle\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AdminLoginThrottle\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AdminLoginThrottle\"",
+        "sql": "CREATE TABLE \"public\".\"AdminLoginThrottle\" (\n  \"attempts\" int4 NOT NULL,\n  \"key\" text NOT NULL,\n  \"windowEndsAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"key\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AdminLoginThrottle\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AdminLoginThrottle\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.AdminUser",
+    "label": "Create table \"AdminUser\"",
+    "summary": "Creates table \"AdminUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AdminUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AdminUser\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AdminUser\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AdminUser\"",
+        "sql": "CREATE TABLE \"public\".\"AdminUser\" (\n  \"active\" bool DEFAULT true NOT NULL,\n  \"authVersion\" int4 DEFAULT 1 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"deactivatedAt\" timestamptz,\n  \"email\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"passwordChangedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"passwordHash\" text NOT NULL,\n  \"role\" text DEFAULT 'EDITOR' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"AdminUser_role_check_991f78b6\" CHECK (\"role\" IN ('ADMIN', 'EDITOR', 'BOOKING_MANAGER')),\n  CONSTRAINT \"admin_user_auth_version_positive_e4ec2ac8\" CHECK (\"authVersion\" > 0),\n  CONSTRAINT \"admin_user_email_normalized_50c0b399\" CHECK (email = lower(btrim(email)) AND email <> ''),\n  CONSTRAINT \"admin_user_name_nonempty_00a4830a\" CHECK (btrim(name) <> '')\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AdminUser\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AdminUser\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.AdminUser.AdminUser_email_key",
+    "label": "Add unique constraint on \"AdminUser\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "AdminUser_email_key",
+        "table": "AdminUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"AdminUser_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AdminUser_email_key",
+          "public",
+          "\"public\".\"AdminUser\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"AdminUser_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"AdminUser\" ADD CONSTRAINT \"AdminUser_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"AdminUser_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AdminUser_email_key",
+          "public",
+          "\"public\".\"AdminUser\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AdminLoginThrottle.AdminLoginThrottle_windowEndsAt_idx_90090ef7",
+    "label": "Create index \"AdminLoginThrottle_windowEndsAt_idx_90090ef7\" on \"AdminLoginThrottle\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AdminLoginThrottle_windowEndsAt_idx_90090ef7",
+        "table": "AdminLoginThrottle"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AdminLoginThrottle_windowEndsAt_idx_90090ef7\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AdminLoginThrottle_windowEndsAt_idx_90090ef7\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AdminLoginThrottle_windowEndsAt_idx_90090ef7\"",
+        "sql": "CREATE INDEX \"AdminLoginThrottle_windowEndsAt_idx_90090ef7\" ON \"public\".\"AdminLoginThrottle\" (\"windowEndsAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AdminLoginThrottle_windowEndsAt_idx_90090ef7\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AdminLoginThrottle_windowEndsAt_idx_90090ef7\""
+        ]
+      }
+    ]
+  }
+]

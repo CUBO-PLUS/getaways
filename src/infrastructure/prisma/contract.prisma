@@ -111,3 +111,36 @@ model BlogImportMapping {
   @@unique([source, sourceId])
   @@unique([targetKind, targetId])
 }
+
+enum AdminRole {
+  @@type("pg/text@1")
+  ADMIN = "ADMIN"
+  EDITOR = "EDITOR"
+  BOOKING_MANAGER = "BOOKING_MANAGER"
+}
+
+model AdminUser {
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  name              String
+  passwordHash      String
+  role              AdminRole @default(EDITOR)
+  active            Boolean  @default(true)
+  authVersion       Int      @default(1)
+  passwordChangedAt DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         temporal.updatedAt()
+  deactivatedAt     DateTime?
+
+  @@check(expression: sql`email = lower(btrim(email)) AND email <> ''`, name: "admin_user_email_normalized")
+  @@check(expression: sql`btrim(name) <> ''`, name: "admin_user_name_nonempty")
+  @@check(expression: sql`"authVersion" > 0`, name: "admin_user_auth_version_positive")
+}
+
+model AdminLoginThrottle {
+  key          String   @id
+  attempts     Int
+  windowEndsAt DateTime
+
+  @@index([windowEndsAt])
+}
