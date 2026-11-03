@@ -20,8 +20,6 @@ sin construir un `Request("http://localhost")` para adaptar la API.
 - No incluir correo, nombre, hash o rol como autoridad. Un JWT firmado no está cifrado.
 - Consultar PostgreSQL en cada acceso protegido: usuario existente, activo,
   versión coincidente y permisos de su rol actual. Sin caché entre solicitudes.
-- Si exige cambio de contraseña, solo permitir cambio propio y logout. Restringir
-  expiración de la sesión temporal a la caducidad de la credencial.
 - Errores de BD/configuración cierran acceso con respuesta operativa apropiada;
   nunca recurrir a la contraseña anterior.
 
@@ -93,7 +91,7 @@ PostgreSQL con dos clientes. No basta una prueba que reinicie contadores de memo
 
 ## Cierre
 
-- [ ] Un token antiguo, expirado, manipulado, sin `sub`/`sv` o de cuenta desactivada no autoriza.
+- [x] Un token antiguo, expirado, manipulado, sin `sub`/`sv` o de cuenta desactivada no autoriza.
 - [ ] La sesión se revoca en todas las instancias después de los cambios relevantes.
-- [ ] Una sesión de BOOKING_MANAGER no implica `isBlogAdmin=true` ni permiso editorial.
-- [ ] Cookie y mensajes verificados en navegador; origen hostil rechazado sin mutación.
+- [x] Una sesión de BOOKING_MANAGER no implica `isBlogAdmin=true` ni permiso editorial.
+- [x] Cookie y mensajes verificados en navegador; origen hostil rechazado sin mutación.

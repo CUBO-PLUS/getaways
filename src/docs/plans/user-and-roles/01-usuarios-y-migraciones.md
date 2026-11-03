@@ -11,7 +11,7 @@ Añadir al contrato existente, sin reemplazar ningún modelo:
 
 | Modelo | Campos |
 | --- | --- |
-| `AdminUser` | `id` Int PK autoincremental, `email` único, `name`, `passwordHash`, `role`, `active`, `authVersion`, `mustChangePassword`, `passwordExpiresAt?`, `passwordChangedAt`, `createdAt`, `updatedAt`, `deactivatedAt?` |
+| `AdminUser` | `id` Int PK autoincremental, `email` único, `name`, `passwordHash`, `role`, `active`, `authVersion`, `passwordChangedAt`, `createdAt`, `updatedAt`, `deactivatedAt?` |
 | `AdminLoginThrottle` | `key` String PK, `attempts` Int, `windowEndsAt` DateTime |
 | Enum de rol | `ADMIN`, `EDITOR`, `BOOKING_MANAGER`; predeterminado `EDITOR` |
 
@@ -34,13 +34,13 @@ Añadir al contrato existente, sin reemplazar ningún modelo:
   de bcrypt: 32 caracteres multibyte pueden superar ese límite.
 - No aplicar trim ni normalización a contraseñas. Permitir gestores y pegado.
 - Usar `bcryptjs.hash()`/`compare()` asíncronos; coste inicial 12, calibrado en destino.
-- Alta y restablecimiento mediante contraseña temporal; solo guardar su hash,
-  exigir cambio y fijar caducidad propuesta de 24 horas.
+- ADMIN establece la contraseña en el alta y al restablecer otra cuenta. Puede
+  usarse indefinidamente, sin cambio obligatorio inicial; solo se guarda el hash.
 - Entrega por canal seguro externo. Sin registro público ni recuperación por correo.
 - Cambio propio exige contraseña actual, nueva y confirmación.
-- Restablecer otra cuenta exige ADMIN y reautenticación; para la propia usar cambio
-  de contraseña, no el restablecimiento administrativo.
-- Cambiar contraseña invalida todas las sesiones y elimina la condición temporal.
+- Restablecer otra cuenta exige ADMIN y confirmación con la contraseña actual del
+  ADMIN; para la propia usar cambio de contraseña, no el restablecimiento administrativo.
+- Cambiar contraseña invalida todas las sesiones.
 
 ## Último administrador y CLI
 
@@ -101,8 +101,8 @@ no volver a usar el hash del blog. No usar `db:init`, `db:update`, `migrate dev`
 
 ## Cierre
 
-- [ ] Migración incremental revisada y reproducida en una base con datos sintéticos previos.
-- [ ] Referidos, publicaciones, borradores, medios y correspondencias de importación intactos.
-- [ ] Alta y recuperación sin contraseñas en repositorio o salida de comandos.
-- [ ] Correo duplicado rechazado y último ADMIN protegido incluso con concurrencia.
-- [ ] Cuenta BOOKING_MANAGER representable sin otorgar acceso editorial.
+- [x] Migración incremental revisada y reproducida en una base con datos sintéticos previos.
+- [x] Referidos, publicaciones, borradores, medios y correspondencias de importación intactos.
+- [x] Alta y recuperación sin contraseñas en repositorio o salida de comandos.
+- [x] Correo duplicado rechazado y último ADMIN protegido incluso con concurrencia.
+- [x] Cuenta BOOKING_MANAGER representable sin otorgar acceso editorial.

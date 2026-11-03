@@ -25,19 +25,18 @@ Open http://localhost:3000.
 From this directory, with Docker running:
 
 ```bash
-cp .env.local.example .env.local  # only if .env.local does not exist
+cp .env.example .env  # only if .env does not exist; configure its credentials
 docker compose -f compose.dev.yaml up -d --wait db
 pnpm db:generate
-pnpm db:init
 pnpm db:check
 pnpm test:db
 ```
 
-`.env.local` contains the development `DATABASE_URL` for `127.0.0.1:5432`. Prisma CLI loads the same `.env*` files as Next.js. If you override the Compose PostgreSQL credentials or port in `.env`, update `.env.local` to match. Inside the Compose app container, `DATABASE_URL` already points to `db:5432` and takes precedence.
+The application and Prisma CLI use the same `DATABASE_URL` from `.env`, with `127.0.0.1` and the published port for the host. Inside Compose, `DATABASE_COMPOSE_HOST=db` translates a loopback URL to `db:5432`; remote URLs are unchanged. PostgreSQL itself still needs `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` for initialization; keep them consistent with the URL. Changing these values does not change an existing database volume or its credentials. Keep `.env` private and never commit it. Do not keep an overriding `DATABASE_URL` in `.env.local`.
 
 ### Local RustFS for blog media
 
-Copy `.env.example` to `.env` and replace both RustFS root and application credential placeholders with unique random values. The root identity is only for the local RustFS service/one-shot bucket initializer; never put it in the app's S3 variables. `S3_BUCKET` defaults to `blog-media`; if changed, update **both** bucket ARNs in `infrastructure/storage/blog-media-policy.json` to match before provisioning the application identity. Then use the RustFS console at `http://127.0.0.1:9001` to create a user with that policy (it grants only list/location and object read/write/delete in the configured bucket). Put that user's credentials in `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` in `.env` and `.env.local` as applicable. Do not expose these variables with a `NEXT_PUBLIC_` prefix.
+Copy `.env.example` to `.env` and replace both RustFS root and application credential placeholders with unique random values. The root identity is only for the local RustFS service/one-shot bucket initializer; never put it in the app's S3 variables. `S3_BUCKET` defaults to `blog-media`; if changed, update **both** bucket ARNs in `infrastructure/storage/blog-media-policy.json` to match before provisioning the application identity. Then use the RustFS console at `http://127.0.0.1:9001` to create a user with that policy (it grants only list/location and object read/write/delete in the configured bucket). Put that user's credentials in `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` in `.env`. Do not expose these variables with a `NEXT_PUBLIC_` prefix.
 
 ```bash
 docker compose -f compose.dev.yaml up -d --wait
@@ -47,9 +46,15 @@ Compose binds the S3 API and console to loopback; the app container uses `http:/
 
 The contract is `infrastructure/prisma/contract.prisma`; the server-only client is exported as `db` from `@/infrastructure/prisma/db`. Prisma 8 uses `@prisma/orm-postgres`, not `@prisma/client`. Commit the emitted `contract.json` and `contract.d.ts` alongside the contract. The contract starts empty: no application data or booking storage has been migrated.
 
-After editing the contract, run `pnpm db:generate` and `pnpm db:update` for local development. For versioned migrations, use `pnpm exec prisma migration plan --name <name>`, review the files under `infrastructure/prisma/migrations/`, then run `pnpm db:migrate`. Builds emit the contract automatically. After a contract change, restart the dev server to refresh the cached client.
+After editing the contract, emit it and plan a versioned migration from the actual database marker; review and rehearse it on an isolated copy before applying. Do not run `db:init` against an existing database. The development client cache is invalidated when the contract or connection URL changes.
 
 `pnpm test:db` checks a real SQL query and client reuse across module reloads. The normal test suite skips this check so it does not require PostgreSQL.
+
+### Operator account provisioning
+
+After the reviewed users migration has been applied, run `docker exec -it gateways-dev-app-1 pnpm admin:user bootstrap` in an interactive terminal for the local Docker environment. Outside Docker, `pnpm admin:user bootstrap` requires `DATABASE_URL` to be configured. Bootstrap only succeeds when the user table is empty. For operational recovery, use `docker exec -it gateways-dev-app-1 pnpm admin:user recover`; it asks for an existing account email, explicit confirmation and a new password, then activates it as ADMIN and revokes its sessions. Restrict server and database access: recovery bypasses web authentication. Password entry is hidden; never put passwords in arguments, environment variables or shell history. Deliver credentials separately over a secure channel. Passwords do not expire automatically.
+
+Login and reauthentication use PostgreSQL rate limits. Without a trusted proxy, all clients share the same global budget; enable `AUTH_TRUST_PROXY=1` only behind a non-bypassable proxy that overwrites `X-Real-IP`.
 
 Other useful commands:
 
@@ -118,7 +123,7 @@ Stored Gutenberg blocks receive static utilities in `shared/security/server/sani
 
 ## Secrets
 
-The example database URL contains local development credentials only. Put real configuration in `.env.local` (already gitignored), never in source control. Do not add real API keys, wallet seeds or private data to this repo.
+The example database URL contains local development credentials only. Put real configuration in `.env` (already gitignored), never in source control. Do not add real API keys, wallet seeds or private data to this repo.
 
 ## Notes
 

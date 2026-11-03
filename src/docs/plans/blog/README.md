@@ -1,4 +1,4 @@
-# [ ] Plan inmediato — Completar la migración del blog
+# [x] Plan inmediato — Completar la migración del blog
 
 [Propuesta original](propuesta-original.md) · [Inventario previo](inventario-previo.md) · [Revisión editorial](revision-editorial.md) · [Mejora del editor](mejora-editor.md)
 
@@ -16,9 +16,12 @@ no declara implementada ninguna fase anterior sin evidencia de aceptación.
 
 ## Estado comprobado y límites
 
-**Actualización 2026-11-02: contenido completado y aceptado; cierre técnico
-pendiente.** Se actualizaron los alt de los nueve artículos existentes en la BD
-local por encargo explícito. No se reimportó ni se escribieron objetos en RustFS.
+**Actualización 2026-11-02: plan marcado como completado por decisión de la persona
+solicitante, con pendientes técnicos abiertos.** Se actualizaron los alt de los
+nueve artículos existentes en la BD local por encargo explícito. No se reimportó
+ni se escribieron objetos en RustFS. El cierre del plan no implica que se hayan
+ejecutado ni aceptado individualmente las verificaciones pendientes de B.1, B.3 y
+la mejora del editor que se detallan a continuación.
 
 - El 2026-11-01 se verificó el esquema PostgreSQL contra el contrato del blog:
   marcador `6f61bccf5fb3a4ddac61b783b36527564f3cbd4a8bf439056252a731b20389c7`;
@@ -102,7 +105,8 @@ y autorización. Detalle en [revisión editorial](revision-editorial.md).
   los lectores públicos no exponen borradores ni utilizan fallback improvisado.
 - [ ] Pruebas, recorrido real, respaldo y restauración ensayada registrados con
   versión, entorno, marcador, responsable, resultados y pendientes.
-- [ ] Entrega aprobada y fases aceptadas antes de marcar completo el plan.
+- [ ] Aceptación individual de la entrega técnica y de las fases pendientes; el
+  plan se marcó completo por decisión de la persona solicitante sin esta evidencia.
 
 Los planes de ampliación siguen manteniendo su propio alcance y sus controles: su
 exclusión de importar artículos no impide que este plan independiente lo haga tras

@@ -22,8 +22,8 @@ B2, pero no dependen entre sí. Los cortes B1 y B2 se ensayan y aceptan por sepa
 - [ ] Evitar imprimir secretos mediante `docker compose config`, env dumps o logs de CI.
 - [ ] Configurar credenciales de app con acceso necesario, no identidad raíz de S3; separar
   credenciales de migración de las de ejecución cuando se configure el despliegue.
-- [ ] Revisar documentación obsoleta del blog: `.env.example` todavía menciona fuente
-  estática, pero el lector público ya consulta PostgreSQL sin ese fallback.
+- [x] Revisar documentación obsoleta del blog: `.env.example` refleja que el lector
+  público consulta PostgreSQL sin fallback estático.
 
 ## Respaldo y ensayo de recuperación
 
@@ -55,14 +55,14 @@ Un volumen persistente o un backup anterior a otras escrituras no bastan.
 - [ ] Ensayar fases 1.1–1.3 y recuperación CLI en clon; aprobar las pruebas aplicables.
 - [ ] Preparar imagen nueva, variables y operador con acceso de recuperación.
 - [ ] Poner panel y API administrativa en mantenimiento para evitar mezcla de versiones.
-- [ ] Obtener respaldo fresco; `db migrate --show` debe presentar exclusivamente la ruta revisada.
-- [ ] Aplicar migración de usuarios y verificar esquema/marcador, sin recrear blog/referidos.
-- [ ] Aprovisionar primer ADMIN individual con entrada oculta y credencial nueva;
+- [x] Obtener respaldo fresco; `db migrate --show` debe presentar exclusivamente la ruta revisada. Verificado para el corte local.
+- [x] Aplicar migración de usuarios y verificar esquema/marcador, sin recrear blog/referidos. Verificado en la base local y clones aislados.
+- [x] Aprovisionar primer ADMIN individual con entrada oculta y credencial nueva;
    comprobar que repetir bootstrap falla. Recomendar segundo ADMIN individual.
 - [ ] Activar la nueva aplicación en todas las instancias y retirar las antiguas.
 - [ ] Rotar firma coordinadamente y rechazar audiencia/claims antiguos; eliminar hash
    compartido de configuración. No mantener «contraseña antigua O cuenta nueva».
-- [ ] Completar primer cambio obligatorio, login y flujo editorial antes de abrir el panel.
+- [ ] Comprobar login, cambio de contraseña y flujo editorial antes de abrir el panel.
 - [ ] Probar recuperación operativa sin dejar un endpoint o secreto de bootstrap permanente.
 
 Conservar las URL públicas del blog. No importar artículos como smoke test.
@@ -117,9 +117,10 @@ Requiere B2 y fases 4.1–4.3 aceptadas; no espera a C1.
 - [ ] Habilitar gestión editorial, comercial y eliminación protegida solo tras aceptación; comprobar invalidación pública, nuevas reservas e historial.
 - [ ] Registrar evidencia C2; si C1 ya está habilitado, ejecutar además el recorrido conjunto de ambos paneles.
 
-La importación del catálogo puede copiar imágenes compartidas, pero no publica
-los nueve artículos ni resuelve su aprobación editorial pendiente. Coordinar la
-correspondencia de medios antes de ejecutar en el futuro el importador del blog.
+La importación del catálogo puede copiar imágenes compartidas, pero no importa ni
+publica artículos del blog. La revisión editorial y la importación local ya constan
+en el seguimiento del blog; no se presupone el estado de otros destinos ni se autoriza
+una nueva importación. Coordinar la correspondencia de medios si se aprueba alguna.
 
 Comandos de despliegue futuros, con entorno correcto y paquete revisado:
 

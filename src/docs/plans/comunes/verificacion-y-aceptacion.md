@@ -59,17 +59,17 @@ la BD y llamar «integración» al resultado.
 
 ### Casos que deben fallar si se rompe seguridad
 
-- [ ] **Autorización de entradas:** matriz parametrizada por rol, sesión ausente,
-   inactiva y temporal sobre lecturas y mutaciones reales. Rechazo antes de cualquier
+- [ ] **Autorización de entradas:** matriz parametrizada por rol, sesión ausente o
+   cuenta inactiva sobre lecturas y mutaciones reales. Rechazo antes de cualquier
    cambio de BD/S3. Blog y medios privados no accesibles a BOOKING_MANAGER.
 - [ ] **Revocación:** conservar token, desactivar/cambiar rol/cambiar/restablecer
    contraseña/logout y volver a usarlo desde otro cliente. Token sin claims,
    expirado, alterado o del contrato antiguo no autoriza.
-- [ ] **Credenciales:** cambio exige contraseña actual; temporal solo cambia contraseña;
-   caducidad, longitud de 8 a 32 caracteres y límite de 72 bytes con caracteres
+- [ ] **Credenciales:** cambio propio exige contraseña actual; restablecer otra cuenta
+   exige contraseña del ADMIN. Comprobar longitud de 8 a 32 caracteres y límite de 72 bytes con caracteres
    multibyte; correo normalizado
    duplicado rechazado. No se devuelve hash en respuestas.
-- [ ] **Último ADMIN y throttle:** dos conexiones concurrentes no pueden dejar cero
+- [x] **Último ADMIN y throttle:** dos conexiones concurrentes no pueden dejar cero
    administradores ni exceder el presupuesto compartido de bcrypt por reiniciar procesos.
 - [ ] **Mass assignment:** EDITOR envía `price`, tasas, `active`, `guests`, políticas o
    un objeto anidado junto con un campo permitido; se rechaza toda la escritura.
@@ -120,7 +120,7 @@ con contraseña en historial. `build` emite artefactos de contrato; revisar sus 
 
 Usar perfiles separados ADMIN, EDITOR, BOOKING_MANAGER y huésped/anónimo:
 
-- [ ] Login, primer cambio de contraseña y navegación exclusiva del rol; URL directa
+- [ ] Login, cambio de contraseña y navegación exclusiva del rol; URL directa
    de otra área rechazada aunque se escriba a mano.
 - [ ] ADMIN crea usuario, cambia rol/desactiva con otra sesión abierta y esta pierde acceso.
 - [ ] EDITOR crea borrador, carga imagen, guarda y previsualiza; publicar directo falla.

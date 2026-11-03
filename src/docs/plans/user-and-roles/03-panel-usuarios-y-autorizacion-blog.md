@@ -13,7 +13,7 @@ Rutas propuestas:
 | --- | --- |
 | `app/admin/page.tsx` | Inicio y enlaces según rol, sin cargar datos de otras áreas |
 | `app/admin/users/page.tsx` | ADMIN: listado y alta |
-| `app/admin/account/password/page.tsx` | Cualquier cuenta activa, incluidas temporales |
+| `app/admin/account/password/page.tsx` | Cualquier cuenta activa |
 | `app/api/admin/users/route.ts` | GET/POST de ADMIN |
 | `app/api/admin/users/[id]/route.ts` | PATCH de nombre, rol y estado por ADMIN |
 | `app/api/admin/users/[id]/reset-password/route.ts` | POST de ADMIN con reautenticación |
@@ -88,9 +88,9 @@ verificarla como entrada independiente y aplicar sus protecciones de origen.
 
 ## Cierre
 
-- [ ] ADMIN puede gestionar cuentas y completar flujo editorial; EDITOR prepara borradores.
-- [ ] BOOKING_MANAGER no lee borradores ni usuarios al pedir sus URLs directamente.
-- [ ] Publicar/retirar como EDITOR devuelve 403 sin cambio en publicación o almacenamiento.
+- [x] ADMIN puede gestionar cuentas y completar flujo editorial; EDITOR prepara borradores.
+- [x] BOOKING_MANAGER no lee borradores ni usuarios al pedir sus URLs directamente.
+- [x] Publicar/retirar como EDITOR devuelve 403 sin cambio en publicación o almacenamiento.
 - [ ] Ninguna respuesta, prop de cliente o log incluye hash o contraseña.
 - [ ] Sesión compartida por entorno y comprobaciones antiguas retiradas; solo permanece
   la clave de firma como secreto de sesión.

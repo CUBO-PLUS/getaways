@@ -1,7 +1,7 @@
 # [ ] Preparación común — Inventario y permisos
 
-Dependencia: ninguna. Estado: inventario de código realizado; decisiones y estado
-real de servicios pendientes de confirmación.
+Dependencia: ninguna. Estado: inventario y línea base local registrados; decisiones,
+otros destinos y recuperación pendientes de confirmación.
 
 [Orden general](../README.md). Preparación compartida de los cuatro planes;
 no marcar completa hasta confirmar decisiones, servicios, datos y línea base.
@@ -108,23 +108,36 @@ todo el checkout como lectura ni convertir el panel en otro confirmador de pagos
 
 ## Decisiones a cerrar
 
-- [ ] Aprobar matriz, cuenta de un solo rol y campos comerciales restringidos.
-- [ ] Confirmar que EDITOR puede actualizar contenido público del hospedaje sin revisión
+- [x] Aprobar matriz, cuenta de un solo rol y campos comerciales restringidos.
+- [x] Confirmar que EDITOR puede actualizar contenido público del hospedaje sin revisión
    previa; publicación del blog permanece reservada a ADMIN.
-- [ ] Aprobar gestión inicial de reservas: contacto, notas, filtros y cancelación;
+- [x] Aprobar gestión inicial de reservas: contacto, notas, filtros y cancelación;
    reprogramación, descuentos manuales, confirmación manual y reembolsos quedan
    pendientes de reglas específicas, no implícitos en «gestionar».
-- [ ] Confirmar entrega de contraseñas temporales, responsables de recuperación,
-   ocho horas de sesión y logout de todas las sesiones.
+- [x] ADMIN establece contraseñas de otras cuentas y confirma sus cambios con su
+   propia contraseña; cada usuario puede cambiar su propia contraseña. Decisión de
+   la persona solicitante, 2026-11-02.
+- [x] Las contraseñas pueden usarse indefinidamente, sin cambio obligatorio inicial.
+   Decisión de la persona solicitante, 2026-11-02.
+- [x] Sesiones de ocho horas y revocación de todas las sesiones al cambiar una
+   contraseña o desactivar la cuenta.
+- [x] Entregar contraseñas por canal privado; la persona solicitante será responsable
+   de recuperar el acceso administrativo. Confirmado el 2026-11-02.
 - [ ] Identificar origen HTTPS, proxy confiable, instancias, respaldos y almacenamiento.
 - [ ] Comprobar datos de reservas existentes sin imprimir datos personales y aprobar
    su importación privada; no asumir que el archivo local está vacío.
+
+Las decisiones marcadas sobre roles, gestión inicial de reservas y sesiones fueron
+confirmadas por la persona solicitante el 2026-11-02; no autorizan migraciones,
+importaciones ni restauraciones.
+La persona solicitante confirmó que todo el entorno objetivo está en local; esto no
+demuestra por sí solo el contenido de la memoria de los procesos locales.
 
 ## Verificación
 
 Desde `src/`, antes de implementar:
 
-- [ ] Ejecutar y registrar la línea base de los siguientes comandos; no ocultar errores previos.
+- [x] Ejecutar y registrar la línea base de los siguientes comandos; no ocultar errores previos.
 
 ```bash
 git status --short
@@ -140,3 +153,46 @@ pnpm run lint
 - [ ] Decisiones registradas y línea base de errores conocida.
 - [ ] Marcador, servicios y datos reales identificados.
 - [ ] Confirmada la exclusión de la importación de los nueve artículos y sus imágenes.
+
+## Línea base local — 2026-11-02
+
+Registro inicial sobre `main` en `1f18b7e`; no equivale a aceptación de la preparación.
+El árbol tenía modificado `src/docs/plans/blog/README.md` y `.opencode/` sin seguimiento.
+No se ejecutaron migraciones, importaciones ni restauraciones.
+
+| Comprobación | Resultado |
+| --- | --- |
+| `git status --short` | Cambios locales indicados arriba, anteriores a este registro. |
+| `pnpm run db:check` | En el host falló: `CONFIG.DB_CONNECTION_REQUIRED`. En `gateways-dev-app-1`, marcador y esquema coinciden con el contrato. |
+| `pnpm exec prisma db migrate --show` | En el host falló por falta de conexión. En el contenedor: sin migraciones pendientes. |
+| `pnpm test` | 59 archivos y 446 pruebas aprobadas; 6 archivos y 6 pruebas omitidas. |
+| `pnpm exec tsc --noEmit --incremental false` | Correcto. |
+| `pnpm run lint` | Falló: cuatro errores `@typescript-eslint/no-require-imports` en `backups/blog-migrado-20261102/restore-objects.cjs`. |
+
+La aplicación local respondió HTTP 200; PostgreSQL y RustFS estaban activos y
+saludables, y el endpoint de disponibilidad de RustFS respondió HTTP 200. Los puertos
+estaban ligados a localhost. El bucket configurado tenía 65 objetos; no se comprobó
+individualmente su integridad. En PostgreSQL se contaron nueve `BlogPost`, nueve
+`BlogPublication`, 65 `MediaAsset`, 77 `BlogImportMapping` y cero filas en cada
+tabla de referidos. Marcador `app`:
+`6f61bccf5fb3a4ddac61b783b36527564f3cbd4a8bf439056252a731b20389c7`.
+El archivo `.data/bookings.json` no estaba presente en `/app` del contenedor; esto no
+descarta reservas en memoria ni en otros destinos. Una revisión posterior tampoco
+encontró ese archivo en las dos rutas locales revisadas. `compose.prod.yaml` no
+define RustFS ni demuestra por sí solo la configuración completa de producción.
+
+En esa línea base quedaban por identificar origen HTTPS, proxy, otras instancias y
+responsables; comprobar datos de reservas y ensayar recuperación. El
+[seguimiento del blog](../blog/README.md) registra el checkpoint local existente y
+sus límites: no acredita una restauración. Las decisiones anteriores requieren
+aprobación explícita; no se infieren de esta línea base.
+
+Antes de implementar el plan 1 se creó el checkpoint local
+`src/backups/progreso-20261102T225648428Z-JXtk67.tar.gz`: dump completo y 65 objetos,
+con referencias conciliadas, listado estable y hashes verificados. No incluye cambios
+de código sin commit. Se restauró el dump en el contenedor aislado sin red
+`gateways-restore-jxtk67-20261102`: 9 borradores y versiones, 9 publicaciones,
+65 activos y marcador presentes. Los 65 objetos se verificaron sin red, pero no se
+restauraron en ese ensayo. Posteriormente se recuperaron conjuntamente la base y los
+objetos del checkpoint siguiente; consultar la evidencia del [plan 1](../user-and-roles/README.md).
+La base del primer ensayo reside en tmpfs y no constituye un respaldo persistente.

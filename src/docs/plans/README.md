@@ -1,8 +1,8 @@
 # Planes de ampliación del panel
 
-Estado: **pendientes de implementación**. Inventario de referencia: 2026-10-31.
-Esta reorganización es documental: no implementa funcionalidades, ejecuta pruebas,
-migra/importa datos ni despliega servicios.
+Estado: **plan 1 implementado localmente, pendiente de verificación y aceptación**;
+planes 2–4 pendientes. Inventario de referencia: 2026-10-31. El seguimiento de cada
+plan distingue los cambios realizados de las verificaciones y entregas pendientes.
 
 ## Orden de ejecución y seguimiento
 
@@ -70,8 +70,9 @@ aprobación, respaldo y primera ejecución sobre una base aislada.
   credencial propia; la sesión de personal no sustituye la credencial de checkout.
 - Sin SSO, MFA, correo transaccional, auditoría avanzada, reembolsos automáticos ni
   proveedor de pagos real como requisitos. El mock de pagos sigue siendo de desarrollo.
-- La importación de los **nueve artículos y sus imágenes sigue pendiente** y no queda
-  autorizada por ningún plan. El lector público del blog ya consulta PostgreSQL.
+- Los **nueve artículos y sus imágenes ya se importaron en el entorno local**; ese
+  resultado no demuestra el estado de otros destinos. Ninguna nueva importación queda
+  autorizada por estos planes. El lector público del blog ya consulta PostgreSQL.
 
 ## Antecedentes y límites de la evidencia
 
@@ -88,12 +89,13 @@ antes de implementar, volver a verificar versiones y documentación correspondie
 - [Claims en jose 6.2.14](https://github.com/panva/jose/blob/v6.2.14/docs/types/interfaces/JWTClaimVerificationOptions.md).
 - [Seguridad y API de bcryptjs](https://github.com/dcodeIO/bcrypt.js#security-considerations).
 - [Plan previo del blog](blog/propuesta-original.md) y
-  [revisión editorial pendiente](blog/revision-editorial.md).
+  [revisión editorial](blog/revision-editorial.md).
 
 El worktree del blog conserva cambios locales no incluidos en el merge:
 `src/compose.dev.yaml` y `src/docs/levantamiento-local-20261031.md`. No descartarlos
-ni incorporarlos automáticamente. El registro local indica esquema del blog
-aplicado sin artículos importados; debe verificarse contra la base real.
+ni incorporarlos automáticamente. El registro histórico describía una base sin
+artículos; la línea base del 2026-11-02 confirma nueve artículos en la base local,
+sin afirmar el estado de otros destinos.
 
-Esta documentación no demuestra ejecución de pruebas ni restauraciones. Registrar
-evidencia al implementar y actualizar el checklist de fase y el de este índice.
+Consultar la evidencia de línea base y registrar las verificaciones y restauraciones
+de cada implementación; actualizar el checklist de fase y el de este índice.
