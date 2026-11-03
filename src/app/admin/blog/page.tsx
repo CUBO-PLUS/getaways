@@ -1,11 +1,11 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { isBlogAdmin } from "@/modules/content/server/blog-auth";
+import { getSession } from "@/modules/auth/server/auth";
 import BlogAdmin from "@/modules/content/client/blog-admin";
 
 export const dynamic = "force-dynamic";
 export default async function Page() {
-  const cookie = (await cookies()).toString();
-  if (!(await isBlogAdmin(new Request("http://localhost", { headers: { cookie } })))) redirect("/admin/blog/login");
+  const actor = await getSession();
+  if (!actor) redirect("/admin/login");
+  if (actor.role !== "ADMIN" && actor.role !== "EDITOR") redirect("/admin");
   return <BlogAdmin />;
 }

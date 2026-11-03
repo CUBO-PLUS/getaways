@@ -10,7 +10,7 @@ import { EditorToolbar } from "./components/editor-toolbar";
 import { EditorPanels } from "./components/editor-panels";
 import { useBlogEditor } from "./hooks/use-blog-editor";
 
-export default function BlogEditor({ id }: { id: string }) {
+export default function BlogEditor({ id, canPublish = false }: { id: string; canPublish?: boolean }) {
   const { persistence, tools, showPreview } = useBlogEditor(id);
   const {
     draft,
@@ -22,6 +22,7 @@ export default function BlogEditor({ id }: { id: string }) {
     conflict,
     actionBusy,
     publicationUnknown,
+    accessLost,
     field,
     save,
     reconcile,
@@ -39,7 +40,7 @@ export default function BlogEditor({ id }: { id: string }) {
     );
   }
 
-  const disabledAction = dirty || saving || actionBusy || conflict || publicationUnknown || uploading;
+  const disabledAction = dirty || saving || actionBusy || conflict || publicationUnknown || uploading || accessLost;
   const publicationLabel = publicationUnknown
     ? "Publicación por confirmar"
     : !draft.publication
@@ -73,7 +74,7 @@ export default function BlogEditor({ id }: { id: string }) {
               <button
                 type="button"
                 className={control}
-                disabled={!dirty || saving || conflict || actionBusy}
+                disabled={!dirty || saving || conflict || actionBusy || accessLost}
                 onClick={() => void save()}
               >
                 Guardar ahora
@@ -87,14 +88,14 @@ export default function BlogEditor({ id }: { id: string }) {
               >
                 <Eye size={16} aria-hidden="true" /> Vista previa
               </button>
-              <button
+              {canPublish && <button
                 type="button"
                 className={cn(control, "border-[#394342] bg-[#394342] text-white hover:bg-[#293332]")}
                 disabled={disabledAction}
                 onClick={() => void action("publish")}
               >
                 {actionBusy ? "Procesando…" : draft.publication ? "Actualizar publicación" : "Publicar artículo"}
-              </button>
+              </button>}
             </div>
           </div>
           <div
@@ -113,7 +114,7 @@ export default function BlogEditor({ id }: { id: string }) {
               Autoguardado del borrador · no publica automáticamente
             </span>
           </div>
-          {draft.publication && (
+          {canPublish && draft.publication && (
             <div className="mt-2 flex justify-end">
               <button
                 type="button"

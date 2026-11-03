@@ -30,11 +30,27 @@ const json = (body: unknown, status = 200) => Promise.resolve(new Response(JSON.
 const loadedFetch = (value = draft()) => vi.fn((input: RequestInfo | URL) => String(input).endsWith("categories") ? json([]) : json(value));
 async function openEditor(fetchMock: ReturnType<typeof vi.fn>) {
   vi.stubGlobal("fetch", fetchMock);
-  const rendered = render(<BlogEditor id="4" />);
+  const rendered = render(<BlogEditor id="4" canPublish />);
   await screen.findByRole("textbox", { name: "Contenido del artículo" });
   return rendered;
 }
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+it("stops saving after access is revoked while preserving local edits", async () => {
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => init?.method === "PUT"
+    ? json({}, 403)
+    : String(input).endsWith("categories") ? json([]) : json(publishableDraft()));
+  await openEditor(fetchMock);
+  const title = screen.getByLabelText("Título del artículo") as HTMLInputElement;
+  fireEvent.change(title, { target: { value: "Cambio local" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar ahora" }));
+  await screen.findByText(/La sesión terminó o ya no tienes permiso/);
+  fireEvent.change(title, { target: { value: "Cambio conservado" } });
+  expect(title.value).toBe("Cambio conservado");
+  expect((screen.getByRole("button", { name: "Guardar ahora" }) as HTMLButtonElement).disabled).toBe(true);
+  await act(() => new Promise(resolve => setTimeout(resolve, 900)));
+  expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "PUT")).toHaveLength(1);
+});
 
 it("edits and removes the targeted image while keeping surrounding text and allowing keyboard image review", async () => {
   const fetchMock = loadedFetch(draft({ document: content("vecino", "Alt uno", "Alt dos") }));

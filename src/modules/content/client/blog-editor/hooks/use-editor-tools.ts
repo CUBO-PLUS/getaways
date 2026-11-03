@@ -8,9 +8,10 @@ type Options = {
   markDirty: () => void;
   field: <K extends keyof Draft>(key: K, value: Draft[K]) => void;
   setError: (message: string) => void;
+  loseAccess: () => void;
 };
 
-export function useEditorTools({ id, markDirty, field, setError }: Options) {
+export function useEditorTools({ id, markDirty, field, setError, loseAccess }: Options) {
   const ready = useRef(false);
   const setReady = useCallback((value: boolean) => { ready.current = value; }, []);
   const [uploading, setUploading] = useState(false);
@@ -118,6 +119,7 @@ export function useEditorTools({ id, markDirty, field, setError }: Options) {
     setError("");
     try {
       const response = await fetch("/api/blog/media", { method: "POST", body: form });
+      if (response.status === 401 || response.status === 403) { loseAccess(); return; }
       if (!response.ok) {
         throw Error(await responseError(response, response.status === 413 || response.status === 415
           ? "La imagen debe ser JPEG, PNG o WebP, de hasta 10 MB y 40 millones de píxeles."

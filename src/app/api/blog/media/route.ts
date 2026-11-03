@@ -3,7 +3,8 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { db } from "@/infrastructure/prisma/db";
 import { getBlogMediaBucket, getS3Client } from "@/infrastructure/storage/s3";
-import { assertSameOrigin, isBlogAdmin } from "@/modules/content/server/blog-auth";
+import { assertSameOrigin } from "@/modules/auth/server/auth";
+import { requireBlogAccess, recheckBlogAccess, blogAccessResponse } from "@/modules/content/server/blog-auth";
 
 export const runtime = "nodejs";
 const LIMIT = 10 * 1024 * 1024;
@@ -13,14 +14,17 @@ let activeUploads = 0;
 export async function POST(request: Request) {
   try { if (!assertSameOrigin(request)) return new Response(null, { status: 403 }); }
   catch { return new Response(null, { status: 503 }); }
-  if (!(await isBlogAdmin(request))) return new Response(null, { status: 401 });
+  let actor: Awaited<ReturnType<typeof requireBlogAccess>>;
+  try { actor = await requireBlogAccess(request); }
+  catch (error) { return blogAccessResponse(error) ?? new Response(null, { status: 503 }); }
   if (activeUploads >= 2) return new Response(null, { status: 503, headers: { "Retry-After": "5" } });
   activeUploads++;
-  try { return await receiveUpload(request); }
+  try { return await receiveUpload(request, actor); }
+  catch (error) { return blogAccessResponse(error) ?? new Response(null, { status: 503 }); }
   finally { activeUploads--; }
 }
 
-async function receiveUpload(request: Request) {
+async function receiveUpload(request: Request, actor: Awaited<ReturnType<typeof requireBlogAccess>>) {
   const length = Number(request.headers.get("content-length"));
   if (!Number.isFinite(length) || length <= 0 || length > LIMIT + 64 * 1024) return new Response(null, { status: 413 });
   const reader = request.body?.getReader();
@@ -55,7 +59,11 @@ async function receiveUpload(request: Request) {
   const bucket = getBlogMediaBucket();
   await s3.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: bytes, ContentType: mime }));
   try {
-    const asset = await db.orm.public.MediaAsset.create({ objectKey, originalName: file.name.slice(0, 255), mimeType: mime, sizeBytes: BigInt(bytes.length), width: metadata.width, height: metadata.height });
+    const { width, height } = metadata;
+    const asset = await db.transaction(async tx => {
+      await recheckBlogAccess(tx, actor);
+      return tx.orm.public.MediaAsset.create({ objectKey, originalName: file.name.slice(0, 255), mimeType: mime, sizeBytes: BigInt(bytes.length), width, height });
+    });
     return Response.json({ id: asset.id, url: `/api/blog/media/${asset.id}` }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     try { await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: objectKey })); }

@@ -19,6 +19,8 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
   const [conflict, setConflict] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [publicationUnknown, setPublicationUnknown] = useState(false);
+  const [accessLost, setAccessLost] = useState(false);
+  const accessLostRef = useRef(false);
   const latest = useRef<Draft | null>(null);
   const version = useRef(0);
   const dirtyRef = useRef(false);
@@ -38,9 +40,9 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
     revision.current++;
     dirtyRef.current = true;
     setDirty(true);
-    setStatus("Cambios por guardar");
+    if (!accessLostRef.current) setStatus("Cambios por guardar");
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void saveRef.current(), 800);
+    if (!accessLostRef.current) timer.current = setTimeout(() => void saveRef.current(), 800);
   }
 
   function field<K extends keyof Draft>(key: K, value: Draft[K]) {
@@ -54,6 +56,15 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
     setConflict(true);
     setStatus("Conflicto de edición");
     setError(message);
+  }
+
+  function loseAccess() {
+    accessLostRef.current = true;
+    setAccessLost(true);
+    queued.current = false;
+    if (timer.current) clearTimeout(timer.current);
+    setStatus("Acceso revocado; autoguardado detenido");
+    setError("La sesión terminó o ya no tienes permiso. Tus cambios locales siguen aquí; copia el contenido antes de salir.");
   }
 
   function imageValidation() {
@@ -70,7 +81,7 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
   }
 
   const save = useCallback(async () => {
-    if (!latest.current || !editor || !dirtyRef.current || conflictRef.current) return;
+    if (!latest.current || !editor || !dirtyRef.current || conflictRef.current || accessLostRef.current) return;
     if (inFlight.current || actionInFlight.current) {
       queued.current = true;
       return;
@@ -107,6 +118,10 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
       });
       if (response.status === 409) {
         flagConflict("Este borrador cambió en otra sesión. Tus cambios locales siguen aquí; copia el contenido antes de recargar.");
+        return;
+      }
+      if (response.status === 401 || response.status === 403) {
+        loseAccess();
         return;
       }
       if (!response.ok) {
@@ -199,6 +214,7 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
     setStatus("Comprobando publicación…");
     try {
       const response = await fetch(`/api/blog/admin/posts/${id}`, { cache: "no-store" });
+      if (response.status === 401 || response.status === 403) { loseAccess(); return; }
       if (!response.ok) throw Error();
       const remote = await response.json() as Draft;
       const local = latest.current;
@@ -220,7 +236,7 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
   }
 
   async function action(name: "publish" | "unpublish") {
-    if (dirtyRef.current || inFlight.current || actionInFlight.current || conflictRef.current || publicationUnknown) {
+    if (dirtyRef.current || inFlight.current || actionInFlight.current || conflictRef.current || publicationUnknown || accessLostRef.current) {
       setError("Guarda todos los cambios y resuelve los avisos antes de publicar o retirar.");
       return;
     }
@@ -245,6 +261,7 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
         flagConflict("La versión del servidor cambió. Tus cambios se conservan; copia el contenido antes de recargar.");
         return;
       }
+      if (response.status === 401 || response.status === 403) { loseAccess(); return; }
       if (!response.ok) {
         if (response.status >= 500) {
           await reconcile();
@@ -296,6 +313,8 @@ export function useBlogPersistence({ id, editor, setReady }: Options) {
     conflict,
     actionBusy,
     publicationUnknown,
+    accessLost,
+    loseAccess,
     dirtyRef,
     inFlight,
     conflictRef,

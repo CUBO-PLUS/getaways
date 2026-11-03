@@ -11,7 +11,8 @@ const { db, isBlogAdmin, assertSameOrigin, publishBlogDraft, unpublishBlogDraft,
 }));
 
 vi.mock("@/infrastructure/prisma/db", () => ({ db }));
-vi.mock("@/modules/content/server/blog-auth", () => ({ isBlogAdmin, assertSameOrigin }));
+vi.mock("@/modules/auth/server/auth", () => ({ assertSameOrigin }));
+vi.mock("@/modules/content/server/blog-auth", () => ({ requireBlogAccess: isBlogAdmin, blogAccessResponse: () => null }));
 vi.mock("@/modules/content/server/blog-operations", () => ({ publishBlogDraft, unpublishBlogDraft, BlogConflict: class BlogConflict extends Error {} }));
 vi.mock("next/cache", () => ({ revalidatePath, revalidateTag }));
 

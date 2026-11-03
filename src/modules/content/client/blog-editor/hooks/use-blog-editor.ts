@@ -3,7 +3,7 @@ import { useEditorTools } from "./use-editor-tools";
 import type { Draft } from "../shared";
 
 export function useBlogEditor(id: string) {
-  const tools = useEditorTools({ id, markDirty, field, setError });
+  const tools = useEditorTools({ id, markDirty, field, setError, loseAccess });
   const persistence = useBlogPersistence({ id, editor: tools.editor, setReady: tools.setReady });
 
   // Editor callbacks run after both hooks have initialized.
@@ -18,6 +18,7 @@ export function useBlogEditor(id: string) {
   function setError(message: string) {
     persistence.setError(message);
   }
+  function loseAccess() { persistence.loseAccess(); }
 
   function showPreview() {
     if (persistence.dirtyRef.current || persistence.inFlight.current || persistence.conflictRef.current || tools.uploading) {

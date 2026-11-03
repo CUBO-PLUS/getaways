@@ -1,3 +1,3 @@
-import Login from "@/modules/content/client/blog-login";
+import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
-export default function Page() { return <Login />; }
+export default function Page() { redirect("/admin/login"); }

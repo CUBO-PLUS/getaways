@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/infrastructure/prisma/db";
 import { parseBlogId } from "@/modules/content/blog-ids";
 import { renderBlogDocument } from "@/modules/content/blog-renderer";
 import { validateBlogDocument } from "@/modules/content/blog-schema";
-import { isBlogAdmin } from "@/modules/content/server/blog-auth";
+import { getSession } from "@/modules/auth/server/auth";
 import { validateMedia } from "@/modules/content/server/blog-operations";
 
 export const metadata: Metadata = { robots: { index: false, follow: false, noarchive: true } };
 
 export default async function PreviewPage({ params }: { params: Promise<{ id: string }> }) {
   await connection();
-  const cookie = (await cookies()).toString();
-  if (!(await isBlogAdmin(new Request("http://localhost", { headers: { cookie } })))) redirect("/admin/blog/login");
+  const actor = await getSession();
+  if (!actor) redirect("/admin/login");
+  if (actor.role !== "ADMIN" && actor.role !== "EDITOR") redirect("/admin");
 
   const id = parseBlogId((await params).id);
   if (id === null) notFound();

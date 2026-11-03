@@ -5,6 +5,7 @@ import { BLOG_DOCUMENT_SCHEMA_VERSION, type BlogDocument, validateBlogDocument }
 import { BLOG_ID_MAX } from "@/modules/content/blog-ids";
 import { validatePublishableBlogPost } from "@/modules/content/blog-publication-validation";
 import { publicationInstant } from "@/modules/content/publication-instant.mjs";
+import { requireBlogAccess, recheckBlogAccess } from "./blog-auth";
 
 export class BlogConflict extends Error {
   constructor(readonly currentVersion: number | null) { super("Blog draft version conflict"); }
@@ -19,14 +20,19 @@ export async function validateMedia(id: string): Promise<boolean> {
   return Boolean(await db.orm.public.MediaAsset.first({ id: Number(id) }));
 }
 
-export async function createBlogDraft() {
+export async function createBlogDraft(request?: Request) {
+  const actor = await requireBlogAccess(request);
   const empty: BlogDocument = { type: "doc", content: [{ type: "paragraph" }] };
   const slug = `borrador-${crypto.randomUUID()}`;
-  const post = await db.orm.public.BlogPost.create({ slug, title: "", excerpt: "", document: empty, documentSchemaVersion: BLOG_DOCUMENT_SCHEMA_VERSION });
-  return { id: post.id, slug: post.slug, version: post.version };
+  return db.transaction(async (tx) => {
+    await recheckBlogAccess(tx, actor);
+    const post = await tx.orm.public.BlogPost.create({ slug, title: "", excerpt: "", document: empty, documentSchemaVersion: BLOG_DOCUMENT_SCHEMA_VERSION });
+    return { id: post.id, slug: post.slug, version: post.version };
+  });
 }
 
-export async function saveBlogDraft(id: number, input: Record<string, unknown>) {
+export async function saveBlogDraft(id: number, input: Record<string, unknown>, request?: Request) {
+  const actor = await requireBlogAccess(request);
   if (!Number.isSafeInteger(id) || id < 1) throw new TypeError("invalid post id");
   const version = input.version;
   if (!Number.isSafeInteger(version) || Number(version) < 1) throw new TypeError("version must be a positive integer");
@@ -37,6 +43,7 @@ export async function saveBlogDraft(id: number, input: Record<string, unknown>) 
   if (!Array.isArray(input.categoryIds) || input.categoryIds.some((id) => !Number.isSafeInteger(id) || Number(id) < 1 || Number(id) > BLOG_ID_MAX)) throw new TypeError("invalid categories");
   const categoryIds = [...new Set(input.categoryIds as number[])];
   return db.transaction(async (tx) => {
+    await recheckBlogAccess(tx, actor);
     const post = await tx.orm.public.BlogPost.where({ id }).forUpdate().first();
     if (!post) return null;
     if (post.version !== version) throw new BlogConflict(post.version);
@@ -62,9 +69,11 @@ export async function saveBlogDraft(id: number, input: Record<string, unknown>) 
   });
 }
 
-export async function publishBlogDraft(id: number, expectedVersion: number) {
+export async function publishBlogDraft(id: number, expectedVersion: number, request?: Request) {
+  const actor = await requireBlogAccess(request, true);
   if (!Number.isSafeInteger(id) || id < 1 || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1) throw new TypeError("invalid post id or version");
   return db.transaction(async (tx) => {
+    await recheckBlogAccess(tx, actor, true);
     const post = await tx.orm.public.BlogPost.where({ id }).forUpdate().first();
     if (!post) return null;
     if (post.version !== expectedVersion) throw new BlogConflict(post.version);
@@ -87,9 +96,11 @@ export async function publishBlogDraft(id: number, expectedVersion: number) {
   });
 }
 
-export async function unpublishBlogDraft(id: number, expectedVersion: number) {
+export async function unpublishBlogDraft(id: number, expectedVersion: number, request?: Request) {
+  const actor = await requireBlogAccess(request, true);
   if (!Number.isSafeInteger(id) || id < 1 || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1) throw new TypeError("invalid post id or version");
   return db.transaction(async (tx) => {
+    await recheckBlogAccess(tx, actor, true);
     const post = await tx.orm.public.BlogPost.where({ id }).forUpdate().first();
     if (!post) return null;
     if (post.version !== expectedVersion) throw new BlogConflict(post.version);

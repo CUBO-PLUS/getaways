@@ -1,7 +1,10 @@
 import { db } from "@/infrastructure/prisma/db";
-import { isBlogAdmin } from "@/modules/content/server/blog-auth";
+import { requireBlogAccess, blogAccessResponse } from "@/modules/content/server/blog-auth";
+const privateHeaders = { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow" };
 export async function GET(request: Request) {
-  if (!(await isBlogAdmin(request))) return new Response(null, { status: 401 });
-  const categories = await db.orm.public.BlogCategory.orderBy((category) => category.name.asc()).all();
-  return Response.json(categories, { headers: { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow" } });
+  try {
+    await requireBlogAccess(request);
+    const categories = await db.orm.public.BlogCategory.orderBy((category) => category.name.asc()).all();
+    return Response.json(categories, { headers: privateHeaders });
+  } catch (error) { return blogAccessResponse(error) ?? new Response(null, { status: 503, headers: privateHeaders }); }
 }
