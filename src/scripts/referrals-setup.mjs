@@ -16,10 +16,10 @@ const major = Number.parseInt(process.versions.node.split(".")[0], 10);
 if (major < 24) throw new Error("Gateways requires Node.js 24 or newer.");
 if (process.env.NODE_ENV === "production") throw new Error("Refusing setup in production.");
 
-const envFile = join(root, ".env.local");
+const envFile = join(root, ".env");
 if (!existsSync(envFile)) {
-  copyFileSync(join(root, ".env.local.example"), envFile);
-  console.log("Created .env.local using the project's example (without overwriting existing config).");
+  copyFileSync(join(root, ".env.example"), envFile);
+  console.log("Created .env using the project's example (without overwriting existing config).");
 }
 const contents = readFileSync(envFile, "utf8");
 if (!/^\s*NEXT_PUBLIC_SITE_URL\s*=/m.test(contents)) {
@@ -28,7 +28,7 @@ if (!/^\s*NEXT_PUBLIC_SITE_URL\s*=/m.test(contents)) {
 }
 loadEnvConfig(root, true);
 const dbUrl = process.env.DATABASE_URL;
-if (!dbUrl) throw new Error("DATABASE_URL is missing in .env.local.");
+if (!dbUrl) throw new Error("DATABASE_URL is missing in .env.");
 const host = new URL(dbUrl).hostname;
 if (!["localhost", "127.0.0.1", "[::1]", "::1"].includes(host)) {
   throw new Error("For safety, referral setup only runs against a loopback PostgreSQL address.");

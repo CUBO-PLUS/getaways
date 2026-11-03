@@ -11,7 +11,8 @@ services:
     environment:
       NODE_ENV: development
       NEXT_TELEMETRY_DISABLED: "1"
-      DATABASE_URL: postgresql://${POSTGRES_USER:-gateways}:${POSTGRES_PASSWORD:-gateways_dev}@db:5432/${POSTGRES_DB:-gateways}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for the app in .env}
+      DATABASE_COMPOSE_HOST: db
       S3_ENDPOINT: http://rustfs:9000
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_BUCKET: ${S3_BUCKET:-blog-media}

@@ -7,7 +7,7 @@ import contractJson from "../infrastructure/prisma/contract.json" with { type: "
 
 loadEnvConfig(process.cwd(), true);
 const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL missing. Configure .env.local first.");
+if (!url) throw new Error("DATABASE_URL missing. Configure .env first.");
 const parsed = new URL(url);
 if (process.env.NODE_ENV === "production" || !["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname)) {
   throw new Error("Refusing to operate on a non-local or production database.");

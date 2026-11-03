@@ -12,7 +12,7 @@ node scripts/referrals-setup.mjs
 pnpm dev
 ```
 
-The setup command is **repeatable** and does not delete bookings, database rows, migrations or blog content. It copies `.env.local.example` only if no `.env.local` exists, adds `NEXT_PUBLIC_SITE_URL=http://localhost:3000` only if absent, starts **only** the existing PostgreSQL Docker Compose service, emits the Prisma 8 contract, previews/applies the existing versioned migrations, verifies the database and creates an active development code `GETAWAYSDEMO` if absent. If that demo code already exists but is inactive, `seed` reactivates it.
+The setup command is **repeatable** and does not delete bookings, database rows, migrations or blog content. It copies `.env.example` only if no `.env` exists, adds `NEXT_PUBLIC_SITE_URL=http://localhost:3000` only if absent, starts **only** the existing PostgreSQL Docker Compose service, emits the Prisma 8 contract, previews/applies the existing versioned migrations, verifies the database and creates an active development code `GETAWAYSDEMO` if absent. If that demo code already exists but is inactive, `seed` reactivates it.
 
 **Blog/RustFS note:** Mauricio's new `compose.dev.yaml` requires S3/RustFS environment substitutions even for `docker compose ... up db`; the setup script supplies inert temporary placeholders for the Compose invocation only, starts just `db`, and does not edit the team's Compose settings. Running the separate blog admin and RustFS infrastructure may require additional configuration as described in the main README.
 
