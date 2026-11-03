@@ -1,6 +1,6 @@
 # Planes de ampliación del panel
 
-Estado: **plan 1 implementado localmente, pendiente de verificación y aceptación**;
+Estado: **plan 1 aceptado por la persona solicitante el 2026-11-03, con excepciones operativas pendientes**;
 planes 2–4 pendientes. Inventario de referencia: 2026-10-31. El seguimiento de cada
 plan distingue los cambios realizados de las verificaciones y entregas pendientes.
 
@@ -11,10 +11,10 @@ su verificación y aceptación; marcar el plan cuando estén aceptadas todas sus
 y su entrega. Las listas descriptivas de modelos, rutas y permisos no son tareas.
 
 - [ ] **Preparación común:** cerrar las decisiones del [inventario y permisos](comunes/00-inventario-y-permisos.md), comprobar el estado real de datos/servicios y registrar la línea base.
-- [ ] **Plan 1 — [Usuarios, roles y acceso al panel](user-and-roles/README.md).** Primer hito entregable sin migrar catálogo ni reservas.
-  - [ ] 1.1 — Usuarios, contrato, migración y aprovisionamiento.
-  - [ ] 1.2 — Autenticación común y sesiones revocables.
-  - [ ] 1.3 — Panel de usuarios y autorización del blog.
+- [x] **Plan 1 — [Usuarios, roles y acceso al panel](user-and-roles/README.md).** Aceptado por la persona solicitante con las excepciones operativas registradas en su README; no equivale a declarar listo un corte/despliegue.
+  - [x] 1.1 — Usuarios, contrato, migración y aprovisionamiento.
+  - [x] 1.2 — Autenticación común y sesiones revocables.
+  - [x] 1.3 — Panel de usuarios y autorización del blog.
 - [ ] **Plan 2 — [Persistencia del catálogo y medios](catalogo-y-medios/README.md).** Requiere el plan 1 para identidad y acceso a medios privados; no habilita administración comercial.
   - [ ] 2.1 — Modelo y contrato del catálogo.
   - [ ] 2.2 — Importación verificada de hospedajes y medios.

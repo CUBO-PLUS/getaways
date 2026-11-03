@@ -1,4 +1,4 @@
-# [ ] Plan 1 — Usuarios, roles y acceso al panel
+# [x] Plan 1 — Usuarios, roles y acceso al panel
 
 [Orden general y seguimiento](../README.md).
 
@@ -12,20 +12,44 @@ Dependencia: preparación y decisiones del [inventario común](../comunes/00-inv
 
 ## Fases
 
-- [ ] **1.1 — [Usuarios, contrato y aprovisionamiento](01-usuarios-y-migraciones.md).** Modelo, migración aditiva, contraseñas, bootstrap y recuperación. Requiere preparación común.
-- [ ] **1.2 — [Autenticación y sesiones](02-autenticacion-y-sesiones.md).** Identidad común, revocación y límite compartido. Requiere 1.1.
-- [ ] **1.3 — [Panel de usuarios y autorización del blog](03-panel-usuarios-y-autorizacion-blog.md).** Primer hito funcional entregable. Requiere 1.2.
+- [x] **1.1 — [Usuarios, contrato y aprovisionamiento](01-usuarios-y-migraciones.md).** Modelo, migración aditiva, contraseñas, bootstrap y recuperación. Requiere preparación común.
+- [x] **1.2 — [Autenticación y sesiones](02-autenticacion-y-sesiones.md).** Identidad común, revocación y límite compartido. Requiere 1.1.
+- [x] **1.3 — [Panel de usuarios y autorización del blog](03-panel-usuarios-y-autorizacion-blog.md).** Primer hito funcional entregable. Requiere 1.2.
 
 Las fases 1.1–1.2 son prerrequisitos internos, no cortes que mantengan simultáneamente
 cuentas individuales y acceso mediante contraseña compartida.
 
 ## Aceptación y entrega
 
+- [x] La persona solicitante aceptó el Plan 1 el 2026-11-03 y autorizó marcarlo
+  completo con las excepciones descritas abajo. Se podrá continuar con el plan 2
+  cuando también se cierre la preparación común; esto no certifica el corte local
+  ni declara listo un despliegue.
+
 - [ ] ADMIN administra cuentas y publicación; EDITOR trabaja borradores; BOOKING_MANAGER no accede a usuarios ni contenido editorial privado.
 - [ ] Revocación, último ADMIN, throttle compartido y gestión de contraseñas verificados.
 - [ ] Blog público, referidos y medios existentes conservados; sin importar artículos.
 - [ ] Ejecutar los controles aplicables de [verificación común](../comunes/verificacion-y-aceptacion.md) y registrar evidencia.
 - [ ] Ensayar y ejecutar el **hito A** de [transición y recuperación](../comunes/transicion-y-recuperacion.md), incluida recuperación CLI.
+
+### Excepciones operativas aceptadas — 2026-11-03
+
+Estos controles no se declaran verificados; se mantienen visibles para resolver antes
+de un corte que habilite el panel en el entorno local:
+
+- [ ] Confirmar que no queden reservas solo en memoria o en otras instancias; el archivo
+  revisado no apareció en `src/.data/bookings.json`, lo que no descarta otras fuentes.
+- [ ] Rotar `BLOG_SESSION_SECRET` coordinadamente y comprobar rechazo de sesiones
+  anteriores tras reiniciar todas las instancias locales.
+- [ ] Verificar revocación entre procesos también tras cambio de rol/estado y
+  restablecimiento de contraseña; hay evidencia entre procesos para logout y cambio
+  de contraseña propia, y evidencia aislada para los otros cambios.
+- [ ] Completar el recorrido pendiente de accesibilidad y el control exhaustivo de que
+  respuestas, props y logs no expongan contraseñas ni hashes.
+- [ ] Revisar los recursos temporales privados conservados de ensayos anteriores.
+
+No se ejecutó rotación ni reinicio como parte de esta aceptación. Los contenedores y
+directorios efímeros creados para la prueba PostgreSQL del 2026-11-03 sí se eliminaron.
 
 Completar este plan desbloquea el plan 2. BOOKING_MANAGER puede tener un inicio
 explicativo hasta que exista su sección, sin recibir permisos de otras áreas.
