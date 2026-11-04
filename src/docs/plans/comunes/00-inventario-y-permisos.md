@@ -1,7 +1,7 @@
-# [ ] Preparación común — Inventario y permisos
+# [x] Preparación común — Inventario y permisos
 
-Dependencia: ninguna. Estado: inventario y línea base local registrados; decisiones,
-otros destinos y recuperación pendientes de confirmación.
+Dependencia: ninguna. Estado: completada para continuar el trabajo local el 2026-11-03.
+El destino Coolify aún no existe; esto no acredita preparación para desplegar.
 
 [Orden general](../README.md). Preparación compartida de los cuatro planes;
 no marcar completa hasta confirmar decisiones, servicios, datos y línea base.
@@ -123,9 +123,27 @@ todo el checkout como lectura ni convertir el panel en otro confirmador de pagos
    contraseña o desactivar la cuenta.
 - [x] Entregar contraseñas por canal privado; la persona solicitante será responsable
    de recuperar el acceso administrativo. Confirmado el 2026-11-02.
-- [ ] Identificar origen HTTPS, proxy confiable, instancias, respaldos y almacenamiento.
-- [ ] Comprobar datos de reservas existentes sin imprimir datos personales y aprobar
-   su importación privada; no asumir que el archivo local está vacío.
+- [x] Identificar origen HTTPS, proxy confiable, instancias, respaldos y almacenamiento.
+   Destino futuro `getaways.mauriciodmo.com` en Coolify, una instancia, proxy/HTTPS de
+   Coolify, PostgreSQL y RustFS allí; respaldos solo locales. Verificar configuración y
+   respaldo independiente antes del despliegue.
+- [x] Resolver datos de reservas existentes sin imprimir datos personales: la persona
+   solicitante confirma que no hay reservas y no autoriza inspeccionar las fuentes. No
+   se importan reservas; esta conclusión es una confirmación del solicitante, no una
+   inspección independiente.
+
+### Confirmaciones operativas — 2026-11-03
+
+- El despliegue futuro será en Coolify bajo `getaways.mauriciodmo.com`; el servidor/proyecto
+  aún no existe. Se prevé una instancia inicial; Coolify gestionará HTTPS y proxy inverso,
+  y alojará PostgreSQL y RustFS. Verificar configuración real cuando se aprovisione.
+- Los respaldos actuales son solo locales. Sirven para el trabajo local, no para aprobar
+  un corte/despliegue; antes de ese hito hace falta un destino independiente y ensayo de
+  restauración.
+- La persona solicitante confirma que no hay reservas y no autoriza inspeccionar fuentes
+  locales. Registrar como declaración del solicitante, no como comprobación independiente;
+  no importar reservas sin aprobación posterior si se descubre que existen.
+- [x] No volver a importar los nueve artículos del blog ni sus imágenes en estos planes.
 
 Las decisiones marcadas sobre roles, gestión inicial de reservas y sesiones fueron
 confirmadas por la persona solicitante el 2026-11-02; no autorizan migraciones,
@@ -150,9 +168,9 @@ pnpm run lint
 
 ## Cierre
 
-- [ ] Decisiones registradas y línea base de errores conocida.
-- [ ] Marcador, servicios y datos reales identificados.
-- [ ] Confirmada la exclusión de la importación de los nueve artículos y sus imágenes.
+- [x] Decisiones registradas y línea base de errores conocida.
+- [x] Marcador, servicios y datos locales identificados (evidencia actual abajo).
+- [x] Confirmada la exclusión de la importación de los nueve artículos y sus imágenes.
 
 ## Línea base local — 2026-11-02
 
@@ -196,3 +214,20 @@ de código sin commit. Se restauró el dump en el contenedor aislado sin red
 restauraron en ese ensayo. Posteriormente se recuperaron conjuntamente la base y los
 objetos del checkpoint siguiente; consultar la evidencia del [plan 1](../user-and-roles/README.md).
 La base del primer ensayo reside en tmpfs y no constituye un respaldo persistente.
+
+## Verificación local — 2026-11-03
+
+Tras autorización de la persona solicitante, se levantó `compose.dev.yaml`; no se
+consultaron reservas, ni se ejecutaron migraciones o importaciones.
+
+| Comprobación | Resultado |
+| --- | --- |
+| Servicios | `app`, PostgreSQL y RustFS activos; PostgreSQL/RustFS saludables. |
+| App y RustFS | App `HTTP 200`; `/health/ready` de RustFS `HTTP 200`. |
+| `pnpm run db:check` | Correcto: marcador y esquema coinciden con el contrato; sin advertencias. |
+| `pnpm exec prisma db migrate --show` | Correcto: no hay migraciones pendientes. |
+| Marcador | `storageHash` `1d24b7dffc9a8683f50290225c3f53f644a21598a8804dec3c879f7d65e94772`; `profileHash` `3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2`. |
+
+La declaración de que no existen reservas no fue verificada directamente, por petición
+de no inspeccionar sus fuentes. Coolify y su respaldo independiente siguen pendientes;
+revalidarlos antes de cualquier corte o despliegue.

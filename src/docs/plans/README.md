@@ -10,7 +10,7 @@ Todos los checkboxes empiezan pendientes. Marcar una fase solo después de regis
 su verificación y aceptación; marcar el plan cuando estén aceptadas todas sus fases
 y su entrega. Las listas descriptivas de modelos, rutas y permisos no son tareas.
 
-- [ ] **Preparación común:** cerrar las decisiones del [inventario y permisos](comunes/00-inventario-y-permisos.md), comprobar el estado real de datos/servicios y registrar la línea base.
+- [x] **Preparación común:** cerrada para continuar el trabajo local; verificada la app, PostgreSQL, RustFS y el marcador el 2026-11-03. Coolify aún no existe: esta aceptación no declara listo el futuro despliegue; revisar allí servicios y respaldos antes del corte.
 - [x] **Plan 1 — [Usuarios, roles y acceso al panel](user-and-roles/README.md).** Aceptado por la persona solicitante con las excepciones operativas registradas en su README; no equivale a declarar listo un corte/despliegue.
   - [x] 1.1 — Usuarios, contrato, migración y aprovisionamiento.
   - [x] 1.2 — Autenticación común y sesiones revocables.
