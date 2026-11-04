@@ -8,7 +8,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 function parsePublicListingId(raw: string): number {
   const id = Number(raw);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isSafeInteger(id) || id <= 0) {
     throw new NotFoundError(`"${raw}" is not a valid listing id.`);
   }
   return id;

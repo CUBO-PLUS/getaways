@@ -59,6 +59,7 @@ model BlogPublication {
 
 model MediaAsset {
   id           Int               @id @default(autoincrement())
+  legacyMediaId BigInt?          @unique
   objectKey    String            @unique
   originalName String
   mimeType     String
@@ -69,6 +70,8 @@ model MediaAsset {
   createdAt    DateTime          @default(now())
   draftCovers  BlogPost[]
   liveCovers   BlogPublication[]
+  listingCovers Listing[]
+  listings      ListingMedia[]
 }
 
 model BlogCategory {
@@ -143,4 +146,80 @@ model AdminLoginThrottle {
   windowEndsAt DateTime
 
   @@index([windowEndsAt])
+}
+
+model Listing {
+  id                    Int                     @id @default(autoincrement())
+  wpId                  BigInt?                 @unique
+  slug                  String                  @unique
+  title                 String
+  contentHtml           String
+  attributes            Jsonb
+  active                Boolean                 @default(false)
+  archivedAt            DateTime?
+  coverMediaId          Int?
+  version               Int                     @default(1)
+  createdAt             DateTime                @default(now())
+  updatedAt             temporal.updatedAt()
+  pricePerNightCents    Int?
+  cleaningFeeCents      Int?
+  extraGuestFeeCents    Int?
+  petFeeCents           Int?
+  ivaBasisPoints        Int?
+  tourismBasisPoints    Int?
+  maxGuests             Int?
+  baseGuests            Int?
+  petsAllowed           Boolean?
+  minStayNights         Int?
+  checkInSeconds        Int?
+  checkOutSeconds       Int?
+  coverMedia            MediaAsset?             @relation(fields: [coverMediaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  terms                 ListingTermAssignment[]
+  media                 ListingMedia[]
+
+  @@index([coverMediaId])
+  @@check(expression: sql`"version" > 0`, name: "listing_version_positive")
+  @@check(expression: sql`("pricePerNightCents" IS NULL OR "pricePerNightCents" >= 0) AND ("cleaningFeeCents" IS NULL OR "cleaningFeeCents" >= 0) AND ("extraGuestFeeCents" IS NULL OR "extraGuestFeeCents" >= 0) AND ("petFeeCents" IS NULL OR "petFeeCents" >= 0)`, name: "listing_money_nonnegative")
+  @@check(expression: sql`("ivaBasisPoints" IS NULL OR "ivaBasisPoints" BETWEEN 0 AND 10000) AND ("tourismBasisPoints" IS NULL OR "tourismBasisPoints" BETWEEN 0 AND 10000)`, name: "listing_tax_basis_points_range")
+  @@check(expression: sql`("maxGuests" IS NULL OR "maxGuests" > 0) AND ("baseGuests" IS NULL OR ("baseGuests" > 0 AND "maxGuests" IS NOT NULL AND "baseGuests" <= "maxGuests"))`, name: "listing_guests_valid")
+  @@check(expression: sql`NOT active OR ("pricePerNightCents" IS NOT NULL AND "pricePerNightCents" > 0 AND "maxGuests" IS NOT NULL AND "maxGuests" > 0)`, name: "listing_active_bookable")
+  @@check(expression: sql`"minStayNights" IS NULL OR "minStayNights" > 0`, name: "listing_min_stay_positive")
+  @@check(expression: sql`("checkInSeconds" IS NULL OR "checkInSeconds" BETWEEN 0 AND 86399) AND ("checkOutSeconds" IS NULL OR "checkOutSeconds" BETWEEN 0 AND 86399)`, name: "listing_time_seconds_range")
+  @@check(expression: sql`jsonb_typeof(attributes) = 'object' AND NOT (attributes ?| ARRAY['price', 'cleaning_fee', 'extra_guest_fee', 'pet_fee', 'iva', 'tourism_tax', 'pricePerNightCents', 'cleaningFeeCents', 'extraGuestFeeCents', 'petFeeCents', 'ivaBasisPoints', 'tourismBasisPoints'])`, name: "listing_attributes_descriptive")
+}
+
+model ListingTerm {
+  id          Int                     @id @default(autoincrement())
+  wpId        BigInt?
+  taxonomy    String
+  slug        String
+  name        String
+  assignments ListingTermAssignment[]
+
+  @@unique([taxonomy, slug])
+}
+
+model ListingTermAssignment {
+  listingId Int
+  termId    Int
+  listing   Listing     @relation(fields: [listingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  term      ListingTerm @relation(fields: [termId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([listingId, termId])
+  @@index([termId])
+}
+
+model ListingMedia {
+  listingId Int
+  mediaId   Int
+  position  Int
+  alt       String?
+  roomGroup String?
+  listing   Listing    @relation(fields: [listingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  media     MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([listingId, mediaId])
+  @@index([mediaId])
+  @@index([listingId, position])
+  @@check(expression: sql`position >= 0`, name: "listing_media_position_nonnegative")
 }

@@ -1,7 +1,5 @@
 import "server-only";
 
-import listingRows from "@/data/listings.json";
-import type { ListingRow as StoredListingRow } from "@/data/types";
 import { DatesUnavailableError, NotFoundError, ValidationError } from "@/modules/bookings/booking-errors";
 import {
   createBooking,
@@ -13,15 +11,15 @@ import {
   type NewBooking,
 } from "@/modules/bookings/server/booking-store";
 import { priceFieldsFromAttributes } from "@/modules/bookings/booking-quote";
-import { isListingActive } from "@/modules/listings/listing-visibility";
+import { readCatalogListings } from "@/modules/listings/server/catalog";
 
 /*
  * The booking rules: what counts as a valid stay, what dates are taken, and
  * how a new booking is written down. The storage itself is in
  * modules/bookings/server/booking-store.ts.
  *
- * Listings are read from data/listings.json (public data the site already
- * shows). Nothing here talks to a database or a payment provider.
+ * Public listing data is read from the PostgreSQL catalogue. Booking storage
+ * remains in booking-store; this module does not talk to a payment provider.
  */
 
 export { getBookingById, getBookingBySessionId } from "@/modules/bookings/server/booking-store";
@@ -40,19 +38,19 @@ export type BookingInput = {
   guest_notes?: string;
 };
 
-export type ListingRow = Pick<StoredListingRow, "id" | "slug" | "title" | "attributes">;
-
-const LISTINGS: ListingRow[] = listingRows;
+export type ListingRow = Pick<Awaited<ReturnType<typeof readCatalogListings>>[number], "id" | "slug" | "title" | "attributes">;
 
 /** The listing with this id, or null. Public data only. */
-export function getListing(id: number): ListingRow | null {
-  return LISTINGS.find((listing) => listing.id === id) ?? null;
+export async function getListing(id: number): Promise<ListingRow | null> {
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
+  const listing = (await readCatalogListings()).find((row) => row.id === id);
+  return listing ?? null;
 }
 
 /** Read-only receipt data, including missing sessions; the template owns the status messages. */
 export async function getBookingConfirmationData(sessionId: string | undefined) {
   const booking = sessionId ? await getBookingBySessionId(sessionId) : null;
-  const listing = booking ? getListing(booking.listing_id) : null;
+  const listing = booking ? await getListing(booking.listing_id) : null;
   return { sessionId, booking, listing };
 }
 
@@ -73,12 +71,33 @@ function requireNonEmptyString(value: unknown, field: string): string {
   return value;
 }
 
-const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+function dayNumber(value: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const instant = Date.parse(`${value}T00:00:00.000Z`);
+  // Reject calendar overflow (e.g. February 30), rather than accepting Date's normalization.
+  if (!Number.isFinite(instant) || new Date(instant).toISOString().slice(0, 10) !== value) return null;
+  return instant / 86_400_000;
+}
 
-function nightsBetween(checkIn: string, checkOut: string): number {
-  const inDate = new Date(`${checkIn}T00:00:00Z`);
-  const outDate = new Date(`${checkOut}T00:00:00Z`);
-  return Math.round((outDate.getTime() - inDate.getTime()) / 86_400_000);
+export function nightsForStay(checkIn: string, checkOut: string): number {
+  const inDay = dayNumber(checkIn);
+  const outDay = dayNumber(checkOut);
+  if (inDay === null || outDay === null || outDay <= inDay) throw new ValidationError("Pick valid check-in and check-out dates.");
+  const nights = outDay - inDay;
+  if (!Number.isSafeInteger(nights)) throw new ValidationError("Those dates are too far apart to price safely.");
+  return nights;
+}
+
+export function isBookingReadyForPayment(booking: Booking): boolean {
+  try {
+    return nightsForStay(booking.check_in, booking.check_out) === booking.nights &&
+      Number.isSafeInteger(booking.guests) && (booking.guests ?? 0) > 0 &&
+      [booking.price_per_night_cents, booking.cleaning_fee_cents, booking.pet_fee_cents,
+        booking.extra_guest_fee_cents, booking.discount_cents, booking.tax_cents, booking.total_amount_cents]
+        .every((amount) => Number.isSafeInteger(amount) && amount >= 0) && booking.total_amount_cents > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -87,8 +106,8 @@ function nightsBetween(checkIn: string, checkOut: string): number {
  * cannot be used to tell a hidden listing from a missing one.
  */
 export async function requireBookableListing(listingId: number): Promise<void> {
-  const listing = getListing(listingId);
-  if (!listing || !isListingActive(listing.attributes)) {
+  const listing = await getListing(listingId);
+  if (!listing) {
     throw new NotFoundError("This property was not found. It may have been removed from the site.");
   }
 }
@@ -125,7 +144,7 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
   const guestEmail = requireNonEmptyString(input.guest_email, "guest_email");
   const checkIn = requireNonEmptyString(input.check_in, "check_in");
   const checkOut = requireNonEmptyString(input.check_out, "check_out");
-  if (!ISO_DAY.test(checkIn) || !ISO_DAY.test(checkOut)) {
+  if (dayNumber(checkIn) === null || dayNumber(checkOut) === null) {
     throw new ValidationError("Pick the dates from the calendar.");
   }
   if (checkIn >= checkOut) {
@@ -136,15 +155,24 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
     throw new ValidationError("Check-in cannot be in the past.");
   }
 
-  const listing = getListing(input.listing_id);
-  if (!listing || !isListingActive(listing.attributes)) {
+  const listing = await getListing(input.listing_id);
+  if (!listing) {
     throw new NotFoundError("This property was not found. It may have been removed from the site.");
   }
 
-  const fields = priceFieldsFromAttributes(listing.attributes);
+  let fields: ReturnType<typeof priceFieldsFromAttributes>;
+  try {
+    fields = priceFieldsFromAttributes(listing.attributes);
+  } catch (error) {
+    if (error instanceof RangeError) throw new ValidationError("This property price cannot be represented safely.");
+    throw error;
+  }
   if (fields.pricePerNightCents <= 0) throw new ValidationError("This property has no price yet.");
+  if (![fields.pricePerNightCents, fields.cleaningFeeCents].every((amount) => Number.isSafeInteger(amount) && amount >= 0)) {
+    throw new ValidationError("This property price cannot be represented safely.");
+  }
 
-  const nights = nightsBetween(checkIn, checkOut);
+  const nights = nightsForStay(checkIn, checkOut);
   const attrs = listing.attributes ?? {};
   if (attrs.booking_min_length && attrs.booking_min_length.trim() !== "") {
     const minNights = Number(attrs.booking_min_length);
@@ -161,6 +189,8 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
   const pricePerNightCents = fields.pricePerNightCents;
   const cleaningFeeCents = fields.cleaningFeeCents;
 
+  const initialTotal = BigInt(nights) * BigInt(pricePerNightCents) + BigInt(cleaningFeeCents);
+  if (initialTotal > BigInt(Number.MAX_SAFE_INTEGER)) throw new ValidationError("This stay total cannot be represented safely.");
   const fresh: NewBooking = {
     listing_id: input.listing_id,
     check_in: checkIn,
@@ -178,7 +208,7 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
     extra_guest_fee_cents: 0,
     discount_cents: 0,
     tax_cents: 0,
-    total_amount_cents: nights * pricePerNightCents + cleaningFeeCents,
+    total_amount_cents: Number(initialTotal),
     coupon_code: null,
     status: "pending_payment",
     checkout_session_id: null,
@@ -202,6 +232,15 @@ export async function saveQuote(
   bookingId: number,
   patch: Partial<Omit<Booking, "id" | "created_at">>
 ): Promise<Booking | null> {
+  for (const key of ["price_per_night_cents", "cleaning_fee_cents", "pet_fee_cents", "extra_guest_fee_cents", "discount_cents", "tax_cents", "total_amount_cents"] as const) {
+    const amount = patch[key];
+    if (amount !== undefined && (!Number.isSafeInteger(amount) || amount < 0)) {
+      throw new ValidationError("This stay total cannot be represented safely.");
+    }
+  }
+  if (patch.guests !== undefined && (!Number.isSafeInteger(patch.guests) || (patch.guests ?? 0) <= 0)) {
+    throw new ValidationError("Choose a valid number of guests.");
+  }
   const current = await getBookingById(bookingId);
   if (!current || current.status !== "pending_payment" || current.payment_reference) return null;
   return updateBooking(bookingId, patch);

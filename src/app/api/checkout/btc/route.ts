@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getBookingBySessionId, getListing } from "@/modules/bookings/server/bookings";
+import { getBookingBySessionId, getListing, isBookingReadyForPayment } from "@/modules/bookings/server/bookings";
 import { markPaid, updateBooking } from "@/modules/bookings/server/booking-store";
 import { isCheckoutSessionId } from "@/modules/checkout/checkout-session";
 import { activePaymentProvider } from "@/modules/payments";
@@ -46,6 +46,9 @@ export async function POST(request: Request) {
   if (booking.status !== "pending_payment") {
     return NextResponse.json({ ok: false, error: "This booking is no longer awaiting payment." }, { status: 409 });
   }
+  if (!isBookingReadyForPayment(booking)) {
+    return NextResponse.json({ ok: false, error: "This booking cannot be charged safely. Reprice it or contact us." }, { status: 409 });
+  }
 
   if (body?.action === "simulate_paid") {
     if (process.env.NODE_ENV === "production") {
@@ -68,8 +71,11 @@ export async function POST(request: Request) {
       const existing = await activePaymentProvider.getPayment(booking.payment_reference);
       if (existing) return NextResponse.json({ ok: true, data: { payment: existing } });
     }
+    if (booking.check_in < new Date().toISOString().slice(0, 10)) {
+      return NextResponse.json({ ok: false, error: "Check-in has passed. This booking can no longer be charged." }, { status: 409 });
+    }
 
-    const listing = getListing(booking.listing_id);
+    const listing = await getListing(booking.listing_id);
     const payment = await activePaymentProvider.createPayment({
       bookingId: booking.id,
       amountCents: booking.total_amount_cents,
@@ -93,6 +99,10 @@ export async function GET(request: Request) {
     const booking = await getBookingBySessionId(sessionId);
     if (!booking) {
       return NextResponse.json({ ok: false, error: "Checkout session not found." }, { status: 404 });
+    }
+
+    if (booking.status === "pending_payment" && !isBookingReadyForPayment(booking)) {
+      return NextResponse.json({ ok: false, error: "This booking cannot be charged safely. Contact us." }, { status: 409 });
     }
 
     let payment = null;

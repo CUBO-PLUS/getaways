@@ -13,6 +13,7 @@
     "blog:convert": "node --experimental-strip-types scripts/blog-import-convert.mts",
     "blog:approval-template": "node --conditions=react-server --experimental-strip-types scripts/blog-import-approval-template.mts",
     "blog:import": "node --conditions=react-server --experimental-strip-types scripts/blog-import.mts",
+    "listings:import": "node --conditions=react-server --experimental-strip-types scripts/listings-import.mts",
     "admin:user": "node --conditions=react-server --experimental-strip-types scripts/admin-user.mts",
     "test:db": "NODE_ENV=development PRISMA_TEST_DATABASE=1 vitest run infrastructure/prisma/_test_/db.test.ts",
     "db:generate": "prisma contract emit",

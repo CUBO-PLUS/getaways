@@ -39,9 +39,12 @@ export const btcMockProvider: PaymentProvider = {
   label: "Bitcoin (student mock)",
 
   async createPayment({ bookingId, amountCents }) {
+    if (!Number.isSafeInteger(amountCents) || amountCents <= 0) throw new RangeError("Invalid payment amount.");
     // TODO(student): fetch a live USD/BTC price here instead of the constant below.
-    const btcAmount = amountCents / 100 / MOCK_USD_PER_BTC;
-    const amountSats = Math.round(btcAmount * 100_000_000);
+    const centsPerBtc = BigInt(MOCK_USD_PER_BTC) * 100n;
+    const sats = (BigInt(amountCents) * 100_000_000n + centsPerBtc / 2n) / centsPerBtc;
+    if (sats <= 0n || sats > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError("Payment cannot be represented in satoshis.");
+    const amountSats = Number(sats);
 
     // TODO(student): generate a real address or Lightning invoice here.
     // TODO(student): set expiresAt to a real expiry time, e.g. 15 minutes from now.

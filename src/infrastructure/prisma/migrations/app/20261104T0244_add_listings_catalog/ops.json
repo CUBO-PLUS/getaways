@@ -1,0 +1,812 @@
+[
+  {
+    "id": "table.Listing",
+    "label": "Create table \"Listing\"",
+    "summary": "Creates table \"Listing\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Listing"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Listing\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Listing\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Listing\"",
+        "sql": "CREATE TABLE \"public\".\"Listing\" (\n  \"active\" bool DEFAULT false NOT NULL,\n  \"archivedAt\" timestamptz,\n  \"attributes\" jsonb NOT NULL,\n  \"baseGuests\" int4,\n  \"checkInSeconds\" int4,\n  \"checkOutSeconds\" int4,\n  \"cleaningFeeCents\" int4,\n  \"contentHtml\" text NOT NULL,\n  \"coverMediaId\" int4,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"extraGuestFeeCents\" int4,\n  \"id\" SERIAL NOT NULL,\n  \"ivaBasisPoints\" int4,\n  \"maxGuests\" int4,\n  \"minStayNights\" int4,\n  \"petFeeCents\" int4,\n  \"petsAllowed\" bool,\n  \"pricePerNightCents\" int4,\n  \"slug\" text NOT NULL,\n  \"title\" text NOT NULL,\n  \"tourismBasisPoints\" int4,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"version\" int4 DEFAULT 1 NOT NULL,\n  \"wpId\" int8,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"listing_active_bookable_29820d57\" CHECK (NOT active OR (\"pricePerNightCents\" IS NOT NULL AND \"pricePerNightCents\" > 0 AND \"maxGuests\" IS NOT NULL AND \"maxGuests\" > 0)),\n  CONSTRAINT \"listing_attributes_descriptive_c63c8437\" CHECK (jsonb_typeof(attributes) = 'object' AND NOT (attributes ?| ARRAY['price', 'cleaning_fee', 'extra_guest_fee', 'pet_fee', 'iva', 'tourism_tax', 'pricePerNightCents', 'cleaningFeeCents', 'extraGuestFeeCents', 'petFeeCents', 'ivaBasisPoints', 'tourismBasisPoints'])),\n  CONSTRAINT \"listing_guests_valid_ecea1ec8\" CHECK ((\"maxGuests\" IS NULL OR \"maxGuests\" > 0) AND (\"baseGuests\" IS NULL OR (\"baseGuests\" > 0 AND \"maxGuests\" IS NOT NULL AND \"baseGuests\" <= \"maxGuests\"))),\n  CONSTRAINT \"listing_min_stay_positive_b5341822\" CHECK (\"minStayNights\" IS NULL OR \"minStayNights\" > 0),\n  CONSTRAINT \"listing_money_nonnegative_2dcdefbe\" CHECK ((\"pricePerNightCents\" IS NULL OR \"pricePerNightCents\" >= 0) AND (\"cleaningFeeCents\" IS NULL OR \"cleaningFeeCents\" >= 0) AND (\"extraGuestFeeCents\" IS NULL OR \"extraGuestFeeCents\" >= 0) AND (\"petFeeCents\" IS NULL OR \"petFeeCents\" >= 0)),\n  CONSTRAINT \"listing_tax_basis_points_range_75fe593b\" CHECK ((\"ivaBasisPoints\" IS NULL OR \"ivaBasisPoints\" BETWEEN 0 AND 10000) AND (\"tourismBasisPoints\" IS NULL OR \"tourismBasisPoints\" BETWEEN 0 AND 10000)),\n  CONSTRAINT \"listing_time_seconds_range_6e2bad98\" CHECK ((\"checkInSeconds\" IS NULL OR \"checkInSeconds\" BETWEEN 0 AND 86399) AND (\"checkOutSeconds\" IS NULL OR \"checkOutSeconds\" BETWEEN 0 AND 86399)),\n  CONSTRAINT \"listing_version_positive_efca705d\" CHECK (\"version\" > 0)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Listing\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Listing\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ListingMedia",
+    "label": "Create table \"ListingMedia\"",
+    "summary": "Creates table \"ListingMedia\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ListingMedia"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ListingMedia\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingMedia\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ListingMedia\"",
+        "sql": "CREATE TABLE \"public\".\"ListingMedia\" (\n  \"alt\" text,\n  \"listingId\" int4 NOT NULL,\n  \"mediaId\" int4 NOT NULL,\n  \"position\" int4 NOT NULL,\n  \"roomGroup\" text,\n  PRIMARY KEY (\"listingId\", \"mediaId\"),\n  CONSTRAINT \"listing_media_position_nonnegative_c03c2ccb\" CHECK (position >= 0)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ListingMedia\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingMedia\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ListingTerm",
+    "label": "Create table \"ListingTerm\"",
+    "summary": "Creates table \"ListingTerm\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ListingTerm"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ListingTerm\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingTerm\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ListingTerm\"",
+        "sql": "CREATE TABLE \"public\".\"ListingTerm\" (\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"slug\" text NOT NULL,\n  \"taxonomy\" text NOT NULL,\n  \"wpId\" int8,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ListingTerm\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingTerm\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ListingTermAssignment",
+    "label": "Create table \"ListingTermAssignment\"",
+    "summary": "Creates table \"ListingTermAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ListingTermAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ListingTermAssignment\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingTermAssignment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ListingTermAssignment\"",
+        "sql": "CREATE TABLE \"public\".\"ListingTermAssignment\" (\n  \"listingId\" int4 NOT NULL,\n  \"termId\" int4 NOT NULL,\n  PRIMARY KEY (\"listingId\", \"termId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ListingTermAssignment\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingTermAssignment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.MediaAsset.legacyMediaId",
+    "label": "Add column \"legacyMediaId\" to \"MediaAsset\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "legacyMediaId",
+        "table": "MediaAsset"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"legacyMediaId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MediaAsset",
+          "legacyMediaId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"legacyMediaId\"",
+        "sql": "ALTER TABLE \"public\".\"MediaAsset\" ADD COLUMN \"legacyMediaId\" int8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"legacyMediaId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "MediaAsset",
+          "legacyMediaId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Listing.Listing_wpId_key",
+    "label": "Add unique constraint on \"Listing\" (wpId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Listing_wpId_key",
+        "table": "Listing"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Listing_wpId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Listing_wpId_key",
+          "public",
+          "\"public\".\"Listing\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Listing_wpId_key\"",
+        "sql": "ALTER TABLE \"public\".\"Listing\" ADD CONSTRAINT \"Listing_wpId_key\" UNIQUE (\"wpId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Listing_wpId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Listing_wpId_key",
+          "public",
+          "\"public\".\"Listing\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Listing.Listing_slug_key",
+    "label": "Add unique constraint on \"Listing\" (slug)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Listing_slug_key",
+        "table": "Listing"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Listing_slug_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Listing_slug_key",
+          "public",
+          "\"public\".\"Listing\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Listing_slug_key\"",
+        "sql": "ALTER TABLE \"public\".\"Listing\" ADD CONSTRAINT \"Listing_slug_key\" UNIQUE (\"slug\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Listing_slug_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Listing_slug_key",
+          "public",
+          "\"public\".\"Listing\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.ListingTerm.ListingTerm_taxonomy_slug_key",
+    "label": "Add unique constraint on \"ListingTerm\" (taxonomy, slug)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "ListingTerm_taxonomy_slug_key",
+        "table": "ListingTerm"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ListingTerm_taxonomy_slug_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingTerm_taxonomy_slug_key",
+          "public",
+          "\"public\".\"ListingTerm\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"ListingTerm_taxonomy_slug_key\"",
+        "sql": "ALTER TABLE \"public\".\"ListingTerm\" ADD CONSTRAINT \"ListingTerm_taxonomy_slug_key\" UNIQUE (\"taxonomy\", \"slug\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ListingTerm_taxonomy_slug_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingTerm_taxonomy_slug_key",
+          "public",
+          "\"public\".\"ListingTerm\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.MediaAsset.MediaAsset_legacyMediaId_key",
+    "label": "Add unique constraint on \"MediaAsset\" (legacyMediaId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "MediaAsset_legacyMediaId_key",
+        "table": "MediaAsset"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"MediaAsset_legacyMediaId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MediaAsset_legacyMediaId_key",
+          "public",
+          "\"public\".\"MediaAsset\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"MediaAsset_legacyMediaId_key\"",
+        "sql": "ALTER TABLE \"public\".\"MediaAsset\" ADD CONSTRAINT \"MediaAsset_legacyMediaId_key\" UNIQUE (\"legacyMediaId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"MediaAsset_legacyMediaId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MediaAsset_legacyMediaId_key",
+          "public",
+          "\"public\".\"MediaAsset\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Listing.Listing_coverMediaId_idx_a9883159",
+    "label": "Create index \"Listing_coverMediaId_idx_a9883159\" on \"Listing\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Listing_coverMediaId_idx_a9883159",
+        "table": "Listing"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Listing_coverMediaId_idx_a9883159\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Listing_coverMediaId_idx_a9883159\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Listing_coverMediaId_idx_a9883159\"",
+        "sql": "CREATE INDEX \"Listing_coverMediaId_idx_a9883159\" ON \"public\".\"Listing\" (\"coverMediaId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Listing_coverMediaId_idx_a9883159\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Listing_coverMediaId_idx_a9883159\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ListingMedia.ListingMedia_listingId_idx_953decda",
+    "label": "Create index \"ListingMedia_listingId_idx_953decda\" on \"ListingMedia\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ListingMedia_listingId_idx_953decda",
+        "table": "ListingMedia"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ListingMedia_listingId_idx_953decda\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingMedia_listingId_idx_953decda\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ListingMedia_listingId_idx_953decda\"",
+        "sql": "CREATE INDEX \"ListingMedia_listingId_idx_953decda\" ON \"public\".\"ListingMedia\" (\"listingId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ListingMedia_listingId_idx_953decda\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingMedia_listingId_idx_953decda\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ListingMedia.ListingMedia_listingId_position_idx_4f3a403f",
+    "label": "Create index \"ListingMedia_listingId_position_idx_4f3a403f\" on \"ListingMedia\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ListingMedia_listingId_position_idx_4f3a403f",
+        "table": "ListingMedia"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ListingMedia_listingId_position_idx_4f3a403f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingMedia_listingId_position_idx_4f3a403f\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ListingMedia_listingId_position_idx_4f3a403f\"",
+        "sql": "CREATE INDEX \"ListingMedia_listingId_position_idx_4f3a403f\" ON \"public\".\"ListingMedia\" (\"listingId\", \"position\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ListingMedia_listingId_position_idx_4f3a403f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingMedia_listingId_position_idx_4f3a403f\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ListingMedia.ListingMedia_mediaId_idx_6b06655c",
+    "label": "Create index \"ListingMedia_mediaId_idx_6b06655c\" on \"ListingMedia\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ListingMedia_mediaId_idx_6b06655c",
+        "table": "ListingMedia"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ListingMedia_mediaId_idx_6b06655c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingMedia_mediaId_idx_6b06655c\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ListingMedia_mediaId_idx_6b06655c\"",
+        "sql": "CREATE INDEX \"ListingMedia_mediaId_idx_6b06655c\" ON \"public\".\"ListingMedia\" (\"mediaId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ListingMedia_mediaId_idx_6b06655c\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingMedia_mediaId_idx_6b06655c\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ListingTermAssignment.ListingTermAssignment_listingId_idx_953decda",
+    "label": "Create index \"ListingTermAssignment_listingId_idx_953decda\" on \"ListingTermAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ListingTermAssignment_listingId_idx_953decda",
+        "table": "ListingTermAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ListingTermAssignment_listingId_idx_953decda\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingTermAssignment_listingId_idx_953decda\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ListingTermAssignment_listingId_idx_953decda\"",
+        "sql": "CREATE INDEX \"ListingTermAssignment_listingId_idx_953decda\" ON \"public\".\"ListingTermAssignment\" (\"listingId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ListingTermAssignment_listingId_idx_953decda\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingTermAssignment_listingId_idx_953decda\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ListingTermAssignment.ListingTermAssignment_termId_idx_1b74c9af",
+    "label": "Create index \"ListingTermAssignment_termId_idx_1b74c9af\" on \"ListingTermAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ListingTermAssignment_termId_idx_1b74c9af",
+        "table": "ListingTermAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ListingTermAssignment_termId_idx_1b74c9af\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingTermAssignment_termId_idx_1b74c9af\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ListingTermAssignment_termId_idx_1b74c9af\"",
+        "sql": "CREATE INDEX \"ListingTermAssignment_termId_idx_1b74c9af\" ON \"public\".\"ListingTermAssignment\" (\"termId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ListingTermAssignment_termId_idx_1b74c9af\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingTermAssignment_termId_idx_1b74c9af\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Listing.Listing_coverMediaId_fkey",
+    "label": "Add foreign key \"Listing_coverMediaId_fkey\" on \"Listing\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Listing_coverMediaId_fkey",
+        "table": "Listing"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Listing_coverMediaId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Listing_coverMediaId_fkey",
+          "public",
+          "\"public\".\"Listing\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Listing_coverMediaId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Listing\"\nADD CONSTRAINT \"Listing_coverMediaId_fkey\"\nFOREIGN KEY (\"coverMediaId\")\nREFERENCES \"public\".\"MediaAsset\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Listing_coverMediaId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Listing_coverMediaId_fkey",
+          "public",
+          "\"public\".\"Listing\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ListingMedia.ListingMedia_listingId_fkey",
+    "label": "Add foreign key \"ListingMedia_listingId_fkey\" on \"ListingMedia\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ListingMedia_listingId_fkey",
+        "table": "ListingMedia"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ListingMedia_listingId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingMedia_listingId_fkey",
+          "public",
+          "\"public\".\"ListingMedia\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ListingMedia_listingId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ListingMedia\"\nADD CONSTRAINT \"ListingMedia_listingId_fkey\"\nFOREIGN KEY (\"listingId\")\nREFERENCES \"public\".\"Listing\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ListingMedia_listingId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingMedia_listingId_fkey",
+          "public",
+          "\"public\".\"ListingMedia\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ListingMedia.ListingMedia_mediaId_fkey",
+    "label": "Add foreign key \"ListingMedia_mediaId_fkey\" on \"ListingMedia\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ListingMedia_mediaId_fkey",
+        "table": "ListingMedia"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ListingMedia_mediaId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingMedia_mediaId_fkey",
+          "public",
+          "\"public\".\"ListingMedia\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ListingMedia_mediaId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ListingMedia\"\nADD CONSTRAINT \"ListingMedia_mediaId_fkey\"\nFOREIGN KEY (\"mediaId\")\nREFERENCES \"public\".\"MediaAsset\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ListingMedia_mediaId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingMedia_mediaId_fkey",
+          "public",
+          "\"public\".\"ListingMedia\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ListingTermAssignment.ListingTermAssignment_listingId_fkey",
+    "label": "Add foreign key \"ListingTermAssignment_listingId_fkey\" on \"ListingTermAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ListingTermAssignment_listingId_fkey",
+        "table": "ListingTermAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ListingTermAssignment_listingId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingTermAssignment_listingId_fkey",
+          "public",
+          "\"public\".\"ListingTermAssignment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ListingTermAssignment_listingId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ListingTermAssignment\"\nADD CONSTRAINT \"ListingTermAssignment_listingId_fkey\"\nFOREIGN KEY (\"listingId\")\nREFERENCES \"public\".\"Listing\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ListingTermAssignment_listingId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingTermAssignment_listingId_fkey",
+          "public",
+          "\"public\".\"ListingTermAssignment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ListingTermAssignment.ListingTermAssignment_termId_fkey",
+    "label": "Add foreign key \"ListingTermAssignment_termId_fkey\" on \"ListingTermAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ListingTermAssignment_termId_fkey",
+        "table": "ListingTermAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ListingTermAssignment_termId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingTermAssignment_termId_fkey",
+          "public",
+          "\"public\".\"ListingTermAssignment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ListingTermAssignment_termId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ListingTermAssignment\"\nADD CONSTRAINT \"ListingTermAssignment_termId_fkey\"\nFOREIGN KEY (\"termId\")\nREFERENCES \"public\".\"ListingTerm\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ListingTermAssignment_termId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingTermAssignment_termId_fkey",
+          "public",
+          "\"public\".\"ListingTermAssignment\""
+        ]
+      }
+    ]
+  }
+]

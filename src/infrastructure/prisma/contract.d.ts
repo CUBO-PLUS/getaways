@@ -18,9 +18,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1d24b7dffc9a8683f50290225c3f53f644a21598a8804dec3c879f7d65e94772'>;
+  StorageHashBase<'b3b6063e6e046aeb330bcb6c54502a2d20efa4c8e4aebb86346f522aafe9258d'>;
 export type ExecutionHash =
-  ExecutionHashBase<'8588905d1274b5a235a5b8c6096b13d1f19c6449134c7dc9814eec74d22ca7ef'>;
+  ExecutionHashBase<'488d8df800ea5dd186d7087f4ea68b3c59716316d33af834ce4b783da2ed69a5'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -303,11 +303,56 @@ export type FieldOutputTypes = {
       readonly categoryId: CodecTypes['pg/int4@1']['output'];
       readonly publicationPostId: CodecTypes['pg/int4@1']['output'];
     };
+    readonly Listing: {
+      readonly active: CodecTypes['pg/bool@1']['output'];
+      readonly archivedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly attributes: CodecTypes['pg/jsonb@1']['output'];
+      readonly baseGuests: CodecTypes['pg/int4@1']['output'] | null;
+      readonly checkInSeconds: CodecTypes['pg/int4@1']['output'] | null;
+      readonly checkOutSeconds: CodecTypes['pg/int4@1']['output'] | null;
+      readonly cleaningFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+      readonly contentHtml: CodecTypes['pg/text@1']['output'];
+      readonly coverMediaId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly extraGuestFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly ivaBasisPoints: CodecTypes['pg/int4@1']['output'] | null;
+      readonly maxGuests: CodecTypes['pg/int4@1']['output'] | null;
+      readonly minStayNights: CodecTypes['pg/int4@1']['output'] | null;
+      readonly petFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+      readonly petsAllowed: CodecTypes['pg/bool@1']['output'] | null;
+      readonly pricePerNightCents: CodecTypes['pg/int4@1']['output'] | null;
+      readonly slug: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly tourismBasisPoints: CodecTypes['pg/int4@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+      readonly wpId: CodecTypes['pg/int8@1']['output'] | null;
+    };
+    readonly ListingMedia: {
+      readonly alt: CodecTypes['pg/text@1']['output'] | null;
+      readonly listingId: CodecTypes['pg/int4@1']['output'];
+      readonly mediaId: CodecTypes['pg/int4@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly roomGroup: CodecTypes['pg/text@1']['output'] | null;
+    };
+    readonly ListingTerm: {
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly slug: CodecTypes['pg/text@1']['output'];
+      readonly taxonomy: CodecTypes['pg/text@1']['output'];
+      readonly wpId: CodecTypes['pg/int8@1']['output'] | null;
+    };
+    readonly ListingTermAssignment: {
+      readonly listingId: CodecTypes['pg/int4@1']['output'];
+      readonly termId: CodecTypes['pg/int4@1']['output'];
+    };
     readonly MediaAsset: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly defaultAlt: CodecTypes['pg/text@1']['output'] | null;
       readonly height: CodecTypes['pg/int4@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly legacyMediaId: CodecTypes['pg/int8@1']['output'] | null;
       readonly mimeType: CodecTypes['pg/text@1']['output'];
       readonly objectKey: CodecTypes['pg/text@1']['output'];
       readonly originalName: CodecTypes['pg/text@1']['output'];
@@ -400,11 +445,56 @@ export type FieldInputTypes = {
       readonly categoryId: CodecTypes['pg/int4@1']['input'];
       readonly publicationPostId: CodecTypes['pg/int4@1']['input'];
     };
+    readonly Listing: {
+      readonly active: CodecTypes['pg/bool@1']['input'];
+      readonly archivedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly attributes: CodecTypes['pg/jsonb@1']['input'];
+      readonly baseGuests: CodecTypes['pg/int4@1']['input'] | null;
+      readonly checkInSeconds: CodecTypes['pg/int4@1']['input'] | null;
+      readonly checkOutSeconds: CodecTypes['pg/int4@1']['input'] | null;
+      readonly cleaningFeeCents: CodecTypes['pg/int4@1']['input'] | null;
+      readonly contentHtml: CodecTypes['pg/text@1']['input'];
+      readonly coverMediaId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly extraGuestFeeCents: CodecTypes['pg/int4@1']['input'] | null;
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly ivaBasisPoints: CodecTypes['pg/int4@1']['input'] | null;
+      readonly maxGuests: CodecTypes['pg/int4@1']['input'] | null;
+      readonly minStayNights: CodecTypes['pg/int4@1']['input'] | null;
+      readonly petFeeCents: CodecTypes['pg/int4@1']['input'] | null;
+      readonly petsAllowed: CodecTypes['pg/bool@1']['input'] | null;
+      readonly pricePerNightCents: CodecTypes['pg/int4@1']['input'] | null;
+      readonly slug: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly tourismBasisPoints: CodecTypes['pg/int4@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
+      readonly wpId: CodecTypes['pg/int8@1']['input'] | null;
+    };
+    readonly ListingMedia: {
+      readonly alt: CodecTypes['pg/text@1']['input'] | null;
+      readonly listingId: CodecTypes['pg/int4@1']['input'];
+      readonly mediaId: CodecTypes['pg/int4@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly roomGroup: CodecTypes['pg/text@1']['input'] | null;
+    };
+    readonly ListingTerm: {
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly slug: CodecTypes['pg/text@1']['input'];
+      readonly taxonomy: CodecTypes['pg/text@1']['input'];
+      readonly wpId: CodecTypes['pg/int8@1']['input'] | null;
+    };
+    readonly ListingTermAssignment: {
+      readonly listingId: CodecTypes['pg/int4@1']['input'];
+      readonly termId: CodecTypes['pg/int4@1']['input'];
+    };
     readonly MediaAsset: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly defaultAlt: CodecTypes['pg/text@1']['input'] | null;
       readonly height: CodecTypes['pg/int4@1']['input'];
       readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly legacyMediaId: CodecTypes['pg/int8@1']['input'] | null;
       readonly mimeType: CodecTypes['pg/text@1']['input'];
       readonly objectKey: CodecTypes['pg/text@1']['input'];
       readonly originalName: CodecTypes['pg/text@1']['input'];
@@ -497,11 +587,56 @@ export type StorageColumnTypes = {
       readonly categoryId: CodecTypes['pg/int4@1']['output'];
       readonly publicationPostId: CodecTypes['pg/int4@1']['output'];
     };
+    readonly Listing: {
+      readonly active: CodecTypes['pg/bool@1']['output'];
+      readonly archivedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly attributes: CodecTypes['pg/jsonb@1']['output'];
+      readonly baseGuests: CodecTypes['pg/int4@1']['output'] | null;
+      readonly checkInSeconds: CodecTypes['pg/int4@1']['output'] | null;
+      readonly checkOutSeconds: CodecTypes['pg/int4@1']['output'] | null;
+      readonly cleaningFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+      readonly contentHtml: CodecTypes['pg/text@1']['output'];
+      readonly coverMediaId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly extraGuestFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly ivaBasisPoints: CodecTypes['pg/int4@1']['output'] | null;
+      readonly maxGuests: CodecTypes['pg/int4@1']['output'] | null;
+      readonly minStayNights: CodecTypes['pg/int4@1']['output'] | null;
+      readonly petFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+      readonly petsAllowed: CodecTypes['pg/bool@1']['output'] | null;
+      readonly pricePerNightCents: CodecTypes['pg/int4@1']['output'] | null;
+      readonly slug: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly tourismBasisPoints: CodecTypes['pg/int4@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+      readonly wpId: CodecTypes['pg/int8@1']['output'] | null;
+    };
+    readonly ListingMedia: {
+      readonly alt: CodecTypes['pg/text@1']['output'] | null;
+      readonly listingId: CodecTypes['pg/int4@1']['output'];
+      readonly mediaId: CodecTypes['pg/int4@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly roomGroup: CodecTypes['pg/text@1']['output'] | null;
+    };
+    readonly ListingTerm: {
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly slug: CodecTypes['pg/text@1']['output'];
+      readonly taxonomy: CodecTypes['pg/text@1']['output'];
+      readonly wpId: CodecTypes['pg/int8@1']['output'] | null;
+    };
+    readonly ListingTermAssignment: {
+      readonly listingId: CodecTypes['pg/int4@1']['output'];
+      readonly termId: CodecTypes['pg/int4@1']['output'];
+    };
     readonly MediaAsset: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly defaultAlt: CodecTypes['pg/text@1']['output'] | null;
       readonly height: CodecTypes['pg/int4@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly legacyMediaId: CodecTypes['pg/int8@1']['output'] | null;
       readonly mimeType: CodecTypes['pg/text@1']['output'];
       readonly objectKey: CodecTypes['pg/text@1']['output'];
       readonly originalName: CodecTypes['pg/text@1']['output'];
@@ -594,11 +729,56 @@ export type StorageColumnInputTypes = {
       readonly categoryId: CodecTypes['pg/int4@1']['input'];
       readonly publicationPostId: CodecTypes['pg/int4@1']['input'];
     };
+    readonly Listing: {
+      readonly active: CodecTypes['pg/bool@1']['input'];
+      readonly archivedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly attributes: CodecTypes['pg/jsonb@1']['input'];
+      readonly baseGuests: CodecTypes['pg/int4@1']['input'] | null;
+      readonly checkInSeconds: CodecTypes['pg/int4@1']['input'] | null;
+      readonly checkOutSeconds: CodecTypes['pg/int4@1']['input'] | null;
+      readonly cleaningFeeCents: CodecTypes['pg/int4@1']['input'] | null;
+      readonly contentHtml: CodecTypes['pg/text@1']['input'];
+      readonly coverMediaId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly extraGuestFeeCents: CodecTypes['pg/int4@1']['input'] | null;
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly ivaBasisPoints: CodecTypes['pg/int4@1']['input'] | null;
+      readonly maxGuests: CodecTypes['pg/int4@1']['input'] | null;
+      readonly minStayNights: CodecTypes['pg/int4@1']['input'] | null;
+      readonly petFeeCents: CodecTypes['pg/int4@1']['input'] | null;
+      readonly petsAllowed: CodecTypes['pg/bool@1']['input'] | null;
+      readonly pricePerNightCents: CodecTypes['pg/int4@1']['input'] | null;
+      readonly slug: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly tourismBasisPoints: CodecTypes['pg/int4@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
+      readonly wpId: CodecTypes['pg/int8@1']['input'] | null;
+    };
+    readonly ListingMedia: {
+      readonly alt: CodecTypes['pg/text@1']['input'] | null;
+      readonly listingId: CodecTypes['pg/int4@1']['input'];
+      readonly mediaId: CodecTypes['pg/int4@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly roomGroup: CodecTypes['pg/text@1']['input'] | null;
+    };
+    readonly ListingTerm: {
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly slug: CodecTypes['pg/text@1']['input'];
+      readonly taxonomy: CodecTypes['pg/text@1']['input'];
+      readonly wpId: CodecTypes['pg/int8@1']['input'] | null;
+    };
+    readonly ListingTermAssignment: {
+      readonly listingId: CodecTypes['pg/int4@1']['input'];
+      readonly termId: CodecTypes['pg/int4@1']['input'];
+    };
     readonly MediaAsset: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly defaultAlt: CodecTypes['pg/text@1']['input'] | null;
       readonly height: CodecTypes['pg/int4@1']['input'];
       readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly legacyMediaId: CodecTypes['pg/int8@1']['input'] | null;
       readonly mimeType: CodecTypes['pg/text@1']['input'];
       readonly objectKey: CodecTypes['pg/text@1']['input'];
       readonly originalName: CodecTypes['pg/text@1']['input'];
@@ -711,19 +891,78 @@ export namespace Models {
     publication: public_BlogPublication;
     readonly [RelationKeys]?: 'category' | 'publication';
   };
+  export type public_Listing = {
+    active: CodecTypes['pg/bool@1']['output'];
+    archivedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+    attributes: CodecTypes['pg/jsonb@1']['output'];
+    baseGuests: CodecTypes['pg/int4@1']['output'] | null;
+    checkInSeconds: CodecTypes['pg/int4@1']['output'] | null;
+    checkOutSeconds: CodecTypes['pg/int4@1']['output'] | null;
+    cleaningFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+    contentHtml: CodecTypes['pg/text@1']['output'];
+    coverMediaId: CodecTypes['pg/int4@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    extraGuestFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+    id: CodecTypes['pg/int4@1']['output'];
+    ivaBasisPoints: CodecTypes['pg/int4@1']['output'] | null;
+    maxGuests: CodecTypes['pg/int4@1']['output'] | null;
+    minStayNights: CodecTypes['pg/int4@1']['output'] | null;
+    petFeeCents: CodecTypes['pg/int4@1']['output'] | null;
+    petsAllowed: CodecTypes['pg/bool@1']['output'] | null;
+    pricePerNightCents: CodecTypes['pg/int4@1']['output'] | null;
+    slug: CodecTypes['pg/text@1']['output'];
+    title: CodecTypes['pg/text@1']['output'];
+    tourismBasisPoints: CodecTypes['pg/int4@1']['output'] | null;
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    version: CodecTypes['pg/int4@1']['output'];
+    wpId: CodecTypes['pg/int8@1']['output'] | null;
+    coverMedia: public_MediaAsset | null;
+    media: public_ListingMedia[];
+    terms: public_ListingTermAssignment[];
+    readonly [RelationKeys]?: 'coverMedia' | 'media' | 'terms';
+  };
+  export type public_ListingMedia = {
+    alt: CodecTypes['pg/text@1']['output'] | null;
+    listingId: CodecTypes['pg/int4@1']['output'];
+    mediaId: CodecTypes['pg/int4@1']['output'];
+    position: CodecTypes['pg/int4@1']['output'];
+    roomGroup: CodecTypes['pg/text@1']['output'] | null;
+    listing: public_Listing;
+    media: public_MediaAsset;
+    readonly [RelationKeys]?: 'listing' | 'media';
+  };
+  export type public_ListingTerm = {
+    id: CodecTypes['pg/int4@1']['output'];
+    name: CodecTypes['pg/text@1']['output'];
+    slug: CodecTypes['pg/text@1']['output'];
+    taxonomy: CodecTypes['pg/text@1']['output'];
+    wpId: CodecTypes['pg/int8@1']['output'] | null;
+    assignments: public_ListingTermAssignment[];
+    readonly [RelationKeys]?: 'assignments';
+  };
+  export type public_ListingTermAssignment = {
+    listingId: CodecTypes['pg/int4@1']['output'];
+    termId: CodecTypes['pg/int4@1']['output'];
+    listing: public_Listing;
+    term: public_ListingTerm;
+    readonly [RelationKeys]?: 'listing' | 'term';
+  };
   export type public_MediaAsset = {
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     defaultAlt: CodecTypes['pg/text@1']['output'] | null;
     height: CodecTypes['pg/int4@1']['output'];
     id: CodecTypes['pg/int4@1']['output'];
+    legacyMediaId: CodecTypes['pg/int8@1']['output'] | null;
     mimeType: CodecTypes['pg/text@1']['output'];
     objectKey: CodecTypes['pg/text@1']['output'];
     originalName: CodecTypes['pg/text@1']['output'];
     sizeBytes: CodecTypes['pg/int8@1']['output'];
     width: CodecTypes['pg/int4@1']['output'];
     draftCovers: public_BlogPost[];
+    listingCovers: public_Listing[];
+    listings: public_ListingMedia[];
     liveCovers: public_BlogPublication[];
-    readonly [RelationKeys]?: 'draftCovers' | 'liveCovers';
+    readonly [RelationKeys]?: 'draftCovers' | 'listingCovers' | 'listings' | 'liveCovers';
   };
   export type public_ReferralAttribution = {
     bookingId: CodecTypes['pg/int4@1']['output'];
@@ -752,6 +991,10 @@ export declare const models: {
     BlogPostCategory: Models.public_BlogPostCategory;
     BlogPublication: Models.public_BlogPublication;
     BlogPublicationCategory: Models.public_BlogPublicationCategory;
+    Listing: Models.public_Listing;
+    ListingMedia: Models.public_ListingMedia;
+    ListingTerm: Models.public_ListingTerm;
+    ListingTermAssignment: Models.public_ListingTermAssignment;
     MediaAsset: Models.public_MediaAsset;
     ReferralAttribution: Models.public_ReferralAttribution;
     ReferralCode: Models.public_ReferralCode;
@@ -1339,6 +1582,376 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly Listing: {
+              columns: {
+                readonly active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly archivedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly attributes: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly baseGuests: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly checkInSeconds: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly checkOutSeconds: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cleaningFeeCents: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly contentHtml: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly coverMediaId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly extraGuestFeeCents: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                  readonly many: false;
+                };
+                readonly ivaBasisPoints: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly maxGuests: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly minStayNights: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly petFeeCents: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly petsAllowed: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly pricePerNightCents: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly slug: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly tourismBasisPoints: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly version: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+                readonly wpId: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['wpId'] },
+                { readonly columns: readonly ['slug'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'Listing_coverMediaId_idx_a9883159';
+                  readonly prefix: 'Listing_coverMediaId_idx';
+                  readonly columns: readonly ['coverMediaId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Listing';
+                    readonly columns: readonly ['coverMediaId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'MediaAsset';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly ListingMedia: {
+              columns: {
+                readonly alt: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly listingId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly mediaId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly position: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly roomGroup: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['listingId', 'mediaId'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'ListingMedia_listingId_idx_953decda';
+                  readonly prefix: 'ListingMedia_listingId_idx';
+                  readonly columns: readonly ['listingId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'ListingMedia_listingId_position_idx_4f3a403f';
+                  readonly prefix: 'ListingMedia_listingId_position_idx';
+                  readonly columns: readonly ['listingId', 'position'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'ListingMedia_mediaId_idx_6b06655c';
+                  readonly prefix: 'ListingMedia_mediaId_idx';
+                  readonly columns: readonly ['mediaId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'ListingMedia';
+                    readonly columns: readonly ['listingId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Listing';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'ListingMedia';
+                    readonly columns: readonly ['mediaId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'MediaAsset';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly ListingTerm: {
+              columns: {
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly slug: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly taxonomy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly wpId: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['taxonomy', 'slug'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
+            readonly ListingTermAssignment: {
+              columns: {
+                readonly listingId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly termId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['listingId', 'termId'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'ListingTermAssignment_listingId_idx_953decda';
+                  readonly prefix: 'ListingTermAssignment_listingId_idx';
+                  readonly columns: readonly ['listingId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'ListingTermAssignment_termId_idx_1b74c9af';
+                  readonly prefix: 'ListingTermAssignment_termId_idx';
+                  readonly columns: readonly ['termId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'ListingTermAssignment';
+                    readonly columns: readonly ['listingId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Listing';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'ListingTermAssignment';
+                    readonly columns: readonly ['termId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'ListingTerm';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly MediaAsset: {
               columns: {
                 readonly createdAt: {
@@ -1368,6 +1981,12 @@ type ContractBase = Omit<
                     readonly kind: 'function';
                     readonly expression: 'autoincrement()';
                   };
+                  readonly many: false;
+                };
+                readonly legacyMediaId: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly mimeType: {
@@ -1402,7 +2021,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['objectKey'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['legacyMediaId'] },
+                { readonly columns: readonly ['objectKey'] },
+              ];
               indexes: readonly [];
               foreignKeys: readonly [];
             };
@@ -1536,6 +2158,19 @@ type ContractBase = Omit<
     readonly BlogPublicationCategory: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'BlogPublicationCategory';
+    };
+    readonly Listing: { readonly namespace: 'public' & NamespaceId; readonly model: 'Listing' };
+    readonly ListingMedia: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ListingMedia';
+    };
+    readonly ListingTerm: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ListingTerm';
+    };
+    readonly ListingTermAssignment: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ListingTermAssignment';
     };
     readonly MediaAsset: {
       readonly namespace: 'public' & NamespaceId;
@@ -2085,6 +2720,336 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly Listing: {
+            readonly fields: {
+              readonly active: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly archivedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly attributes: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly baseGuests: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly checkInSeconds: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly checkOutSeconds: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly cleaningFeeCents: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly contentHtml: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly coverMediaId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly extraGuestFeeCents: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly ivaBasisPoints: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly maxGuests: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly minStayNights: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly petFeeCents: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly petsAllowed: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly pricePerNightCents: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly slug: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly tourismBasisPoints: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly version: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly wpId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+            };
+            readonly relations: {
+              readonly coverMedia: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'MediaAsset';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['coverMediaId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly media: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ListingMedia';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['listingId'];
+                };
+              };
+              readonly terms: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ListingTermAssignment';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['listingId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Listing';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly active: { readonly column: 'active' };
+                readonly archivedAt: { readonly column: 'archivedAt' };
+                readonly attributes: { readonly column: 'attributes' };
+                readonly baseGuests: { readonly column: 'baseGuests' };
+                readonly checkInSeconds: { readonly column: 'checkInSeconds' };
+                readonly checkOutSeconds: { readonly column: 'checkOutSeconds' };
+                readonly cleaningFeeCents: { readonly column: 'cleaningFeeCents' };
+                readonly contentHtml: { readonly column: 'contentHtml' };
+                readonly coverMediaId: { readonly column: 'coverMediaId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly extraGuestFeeCents: { readonly column: 'extraGuestFeeCents' };
+                readonly id: { readonly column: 'id' };
+                readonly ivaBasisPoints: { readonly column: 'ivaBasisPoints' };
+                readonly maxGuests: { readonly column: 'maxGuests' };
+                readonly minStayNights: { readonly column: 'minStayNights' };
+                readonly petFeeCents: { readonly column: 'petFeeCents' };
+                readonly petsAllowed: { readonly column: 'petsAllowed' };
+                readonly pricePerNightCents: { readonly column: 'pricePerNightCents' };
+                readonly slug: { readonly column: 'slug' };
+                readonly title: { readonly column: 'title' };
+                readonly tourismBasisPoints: { readonly column: 'tourismBasisPoints' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly version: { readonly column: 'version' };
+                readonly wpId: { readonly column: 'wpId' };
+              };
+            };
+          };
+          readonly ListingMedia: {
+            readonly fields: {
+              readonly alt: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly listingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly mediaId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly position: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly roomGroup: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly listing: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Listing';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['listingId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly media: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'MediaAsset';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['mediaId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'ListingMedia';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly alt: { readonly column: 'alt' };
+                readonly listingId: { readonly column: 'listingId' };
+                readonly mediaId: { readonly column: 'mediaId' };
+                readonly position: { readonly column: 'position' };
+                readonly roomGroup: { readonly column: 'roomGroup' };
+              };
+            };
+          };
+          readonly ListingTerm: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly slug: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly taxonomy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly wpId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+            };
+            readonly relations: {
+              readonly assignments: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ListingTermAssignment';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['termId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'ListingTerm';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly slug: { readonly column: 'slug' };
+                readonly taxonomy: { readonly column: 'taxonomy' };
+                readonly wpId: { readonly column: 'wpId' };
+              };
+            };
+          };
+          readonly ListingTermAssignment: {
+            readonly fields: {
+              readonly listingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly termId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly listing: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Listing';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['listingId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly term: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ListingTerm';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['termId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'ListingTermAssignment';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly listingId: { readonly column: 'listingId' };
+                readonly termId: { readonly column: 'termId' };
+              };
+            };
+          };
           readonly MediaAsset: {
             readonly fields: {
               readonly createdAt: {
@@ -2105,6 +3070,10 @@ type ContractBase = Omit<
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly legacyMediaId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
               };
               readonly mimeType: {
                 readonly nullable: false;
@@ -2139,6 +3108,28 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['coverMediaId'];
                 };
               };
+              readonly listingCovers: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Listing';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['coverMediaId'];
+                };
+              };
+              readonly listings: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ListingMedia';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['mediaId'];
+                };
+              };
               readonly liveCovers: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -2159,6 +3150,7 @@ type ContractBase = Omit<
                 readonly defaultAlt: { readonly column: 'defaultAlt' };
                 readonly height: { readonly column: 'height' };
                 readonly id: { readonly column: 'id' };
+                readonly legacyMediaId: { readonly column: 'legacyMediaId' };
                 readonly mimeType: { readonly column: 'mimeType' };
                 readonly objectKey: { readonly column: 'objectKey' };
                 readonly originalName: { readonly column: 'originalName' };
@@ -2316,6 +3308,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'BlogPublication';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Listing';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

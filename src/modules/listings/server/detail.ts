@@ -1,10 +1,6 @@
 import "server-only";
-import path from "node:path";
-
 import { getListingBySlug, getRelatedListings } from "@/modules/listings/server/listings";
-import { getMediaByIds } from "@/shared/media/server/media";
-import { readImageDimensions } from "@/shared/media/server/image-dimensions";
-import { listingFallbackMedia, resolveGalleryIds } from "@/shared/media/media";
+import { resolveGalleryIds } from "@/shared/media/media";
 import { buildAmenityRows } from "@/modules/listings/amenities";
 import { groupListingSections, isHtmlContent, parseListingContent } from "@/modules/listings/listing-content";
 import { parseListingReviews } from "@/modules/listings/listing-reviews";
@@ -25,19 +21,13 @@ export async function getListingDetailData(slug: string) {
   if (!listing) return null;
   const attrs = listing.attributes;
   const galleryIds = resolveGalleryIds(listing.featured_media_id, listing.gallery_media_ids);
-  const fetchedMedia = await getMediaByIds(galleryIds);
-  const mediaById = new Map(fetchedMedia.map((m) => [m.id, m]));
-  const galleryMedia = galleryIds
-    .map((id) => mediaById.get(id))
-    .filter((m): m is NonNullable<typeof m> => Boolean(m));
-  const fallbackMedia = listingFallbackMedia(listing.slug);
-  const displayGalleryMedia = galleryMedia.length > 0 ? galleryMedia : fallbackMedia ? [fallbackMedia] : [];
-  // Fallback media has no id: it can be a cover but cannot key tour tags.
+  const galleryMedia = galleryIds.flatMap((id) => {
+    const media = listing.gallery_media.find((item) => item.id === id);
+    return media ? [media] : [];
+  });
+  const displayGalleryMedia = galleryMedia;
   const listingReviews = parseListingReviews(listing.attributes);
-  const tourMedia = await Promise.all(galleryMedia.map(async (media) => ({
-    ...media,
-    ...await readImageDimensions(path.join(process.cwd(), "public/media", media.storage_path)),
-  })));
+  const tourMedia = galleryMedia;
   const tourGroups = buildGalleryTour(tourMedia, parseGalleryGroups(attrs));
   const tourPhotoCount = tourGroups.reduce((sum, group) => sum + group.media.length, 0);
   const { css: descriptionCss, html: description } = splitEditorContent(listing.content_html);

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   };
 
   try {
-    if (!Number.isInteger(input.listing_id) || input.listing_id <= 0) {
+    if (!Number.isSafeInteger(input.listing_id) || input.listing_id <= 0) {
       return NextResponse.json({ ok: false, error: "Invalid listing." }, { status: 400 });
     }
 

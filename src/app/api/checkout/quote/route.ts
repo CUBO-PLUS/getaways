@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getBookingBySessionId, getListing, saveQuote } from "@/modules/bookings/server/bookings";
+import { getBookingBySessionId, getListing, nightsForStay, saveQuote, ValidationError } from "@/modules/bookings/server/bookings";
 import { priceFieldsFromAttributes, quoteStay } from "@/modules/bookings/booking-quote";
 import { isCheckoutSessionId } from "@/modules/checkout/checkout-session";
 import { previewCoupon } from "@/modules/coupons/server/coupons";
@@ -56,8 +56,11 @@ export async function POST(request: Request) {
     if (booking.payment_reference) {
       return NextResponse.json({ ok: false, error: PAYMENT_OPEN_MESSAGE }, { status: 409 });
     }
+    if (nightsForStay(booking.check_in, booking.check_out) !== booking.nights) {
+      return NextResponse.json({ ok: false, error: "This booking's dates are invalid. Please contact us." }, { status: 409 });
+    }
 
-    const listing = getListing(booking.listing_id);
+    const listing = await getListing(booking.listing_id);
     if (!listing) {
       return NextResponse.json(
         { ok: false, error: "The price could not be worked out right now. Please try again." },
@@ -68,8 +71,8 @@ export async function POST(request: Request) {
     const fields = priceFieldsFromAttributes(listing.attributes);
 
     // What the booking already holds, for any answer the body does not give.
-    const storedGuests = Number(booking.guests);
-    const defaultGuests = Number.isInteger(storedGuests) && storedGuests > 0 ? storedGuests : 1;
+    const storedGuests = booking.guests;
+    const defaultGuests = Number.isSafeInteger(storedGuests) && (storedGuests ?? 0) > 0 ? storedGuests! : 1;
     const defaultPet = (booking.pet_fee_cents ?? 0) > 0 && fields.petsAllowed;
     const defaultCode = booking.coupon_code?.trim() ?? "";
 
@@ -77,8 +80,11 @@ export async function POST(request: Request) {
     if (body?.guests === undefined || body.guests === null) {
       guests = fields.maxGuests > 0 ? Math.min(defaultGuests, fields.maxGuests) : defaultGuests;
     } else {
-      const requestedGuests = Number(body.guests);
-      guests = Number.isFinite(requestedGuests) && requestedGuests > 0 ? Math.floor(requestedGuests) : 1;
+      const requestedGuests = body.guests;
+      if (typeof requestedGuests !== "number" || !Number.isSafeInteger(requestedGuests) || requestedGuests <= 0) {
+        return NextResponse.json({ ok: false, error: "Choose a valid number of guests." }, { status: 400 });
+      }
+      guests = requestedGuests;
       if (fields.maxGuests > 0 && guests > fields.maxGuests) {
         return NextResponse.json({ ok: false, error: `This property sleeps ${fields.maxGuests}.` }, { status: 400 });
       }
@@ -160,6 +166,12 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+    }
+    if (error instanceof RangeError) {
+      return NextResponse.json({ ok: false, error: "This stay cannot be priced safely. Please contact us." }, { status: 400 });
+    }
     console.error("Unexpected error in POST /api/checkout/quote:", error);
     return NextResponse.json({ ok: false, error: "The price could not be worked out." }, { status: 500 });
   }

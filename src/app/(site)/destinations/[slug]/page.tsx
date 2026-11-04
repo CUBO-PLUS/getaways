@@ -5,7 +5,6 @@ import Link from "next/link";
 import PropertyArchive from "@/components/organisms/PropertyArchive";
 import JsonLd from "@/components/seo/JsonLd";
 import { getListingCategoriesWithCounts, getListingsForArchive } from "@/modules/listings/server/listings";
-import { getMediaByIds } from "@/shared/media/server/media";
 import { visibleListingCategories } from "@/modules/listings/categories";
 import { mediaPublicUrl } from "@/shared/media/media";
 import { parseSearchDates, unavailableListingIds } from "@/modules/bookings/server/availability-search";
@@ -52,8 +51,7 @@ export async function generateMetadata({
   // The share card uses a photo of a property in that very town, which is a
   // better answer to "what does El Zonte look like" than the site-wide hero.
   const inTown = listings.filter((l) => matchesDestination(l.attributes, destination.slug));
-  const coverId = inTown.map((l) => l.featured_media_id).find((id): id is number => id != null);
-  const [coverMedia] = coverId ? await getMediaByIds([coverId]) : [];
+  const coverMedia = inTown.find((listing) => listing.featured_media)?.featured_media;
   const cover = coverMedia ? mediaPublicUrl(coverMedia.storage_path) : undefined;
 
   const title = `Vacation Rentals in ${town}, El Salvador`;

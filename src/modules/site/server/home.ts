@@ -12,7 +12,7 @@ import { slugify } from "@/shared/utils/strings";
 import { getRenderState } from "@/modules/site/server/site-text";
 import { categoryImageSlotId, slotMediaId } from "@/modules/content/site-content";
 
-// Original WordPress attachment ids; published slot overrides take precedence.
+// Static site artwork, not listing attachments; published slot overrides take precedence.
 const CTA_COVER_WP_ID = 287;
 const HERO_COVER_WP_ID = 447;
 export const CATEGORY_COVER_WP_IDS: Record<string, number> = {
@@ -100,16 +100,20 @@ export async function getHomeData() {
   const usedPhotoIds = new Set(
     placeCards.flatMap((card) => (card.photoId != null ? [card.photoId] : []))
   );
+  const catalogueMedia = new Map(allListings.flatMap((listing) => listing.gallery_media).map((media) => [media.id, media]));
   const conciergePhotoId = pickPhotoIdByRoom(
     allListings,
     ["Terrace", "Pool", "Views", "Neighbourhood"],
     usedPhotoIds
   );
-  const [autoConciergePhoto] = conciergePhotoId ? await getMediaByIds([conciergePhotoId]) : [];
+  const autoConciergePhoto = conciergePhotoId ? catalogueMedia.get(conciergePhotoId) : undefined;
   const conciergeUrl =
     chosenUrl("home.concierge.image") ??
     (autoConciergePhoto ? mediaPublicUrl(autoConciergePhoto.storage_path) : undefined);
-  const placePhotos = await getMediaByIds(placeCards.map((card) => card.photoId).filter((id): id is number => id != null));
+  const placePhotos = placeCards.flatMap((card) => {
+    const media = card.photoId == null ? undefined : catalogueMedia.get(card.photoId);
+    return media ? [media] : [];
+  });
   const placePhotoById = new Map(placePhotos.map((media) => [media.id, media]));
   const maxGuests = allListings.reduce((max, listing) => {
     const attrs = listing.attributes;

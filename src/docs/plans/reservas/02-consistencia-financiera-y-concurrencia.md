@@ -5,7 +5,8 @@ Dependencia: [fase 3.1](01-modelo-e-importacion.md).
 
 ## Reglas financieras
 
-- [ ] Reutilizar `quoteStay()` y las pruebas actuales de céntimos/impuestos.
+- [ ] Conservar el comportamiento y las pruebas actuales de céntimos/impuestos al adaptar `quoteStay()`; el cálculo actual con `number` no garantiza precisión para todos los valores admitidos.
+- [ ] Mantener el requisito previo a B1 de validar entradas y calcular sin pérdida productos, descuentos, impuestos y totales; verificar que los resultados sean representables en reservas, API y proveedor antes de guardar o habilitar pagos. No confiar en una comprobación posterior a aritmética ya redondeada ni imponer techos comerciales sin acuerdo.
 - [ ] Cotizar desde el snapshot completo antes de permitir edición de precios. Hoy solo la tarifa por noche se toma del booking; limpieza, extras, mascota e impuestos se vuelven a leer del hospedaje y cambiarían un checkout abierto.
 - [ ] Calcular importes en servidor. EDITOR, BOOKING_MANAGER y el cliente público no pueden enviar un total que se guarde directamente.
 - [ ] Guardar quote solo si sigue pendiente y sin pago abierto, mediante transacción o actualización condicional atómica. Conflicto devuelve 409.

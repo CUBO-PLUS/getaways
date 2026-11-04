@@ -69,6 +69,16 @@ Conservar las URL públicas del blog. No importar artículos como smoke test.
 
 ## Hito B1 — Catálogo y medios en PostgreSQL
 
+**Entrega local abreviada — 2026-11-04:** prevalece la excepción del
+[índice](../README.md): respaldo fresco, app detenida, importación y comparación
+directa de datos/bytes. No ejecutar tests ni repetir ensayos de restauración en
+esta sesión. Los pasos de pruebas/recuperación de esta guía siguen pendientes para
+un despliegue real; no impiden cerrar la implementación y migración local solicitadas.
+
+**B1 local completado:** `--apply` y `--verify` confirmaron 11 hospedajes, 114 medios,
+6 términos y 18 asociaciones. Filas y 65 objetos anteriores intactos; lectores y
+checkout adaptados sin JSON fallback. [Resultado y límites](../catalogo-y-medios/04-evidencia-local.md).
+
 Requiere A y fases 2.1–2.3 listas y ensayadas. No requiere migrar reservas ni
 habilita administración comercial. La autorización de medios usa identidad de A.
 

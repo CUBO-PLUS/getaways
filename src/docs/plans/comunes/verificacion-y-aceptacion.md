@@ -3,6 +3,13 @@
 Aplicación: acompaña cada implementación; aceptación final por entrega habilitada.
 Esta entrega no crea ni ejecuta pruebas de aplicación. No medir éxito por número de tests.
 
+Para el **plan 2 local del 2026-11-04**, por petición expresa se omiten también
+lint, typecheck, build, fixtures y navegador. Validación mínima: inventario,
+importación transaccional y comparación fuente/destino, objetos por SHA-256,
+secuencias y hashes de filas previas. No marcar como ejecutadas las pruebas y
+restauraciones diferidas que aparecen más abajo; registrar el resultado en
+[evidencia del catálogo](../catalogo-y-medios/04-evidencia-local.md).
+
 [Orden general y checklists](../README.md). No es una fase final independiente.
 Registrar comprobaciones en la fase correspondiente y en el checklist aplicable
 de esta guía; no marcar controles de funcionalidades aún no implementadas.
@@ -10,7 +17,7 @@ de esta guía; no marcar controles de funcionalidades aún no implementadas.
 ## Aplicación por plan e hito
 
 - [ ] **Plan 1 / A:** identidad, revocación, credenciales, último ADMIN, throttle y autorización real del blog.
-- [ ] **Plan 2 / B1:** migración e importación repetibles, catálogo equivalente, IDs/secuencias y medios públicos/privados.
+- [x] **Plan 2 / B1 local:** importación y comparación directa de catálogo, IDs/secuencias y bytes completadas; autorización implementada, sin prueba de roles ni testing por la excepción solicitada. [Evidencia](../catalogo-y-medios/04-evidencia-local.md).
 - [ ] **Plan 3 / B2 (3.1–3.3):** importación privada, snapshots, checkout, concurrencia, referidos y fuente única compartida.
 - [ ] **Plan 3 / C1 (3.4):** acceso operativo, contacto/notas, cancelación, privacidad y conflictos.
 - [ ] **Plan 4 / C2:** frontera editorial/comercial, ciclo de vida, historial, imágenes e invalidación pública.

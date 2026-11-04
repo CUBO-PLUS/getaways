@@ -36,6 +36,22 @@
       "model": "BlogPublicationCategory",
       "namespace": "public"
     },
+    "Listing": {
+      "model": "Listing",
+      "namespace": "public"
+    },
+    "ListingMedia": {
+      "model": "ListingMedia",
+      "namespace": "public"
+    },
+    "ListingTerm": {
+      "model": "ListingTerm",
+      "namespace": "public"
+    },
+    "ListingTermAssignment": {
+      "model": "ListingTermAssignment",
+      "namespace": "public"
+    },
     "MediaAsset": {
       "model": "MediaAsset",
       "namespace": "public"
@@ -889,6 +905,539 @@
               "table": "BlogPublicationCategory"
             }
           },
+          "Listing": {
+            "fields": {
+              "active": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "archivedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "attributes": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "baseGuests": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "checkInSeconds": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "checkOutSeconds": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "cleaningFeeCents": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "contentHtml": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "coverMediaId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "extraGuestFeeCents": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "ivaBasisPoints": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "maxGuests": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "minStayNights": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "petFeeCents": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "petsAllowed": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "pricePerNightCents": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "slug": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "tourismBasisPoints": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "version": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "wpId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "coverMedia": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "coverMediaId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "MediaAsset",
+                  "namespace": "public"
+                }
+              },
+              "media": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "listingId"
+                  ]
+                },
+                "to": {
+                  "model": "ListingMedia",
+                  "namespace": "public"
+                }
+              },
+              "terms": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "listingId"
+                  ]
+                },
+                "to": {
+                  "model": "ListingTermAssignment",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "active": {
+                  "column": "active"
+                },
+                "archivedAt": {
+                  "column": "archivedAt"
+                },
+                "attributes": {
+                  "column": "attributes"
+                },
+                "baseGuests": {
+                  "column": "baseGuests"
+                },
+                "checkInSeconds": {
+                  "column": "checkInSeconds"
+                },
+                "checkOutSeconds": {
+                  "column": "checkOutSeconds"
+                },
+                "cleaningFeeCents": {
+                  "column": "cleaningFeeCents"
+                },
+                "contentHtml": {
+                  "column": "contentHtml"
+                },
+                "coverMediaId": {
+                  "column": "coverMediaId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "extraGuestFeeCents": {
+                  "column": "extraGuestFeeCents"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "ivaBasisPoints": {
+                  "column": "ivaBasisPoints"
+                },
+                "maxGuests": {
+                  "column": "maxGuests"
+                },
+                "minStayNights": {
+                  "column": "minStayNights"
+                },
+                "petFeeCents": {
+                  "column": "petFeeCents"
+                },
+                "petsAllowed": {
+                  "column": "petsAllowed"
+                },
+                "pricePerNightCents": {
+                  "column": "pricePerNightCents"
+                },
+                "slug": {
+                  "column": "slug"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "tourismBasisPoints": {
+                  "column": "tourismBasisPoints"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "version": {
+                  "column": "version"
+                },
+                "wpId": {
+                  "column": "wpId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Listing"
+            }
+          },
+          "ListingMedia": {
+            "fields": {
+              "alt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "listingId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "mediaId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "position": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "roomGroup": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "listing": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "listingId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Listing",
+                  "namespace": "public"
+                }
+              },
+              "media": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "mediaId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "MediaAsset",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "alt": {
+                  "column": "alt"
+                },
+                "listingId": {
+                  "column": "listingId"
+                },
+                "mediaId": {
+                  "column": "mediaId"
+                },
+                "position": {
+                  "column": "position"
+                },
+                "roomGroup": {
+                  "column": "roomGroup"
+                }
+              },
+              "namespaceId": "public",
+              "table": "ListingMedia"
+            }
+          },
+          "ListingTerm": {
+            "fields": {
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "slug": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "taxonomy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "wpId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "assignments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "termId"
+                  ]
+                },
+                "to": {
+                  "model": "ListingTermAssignment",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "slug": {
+                  "column": "slug"
+                },
+                "taxonomy": {
+                  "column": "taxonomy"
+                },
+                "wpId": {
+                  "column": "wpId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "ListingTerm"
+            }
+          },
+          "ListingTermAssignment": {
+            "fields": {
+              "listingId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "termId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "listing": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "listingId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Listing",
+                  "namespace": "public"
+                }
+              },
+              "term": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "termId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ListingTerm",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "listingId": {
+                  "column": "listingId"
+                },
+                "termId": {
+                  "column": "termId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "ListingTermAssignment"
+            }
+          },
           "MediaAsset": {
             "fields": {
               "createdAt": {
@@ -916,6 +1465,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "legacyMediaId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int8@1",
                   "kind": "scalar"
                 }
               },
@@ -971,6 +1527,36 @@
                   "namespace": "public"
                 }
               },
+              "listingCovers": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "coverMediaId"
+                  ]
+                },
+                "to": {
+                  "model": "Listing",
+                  "namespace": "public"
+                }
+              },
+              "listings": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "mediaId"
+                  ]
+                },
+                "to": {
+                  "model": "ListingMedia",
+                  "namespace": "public"
+                }
+              },
               "liveCovers": {
                 "cardinality": "1:N",
                 "on": {
@@ -1000,6 +1586,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "legacyMediaId": {
+                  "column": "legacyMediaId"
                 },
                 "mimeType": {
                   "column": "mimeType"
@@ -1836,6 +2425,483 @@
               },
               "uniques": []
             },
+            "Listing": {
+              "checks": [
+                {
+                  "expression": "NOT active OR (\"pricePerNightCents\" IS NOT NULL AND \"pricePerNightCents\" > 0 AND \"maxGuests\" IS NOT NULL AND \"maxGuests\" > 0)",
+                  "name": "listing_active_bookable_29820d57",
+                  "prefix": "listing_active_bookable"
+                },
+                {
+                  "expression": "jsonb_typeof(attributes) = 'object' AND NOT (attributes ?| ARRAY['price', 'cleaning_fee', 'extra_guest_fee', 'pet_fee', 'iva', 'tourism_tax', 'pricePerNightCents', 'cleaningFeeCents', 'extraGuestFeeCents', 'petFeeCents', 'ivaBasisPoints', 'tourismBasisPoints'])",
+                  "name": "listing_attributes_descriptive_c63c8437",
+                  "prefix": "listing_attributes_descriptive"
+                },
+                {
+                  "expression": "(\"maxGuests\" IS NULL OR \"maxGuests\" > 0) AND (\"baseGuests\" IS NULL OR (\"baseGuests\" > 0 AND \"maxGuests\" IS NOT NULL AND \"baseGuests\" <= \"maxGuests\"))",
+                  "name": "listing_guests_valid_ecea1ec8",
+                  "prefix": "listing_guests_valid"
+                },
+                {
+                  "expression": "\"minStayNights\" IS NULL OR \"minStayNights\" > 0",
+                  "name": "listing_min_stay_positive_b5341822",
+                  "prefix": "listing_min_stay_positive"
+                },
+                {
+                  "expression": "(\"pricePerNightCents\" IS NULL OR \"pricePerNightCents\" >= 0) AND (\"cleaningFeeCents\" IS NULL OR \"cleaningFeeCents\" >= 0) AND (\"extraGuestFeeCents\" IS NULL OR \"extraGuestFeeCents\" >= 0) AND (\"petFeeCents\" IS NULL OR \"petFeeCents\" >= 0)",
+                  "name": "listing_money_nonnegative_2dcdefbe",
+                  "prefix": "listing_money_nonnegative"
+                },
+                {
+                  "expression": "(\"ivaBasisPoints\" IS NULL OR \"ivaBasisPoints\" BETWEEN 0 AND 10000) AND (\"tourismBasisPoints\" IS NULL OR \"tourismBasisPoints\" BETWEEN 0 AND 10000)",
+                  "name": "listing_tax_basis_points_range_75fe593b",
+                  "prefix": "listing_tax_basis_points_range"
+                },
+                {
+                  "expression": "(\"checkInSeconds\" IS NULL OR \"checkInSeconds\" BETWEEN 0 AND 86399) AND (\"checkOutSeconds\" IS NULL OR \"checkOutSeconds\" BETWEEN 0 AND 86399)",
+                  "name": "listing_time_seconds_range_6e2bad98",
+                  "prefix": "listing_time_seconds_range"
+                },
+                {
+                  "expression": "\"version\" > 0",
+                  "name": "listing_version_positive_efca705d",
+                  "prefix": "listing_version_positive"
+                }
+              ],
+              "columns": {
+                "active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "archivedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "attributes": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "baseGuests": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "checkInSeconds": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "checkOutSeconds": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "cleaningFeeCents": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "contentHtml": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "coverMediaId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "extraGuestFeeCents": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "ivaBasisPoints": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "maxGuests": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "minStayNights": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "petFeeCents": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "petsAllowed": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
+                "pricePerNightCents": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "slug": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "tourismBasisPoints": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "version": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                },
+                "wpId": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Listing_coverMediaId_idx_a9883159"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "coverMediaId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Listing"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "MediaAsset"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "coverMediaId"
+                  ],
+                  "name": "Listing_coverMediaId_idx_a9883159",
+                  "prefix": "Listing_coverMediaId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "wpId"
+                  ]
+                },
+                {
+                  "columns": [
+                    "slug"
+                  ]
+                }
+              ]
+            },
+            "ListingMedia": {
+              "checks": [
+                {
+                  "expression": "position >= 0",
+                  "name": "listing_media_position_nonnegative_c03c2ccb",
+                  "prefix": "listing_media_position_nonnegative"
+                }
+              ],
+              "columns": {
+                "alt": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "listingId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "mediaId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "position": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "roomGroup": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "ListingMedia_listingId_idx_953decda"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "listingId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ListingMedia"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Listing"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "ListingMedia_mediaId_idx_6b06655c"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "mediaId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ListingMedia"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "MediaAsset"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "listingId"
+                  ],
+                  "name": "ListingMedia_listingId_idx_953decda",
+                  "prefix": "ListingMedia_listingId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "listingId",
+                    "position"
+                  ],
+                  "name": "ListingMedia_listingId_position_idx_4f3a403f",
+                  "prefix": "ListingMedia_listingId_position_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "mediaId"
+                  ],
+                  "name": "ListingMedia_mediaId_idx_6b06655c",
+                  "prefix": "ListingMedia_mediaId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "listingId",
+                  "mediaId"
+                ]
+              },
+              "uniques": []
+            },
+            "ListingTerm": {
+              "columns": {
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "slug": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "taxonomy": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "wpId": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "taxonomy",
+                    "slug"
+                  ]
+                }
+              ]
+            },
+            "ListingTermAssignment": {
+              "columns": {
+                "listingId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "termId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "ListingTermAssignment_listingId_idx_953decda"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "listingId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ListingTermAssignment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Listing"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "ListingTermAssignment_termId_idx_1b74c9af"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "termId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ListingTermAssignment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ListingTerm"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "listingId"
+                  ],
+                  "name": "ListingTermAssignment_listingId_idx_953decda",
+                  "prefix": "ListingTermAssignment_listingId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "termId"
+                  ],
+                  "name": "ListingTermAssignment_termId_idx_1b74c9af",
+                  "prefix": "ListingTermAssignment_termId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "listingId",
+                  "termId"
+                ]
+              },
+              "uniques": []
+            },
             "MediaAsset": {
               "columns": {
                 "createdAt": {
@@ -1865,6 +2931,11 @@
                     "kind": "function"
                   },
                   "nullable": false
+                },
+                "legacyMediaId": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": true
                 },
                 "mimeType": {
                   "codecId": "pg/text@1",
@@ -1900,6 +2971,11 @@
                 ]
               },
               "uniques": [
+                {
+                  "columns": [
+                    "legacyMediaId"
+                  ]
+                },
                 {
                   "columns": [
                     "objectKey"
@@ -2028,10 +3104,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1d24b7dffc9a8683f50290225c3f53f644a21598a8804dec3c879f7d65e94772"
+    "storageHash": "b3b6063e6e046aeb330bcb6c54502a2d20efa4c8e4aebb86346f522aafe9258d"
   },
   "execution": {
-    "executionHash": "8588905d1274b5a235a5b8c6096b13d1f19c6449134c7dc9814eec74d22ca7ef",
+    "executionHash": "488d8df800ea5dd186d7087f4ea68b3c59716316d33af834ce4b783da2ed69a5",
     "mutations": {
       "defaults": [
         {
@@ -2075,6 +3151,21 @@
           },
           "ref": {
             "entry": "BlogPublication",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Listing",
             "field": "updatedAt",
             "namespace": "public"
           }

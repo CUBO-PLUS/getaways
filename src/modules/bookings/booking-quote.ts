@@ -83,11 +83,37 @@ export function discountCents(
 ): number {
   if (!discount || !Number.isFinite(discount.value) || discount.value <= 0) return 0;
   if (subtotalCents <= 0) return 0;
-  const raw =
-    discount.kind === "percent"
-      ? Math.round((subtotalCents * discount.value) / 100)
-      : Math.round(discount.value * 100);
-  return Math.max(0, Math.min(raw, subtotalCents));
+  if (!Number.isSafeInteger(subtotalCents)) throw new RangeError("Subtotal cannot be represented safely in cents.");
+  const [numerator, denominator] = decimalRatio(discount.value);
+  const raw = discount.kind === "percent"
+    ? roundRatio(BigInt(subtotalCents) * numerator, denominator * 100n)
+    : roundRatio(numerator * 100n, denominator);
+  return Number(raw > BigInt(subtotalCents) ? BigInt(subtotalCents) : raw);
+}
+
+function decimalRatio(value: number): [bigint, bigint] {
+  if (!Number.isFinite(value) || value < 0) throw new RangeError("Rate cannot be represented safely.");
+  const text = value.toString().toLowerCase();
+  const match = /^(\d+)(?:\.(\d*))?(?:e([+-]?\d+))?$/.exec(text);
+  if (!match) throw new RangeError("Rate cannot be represented safely.");
+  const fraction = match[2] ?? "";
+  const exponent = Number(match[3] ?? 0) - fraction.length;
+  let numerator = BigInt(`${match[1]}${fraction}`);
+  let denominator = 1n;
+  if (exponent < 0) denominator = 10n ** BigInt(-exponent);
+  else numerator *= 10n ** BigInt(exponent);
+  return [numerator, denominator];
+}
+
+function roundRatio(numerator: bigint, denominator: bigint): bigint {
+  return (numerator * 2n + denominator) / (denominator * 2n);
+}
+
+function safeCents(value: bigint): number {
+  if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("Stay total cannot be represented safely in cents.");
+  }
+  return Number(value);
 }
 
 /** Guests beyond what the nightly rate covers. Never negative. */
@@ -120,13 +146,19 @@ export function extraGuestCount(guests: number, baseGuests: number): number {
  * was missing on the stay (no tourism tax at all) and doubled on the cleaning.
  */
 export function quoteStay(input: QuoteInput): Quote {
-  const nights = Math.max(0, Math.floor(input.nights));
-  const extraGuests = extraGuestCount(input.guests, input.baseGuests);
+  const counts = [input.nights, input.guests, input.baseGuests];
+  const fees = [input.pricePerNightCents, input.cleaningFeeCents, input.extraGuestFeeCents, input.petFeeCents];
+  if (!counts.every(Number.isSafeInteger) || input.nights <= 0 || input.guests <= 0 || input.baseGuests < 0 ||
+    !fees.every((value) => Number.isSafeInteger(value) && value >= 0)) {
+    throw new RangeError("Stay dates, guests, or prices cannot be represented safely.");
+  }
+  const nights = input.nights;
+  const extraGuests = Math.max(0, input.guests - input.baseGuests);
 
-  const stayCents = nights * Math.max(0, input.pricePerNightCents);
-  const cleaningCents = Math.max(0, input.cleaningFeeCents);
-  const extraGuestCents = extraGuests * Math.max(0, input.extraGuestFeeCents) * nights;
-  const petCents = input.withPet ? Math.max(0, input.petFeeCents) : 0;
+  const stayCents = safeCents(BigInt(nights) * BigInt(input.pricePerNightCents));
+  const cleaningCents = input.cleaningFeeCents;
+  const extraGuestCents = safeCents(BigInt(extraGuests) * BigInt(input.extraGuestFeeCents) * BigInt(nights));
+  const petCents = input.withPet ? input.petFeeCents : 0;
 
   const lines: QuoteLine[] = [];
   if (stayCents > 0 || nights > 0) {
@@ -141,7 +173,7 @@ export function quoteStay(input: QuoteInput): Quote {
   }
   if (petCents > 0) lines.push({ label: "Pet fee", amountCents: petCents });
 
-  const subtotalCents = stayCents + cleaningCents + extraGuestCents + petCents;
+  const subtotalCents = safeCents(BigInt(stayCents) + BigInt(cleaningCents) + BigInt(extraGuestCents) + BigInt(petCents));
   const discount = discountCents(subtotalCents, input.discount);
   const payableCents = subtotalCents - discount;
 
@@ -161,9 +193,11 @@ export function quoteStay(input: QuoteInput): Quote {
   // Rounded separately, because each one is a line the guest reads and a
   // figure the business declares; rounding the sum would leave the lines not
   // adding up to the total.
-  const taxCents = Math.round(taxableCents * ivaRate);
-  const tourismCents = Math.round(taxableCents * tourismRate);
-  const taxTotalCents = taxCents + tourismCents;
+  const [ivaNumerator, ivaDenominator] = decimalRatio(ivaRate);
+  const [tourismNumerator, tourismDenominator] = decimalRatio(tourismRate);
+  const taxCents = safeCents(roundRatio(BigInt(taxableCents) * ivaNumerator, ivaDenominator));
+  const tourismCents = safeCents(roundRatio(BigInt(taxableCents) * tourismNumerator, tourismDenominator));
+  const taxTotalCents = safeCents(BigInt(taxCents) + BigInt(tourismCents));
 
   return {
     lines,
@@ -173,7 +207,7 @@ export function quoteStay(input: QuoteInput): Quote {
     taxCents,
     tourismCents,
     taxTotalCents,
-    totalCents: payableCents + taxTotalCents,
+    totalCents: safeCents(BigInt(payableCents) + BigInt(taxTotalCents)),
     extraGuests,
   };
 }
@@ -216,12 +250,20 @@ export function priceFieldsFromAttributes(attributes: Record<string, string> | n
        fee typed as negative in the admin came back as a positive charge --
        caught by a test, not by reading. */
     if (text.includes("-")) return 0;
-    const value = Number.parseFloat(text.replace(/[^0-9.]/g, ""));
-    return Number.isFinite(value) && value > 0 ? Math.round(value * 100) : 0;
+    const normalized = text.replace(/[^0-9.]/g, "");
+    const match = /^(\d+)(?:\.(\d*))?$/.exec(normalized);
+    if (!match) return 0;
+    const fraction = match[2] ?? "";
+    if (/[^0]/.test(fraction.slice(2))) throw new RangeError("A price has fractions smaller than one cent.");
+    const cents = BigInt(match[1]) * 100n + BigInt((fraction.slice(0, 2) + "00").slice(0, 2));
+    if (cents > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError("A price cannot be represented safely in cents.");
+    return Number(cents);
   };
   const count = (raw: string | undefined) => {
-    const value = Number.parseInt(String(raw ?? ""), 10);
-    return Number.isFinite(value) && value > 0 ? value : 0;
+    const text = String(raw ?? "").trim();
+    if (!/^\d+$/.test(text)) return 0;
+    const value = Number(text);
+    return Number.isSafeInteger(value) && value > 0 ? value : 0;
   };
 
   /*
@@ -256,7 +298,9 @@ export function priceFieldsFromAttributes(attributes: Record<string, string> | n
     petFeeCents: money(attrs.pet_fee),
     baseGuests,
     maxGuests: capacity,
-    petsAllowed: money(attrs.pet_fee) > 0 || attrs.pets_allowed === "1",
+    petsAllowed: attrValue(attrs, "pets_allowed") === undefined
+      ? money(attrs.pet_fee) > 0
+      : attrs.pets_allowed === "1" || attrs.pets_allowed === "true",
     tourismRate,
     ivaRate,
   };

@@ -9,7 +9,8 @@ Resumen en español: este repositorio es la versión pública de la web de Getaw
 - Node.js 24 or newer
 - pnpm 12
 
-No API key or account is needed. The public site still uses local JSON; Prisma's development database runs in Docker.
+PostgreSQL and private RustFS/S3 are required for the blog and property catalogue.
+Static editorial pages and site artwork still use local JSON/files.
 
 ## Run it
 
@@ -44,7 +45,13 @@ docker compose -f compose.dev.yaml up -d --wait
 
 Compose binds the S3 API and console to loopback; the app container uses `http://rustfs:9000`, while a process running on the host uses `http://127.0.0.1:9000`. `rustfs-init` idempotently creates the private `blog-media` bucket. No anonymous/public-read policy is applied. RustFS persists data in the `rustfs_data` volume; a volume is not a backup. Back up PostgreSQL and RustFS objects together and test restoring both. Production endpoint, TLS, private networking, credentials, and backup schedule must be configured by the operator; they are not verifiable from this repository.
 
-The contract is `infrastructure/prisma/contract.prisma`; the server-only client is exported as `db` from `@/infrastructure/prisma/db`. Prisma 8 uses `@prisma/orm-postgres`, not `@prisma/client`. Commit the emitted `contract.json` and `contract.d.ts` alongside the contract. The contract starts empty: no application data or booking storage has been migrated.
+The contract is `infrastructure/prisma/contract.prisma`; the server-only client is exported as `db` from `@/infrastructure/prisma/db`. Prisma 8 uses `@prisma/orm-postgres`, not `@prisma/client`. Commit the emitted `contract.json` and `contract.d.ts` alongside the contract. Blog, staff accounts and the catalogue use PostgreSQL; booking storage has not yet been migrated.
+
+The catalogue migration CLI is `pnpm listings:import` (read-only inventory),
+`pnpm listings:import --apply` (explicit import) and `pnpm listings:import --verify`
+(read-only source/database/S3 comparison). Back up the database and objects and
+stop application writers before applying. Existing differences abort instead of
+overwriting edits. See [plan 2 and local evidence](docs/plans/catalogo-y-medios/README.md).
 
 After editing the contract, emit it and plan a versioned migration from the actual database marker; review and rehearse it on an isolated copy before applying. Do not run `db:init` against an existing database. The development client cache is invalidated when the contract or connection URL changes.
 
@@ -89,7 +96,7 @@ npx next build          # production build
 | `components/organisms/CheckoutExtras.tsx`, `components/organisms/CheckoutMethods.tsx` | Checkout bill and payment-method area. |
 | `infrastructure/data/local-client.ts` | Local, read-only data client built from `data/*.json`. No database. |
 | `modules/content/server/content.ts`, `modules/listings/server/listings.ts`, `shared/media/server/media.ts` | Editorial, catalogue and media queries, with unchanged function signatures. |
-| `shared/media/media.ts` | Turns a media path into a URL under `/media/`. |
+| `shared/media/media.ts` | Static media URLs and persisted `/api/media/{id}` or blog media URLs. |
 | `data/*.json` | Public site data: pages, posts, listings (with prices), terms, media index. |
 | `public/media/` | Photos and files referenced by `data/media.json`. |
 | `_test_/support/` | Test-only stand-in for `server-only`. |
@@ -115,9 +122,9 @@ Stored Gutenberg blocks receive static utilities in `shared/security/server/sani
 
 ## How data works
 
-- Public pages still read `data/*.json`: pages, blog posts, listings with their prices, terms and the media index. The Prisma connection is ready for future PostgreSQL-backed features, without replacing the existing readers.
-- `infrastructure/data/local-client.ts` gives the rest of the code a small query interface over those JSON files. It is read-only. Edits to the JSON files show up after a reload.
-- Photos are in `public/media/`. A path such as `listings/casa-x/01.jpg` in the data is served at `/media/listings/casa-x/01.jpg`.
+- Blog and property catalogue readers, including checkout, use PostgreSQL without JSON fallback. Prices are typed cents/basis points, adapted to the existing presentation shape.
+- `infrastructure/data/local-client.ts` remains a read-only JSON interface for static pages and site artwork. Catalogue JSON files are import originals, not an operational data source.
+- Catalogue/blog photos are immutable objects in the existing private S3 bucket, served through authorized media routes. Static site images remain in `public/media/`; originals are retained unchanged.
 - Bookings are different: they are created while you use the site. They are kept in memory and saved to `.data/bookings.json`, so a dev restart keeps them. Delete that folder to reset all bookings.
 - The public data has no guest data, no staff data and no keys.
 

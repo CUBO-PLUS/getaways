@@ -35,7 +35,26 @@ RustFS. No incluye credenciales, roles globales, políticas/historial del bucket
 archivos fuente sin commit. No restaura ni reinicia servicios, ni borra copias previas.
 Un fallo deja el intento incompleto identificado; no usarlo como checkpoint válido.
 
-### Último checkpoint verificado — 2026-11-02
+### Último checkpoint verificado — 2026-11-04
+
+`progreso-20261104T203633013Z-zRoteV.tar.gz`
+
+SHA-256: `367712df2e564a9881f663d99516590b20bee6a6ea56460e669970aca3b4ee54`.
+Respaldo posterior a la fase 2: BD completa `gateways` (PostgreSQL 18.6),
+11 hospedajes migrados, 9 borradores y 9 publicaciones; 179 activos y 179 objetos
+del bucket `blog-media`, con 186 655 527 bytes de objetos. Incluye las tablas de
+catálogo y sus relaciones, sin volver a importar datos.
+
+Completado el 2026-11-04 a las 20:36:37 UTC. Se verificaron el hash del archivo,
+todos los checksums internos, las referencias de medios desde el snapshot de BD,
+el listado estable del bucket y los 179 archivos mediante el helper en modo
+`verified-only`. **Restauración no ensayada.** No se ejecutaron tests de aplicación.
+
+El estado Git se registra, pero el código sin commit y los archivos de reservas
+fuera de PostgreSQL no se copian. Se mantienen las exclusiones descritas arriba;
+el respaldo local no es una copia independiente de esta máquina.
+
+### Checkpoint anterior verificado — 2026-11-02
 
 `progreso-20261102T190057675Z-eyXUZX.tar.gz`
 

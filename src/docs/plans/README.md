@@ -1,9 +1,20 @@
 # Planes de cuentas, reservas y administración
 
 Estado: **plan 1 aceptado por la persona solicitante el 2026-11-03, con excepciones operativas pendientes**;
-planes 2–4 y las nuevas fases de huéspedes y pagos pendientes. La prioridad es un
+**plan 2 implementado y migrado localmente el 2026-11-04**, sin testing por petición
+expresa; planes 3–4 y las nuevas fases de huéspedes y pagos pendientes. La prioridad es un
 recorrido local de reserva y pago en testnet asociado a una cuenta de huésped.
 Inventario de referencia: 2026-10-31.
+
+**Actualización de alcance — 2026-11-04:** completar el plan 2 en el Compose local
+con subagentes Luna y **sin crear ni ejecutar tests, lint, typecheck o build** por
+petición de la persona solicitante. La ruta abreviada es respaldo fresco → inventario
+→ importación transaccional → comparación fuente/destino y bytes → lectores PostgreSQL.
+No repetir la migración de esquema ya aplicada ni construir paneles de preparación,
+aprobaciones por ficha o infraestructura nueva. Esta excepción sustituye los ensayos
+y recorridos de pruebas del plan 2 para esta entrega local; no acredita producción,
+recuperación ensayada ni autoriza pagos reales. La evidencia se registra en
+[el cierre de catálogo](catalogo-y-medios/04-evidencia-local.md).
 
 Este índice actualiza el orden y el alcance acordados. Los planes detallados y las
 guías comunes conservan sus controles y evidencia, pero aún describen el alcance
@@ -22,10 +33,10 @@ conservan la aceptación anterior y no certifican los nuevos alcances.
   - [x] 1.1 — Usuarios, contrato, migración y aprovisionamiento.
   - [x] 1.2 — Autenticación común y sesiones revocables.
   - [x] 1.3 — Panel de usuarios y autorización del blog.
-- [ ] **Plan 2 — [Persistencia del catálogo y medios](catalogo-y-medios/README.md).** Requiere el plan 1 para identidad y acceso a medios privados; no habilita administración comercial.
-  - [ ] 2.1 — Modelo y contrato del catálogo.
-  - [ ] 2.2 — Importación verificada de hospedajes y medios.
-  - [ ] 2.3 — Lectores públicos, checkout y acceso a medios sobre PostgreSQL.
+- [x] **Plan 2 — [Persistencia del catálogo y medios](catalogo-y-medios/README.md).** Implementación y migración local completadas: 11 hospedajes, 114 imágenes y 6 términos; [evidencia](catalogo-y-medios/04-evidencia-local.md). Sin testing ni certificación de despliegue; no habilita administración comercial.
+  - [x] 2.1 — Modelo y contrato del catálogo.
+  - [x] 2.2 — Importación verificada de hospedajes y medios.
+  - [x] 2.3 — Lectores públicos, checkout y acceso a medios sobre PostgreSQL.
 - [ ] **Fase H — Cuentas de huéspedes.** Registro, sesiones y acceso a reservas propias, separados de las cuentas del personal. Puede avanzarse tras el plan 1, coordinando migraciones con el plan 2.
 - [ ] **Fase T — BTCPay en Docker Compose local.** Preparar BTCPay Server, NBXplorer y Bitcoin Core XXS en testnet; puede avanzarse en paralelo con el catálogo y las cuentas.
 - [ ] **Plan 3 — [Persistencia y gestión de reservas](reservas/README.md).** Requiere el plan 2; el recorrido de huéspedes incorpora además la fase H.
@@ -72,6 +83,7 @@ explícitos, sin precios, cambios de estado comercial ni borrados.
 
 ## Fase P — Reserva y pago de prueba
 
+- [ ] Antes de habilitar pagos, verificar el requisito previo a B1 de entradas y totales exactos y representables en reservas, API y proveedor; rechazar los no representables sin establecer límites comerciales arbitrarios.
 - [ ] Exigir registro o inicio de sesión para el nuevo recorrido; crear la reserva pendiente con propietario, fechas, condiciones y precio calculados en servidor. Conservar referidos y snapshots.
 - [ ] Crear una factura BTCPay de **USD 0.01** por cada intento de prueba, independientemente del precio de la estancia. Guardar el precio real y el importe de prueba por separado y mostrar claramente que el pago es de prueba en testnet.
 - [ ] Aislar datos y configuración de prueba, comprobar que app, BTCPay y nodo usan testnet y bloquear el importe fijo y el flujo de prueba en mainnet. Una prueba pagada no acredita que se haya cobrado el precio real.

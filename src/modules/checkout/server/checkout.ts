@@ -8,7 +8,7 @@ export async function getCheckoutData(sessionId: string | undefined) {
   if (!sessionId || !isCheckoutSessionId(sessionId)) return null;
   const booking = await getBookingBySessionId(sessionId);
   if (!booking) return null;
-  const listing = getListing(booking.listing_id);
+  const listing = await getListing(booking.listing_id);
   const isDev = process.env.NODE_ENV !== "production";
   const methods: CheckoutMethod[] = [
     {

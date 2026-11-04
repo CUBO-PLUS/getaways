@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getBlockedRangesForListings, rangesOverlapPublic } from "@/modules/bookings/server/bookings";
+import { getBlockedRangesForListings, nightsForStay, rangesOverlapPublic } from "@/modules/bookings/server/bookings";
 
 /*
  * Date-aware search for the /properties archive.
@@ -19,15 +19,13 @@ import { getBlockedRangesForListings, rangesOverlapPublic } from "@/modules/book
 
 export type SearchDates = { checkIn: string; checkOut: string } | null;
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 export function parseSearchDates(
   checkIn: string | undefined,
   checkOut: string | undefined
 ): SearchDates {
   if (!checkIn || !checkOut) return null;
-  if (!ISO_DATE.test(checkIn) || !ISO_DATE.test(checkOut)) return null;
-  if (checkOut <= checkIn) return null;
+  try { nightsForStay(checkIn, checkOut); }
+  catch { return null; }
   return { checkIn, checkOut };
 }
 

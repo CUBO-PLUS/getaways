@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import ListingTemplate from "@/components/templates/ListingTemplate";
 import { getListingDetailData } from "@/modules/listings/server/detail";
 import { getListingBySlug } from "@/modules/listings/server/listings";
-import { getMediaByIds } from "@/shared/media/server/media";
-import { listingFallbackMedia, mediaPublicUrl, resolveGalleryIds } from "@/shared/media/media";
+import { mediaPublicUrl, resolveGalleryIds } from "@/shared/media/media";
 import { listingLocation } from "@/modules/listings/locations";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -28,12 +29,10 @@ export async function generateMetadata({
     .filter(Boolean)
     .join(". ") + ".";
   const galleryIds = resolveGalleryIds(listing.featured_media_id, listing.gallery_media_ids);
-  const [cover] = await getMediaByIds(galleryIds.slice(0, 1));
+  const cover = listing.gallery_media.find((media) => media.id === galleryIds[0]);
   const image = cover
     ? mediaPublicUrl(cover.storage_path)
-    : listingFallbackMedia(listing.slug)
-      ? mediaPublicUrl(listingFallbackMedia(listing.slug)!.storage_path)
-      : undefined;
+    : undefined;
   return {
     title: listing.title,
     description,

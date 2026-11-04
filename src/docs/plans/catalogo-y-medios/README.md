@@ -1,4 +1,4 @@
-# [ ] Plan 2 — Persistencia del catálogo y medios
+# [x] Plan 2 — Persistencia del catálogo y medios
 
 [Orden general y seguimiento](../README.md).
 
@@ -13,17 +13,25 @@ identidad común y los permisos editoriales. No necesita el panel de reservas.
 
 ## Fases
 
-- [ ] **2.1 — [Modelo y contrato](01-modelo-y-contrato.md).** Esquema aditivo, restricciones y migración revisada. Requiere plan 1.
-- [ ] **2.2 — [Importación del catálogo y medios](02-importacion-catalogo-y-medios.md).** Ensayo repetible, correspondencias y equivalencia, sin sobrescribir cambios. Requiere 2.1.
-- [ ] **2.3 — [Lectores y acceso a medios](03-lectores-y-medios.md).** Adaptar todos los consumidores, incluido checkout, y cortar a PostgreSQL. Requiere 2.2.
+**Ruta rápida local (2026-11-04):** reutilizar el esquema de 2.1 ya aplicado,
+mantener la app detenida durante el respaldo y la importación y conservar JSON y
+`public/media/` intactos. No añadir CRUD ni pasos de aprobación por ficha. Por
+petición expresa no se ejecutan tests, lint, typecheck ni build: solo inventario,
+importación y verificación directa de datos/objetos. Los ensayos de pruebas y
+restauración indicados en guías generales quedan diferidos para despliegue, no
+presentados como ejecutados. Véase [evidencia local](04-evidencia-local.md).
+
+- [x] **2.1 — [Modelo y contrato](01-modelo-y-contrato.md).** Esquema aditivo, restricciones y migración existentes reutilizados. Requiere plan 1.
+- [x] **2.2 — [Importación del catálogo y medios](02-importacion-catalogo-y-medios.md).** Correspondencias y equivalencia verificadas directamente, sin sobrescribir cambios. Requiere 2.1.
+- [x] **2.3 — [Lectores y acceso a medios](03-lectores-y-medios.md).** Consumidores, incluido checkout, adaptados a PostgreSQL. Requiere 2.2.
 
 ## Aceptación y entrega
 
-- [ ] Catálogo equivalente y todos los consumidores usando la misma tarifa y visibilidad.
-- [ ] Originales intactos, medios sin colisiones y acceso privado autorizado por área.
-- [ ] Sin habilitar edición comercial, archivado, borrado ni formularios administrativos.
-- [ ] Ejecutar controles de catálogo/importación de la [verificación común](../comunes/verificacion-y-aceptacion.md).
-- [ ] Ensayar y ejecutar el **hito B1** de [transición y recuperación](../comunes/transicion-y-recuperacion.md).
+- [x] Catálogo comparado campo a campo, lectores sobre una misma tarifa y visibilidad.
+- [x] Originales intactos, 114 medios sin colisiones; acceso compartido ADMIN/EDITOR para medios no públicos implementado, sin prueba de roles en esta entrega.
+- [x] Sin habilitar edición comercial, archivado, borrado ni formularios administrativos.
+- [x] Validación abreviada de datos/objetos completada según la excepción local de la [guía común](../comunes/verificacion-y-aceptacion.md).
+- [x] **B1 local:** importación y cambio de lectores completados; ensayos de restauración, navegador y certificación de despliegue diferidos expresamente. [Comandos y resultados](04-evidencia-local.md).
 
 El corte B1 no migra reservas: su store anterior sigue siendo una limitación
 documentada hasta B2. No prometer operación/pagos multiinstancia por migrar catálogo.

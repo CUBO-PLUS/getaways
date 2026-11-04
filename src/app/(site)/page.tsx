@@ -6,6 +6,8 @@ import { getPageBySlug, getSiteContent } from "@/modules/content/server/content"
 import { slotMediaId } from "@/modules/content/site-content";
 import { mediaPublicUrl } from "@/shared/media/media";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const [page, content] = await Promise.all([getPageBySlug("home"), getSiteContent()]);
   const heroId = slotMediaId(content, "home.hero.image");
