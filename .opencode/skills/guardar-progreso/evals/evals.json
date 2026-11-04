@@ -1,0 +1,17 @@
+{
+  "skill_name": "guardar-progreso",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Simulación de solo lectura: el usuario pide 'guarda el progreso con el contenido aprobado'. Compose gateways-dev está activo. El script existente terminó con un paquete nuevo progreso-20261102T190057675Z-eyXUZX.tar.gz, dump completo, 65 objetos, hashes correctos y restorationRehearsed=false; Git tiene cambios sin commit. Describe las comprobaciones y la respuesta final sin ejecutar comandos, crear backups ni acceder a secretos.",
+      "expected_output": "Reutiliza el script y comprueba hashes/manifiesto; informa BD completa y 65 objetos, sin afirmar restauración ni que los archivos fuente sin commit estén respaldados.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Simulación de solo lectura: el usuario pide 'haz otro dump de BD y RustFS'. Los contenedores locales están activos, pero durante la copia el listado del bucket cambió y falta un objeto de MediaAsset. Hay un intento parcial en backups/progreso-intento-incompleto y un backup anterior válido. Explica qué harías y qué informarías sin ejecutar comandos, crear backups ni acceder a secretos.",
+      "expected_output": "Rechaza el intento como checkpoint completo; conserva intento y copia anterior, no oculta el error, no restaura ni reinicia ni cambia a producción, y solo reintenta en un directorio nuevo cuando se resuelva la causa.",
+      "files": []
+    }
+  ]
+}
