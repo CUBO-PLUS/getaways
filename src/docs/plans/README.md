@@ -9,7 +9,8 @@ por la persona solicitante tras el [testing funcional/concurrencia](reservas/06-
 Se conserva como excepción operativa el ensayo pendiente de restauración del respaldo
 fresco; no certifica producción ni pagos reales. **H está implementada, verificada
 y migrada al Compose local el 2026-11-05 UTC**, con corte autorizado por la persona
-solicitante; su aceptación formal sigue pendiente. Plan 4, 3.4 y las fases de infraestructura
+solicitante; **H aceptada y cerrada para el entorno local el 2026-11-05** por petición
+«marcalo como completada». Plan 4, 3.4 y las fases de infraestructura
 y pagos siguen pendientes. La prioridad es un
 recorrido local de reserva y pago en testnet asociado a una cuenta de huésped.
 Inventario de referencia: 2026-10-31.
@@ -50,7 +51,7 @@ conservan la aceptación anterior y no certifican los nuevos alcances.
   - [x] 2.1 — Modelo y contrato del catálogo.
   - [x] 2.2 — Importación verificada de hospedajes y medios.
   - [x] 2.3 — Lectores públicos, checkout y acceso a medios sobre PostgreSQL.
-- [ ] **Fase H — [Cuentas de huéspedes](huespedes/README.md).** Implementada con subagentes Luna, verificada y migrada localmente; registro, sesiones y reservas propias separados del personal. Corte autorizado con «bien» y completado tras las pruebas, con respaldo final y 16 tablas previas preservadas. Solo falta aceptación formal de la entrega; no habilita producción.
+- [x] **Fase H — [Cuentas de huéspedes](huespedes/README.md).** Implementada con subagentes Luna, verificada, migrada y aceptada localmente el 2026-11-05 por petición «marcalo como completada». Registro, sesiones y reservas propias separados del personal; respaldo final y 16 tablas previas preservadas. No habilita producción.
 - [ ] **Fase T — BTCPay en Docker Compose local.** Preparar BTCPay Server, NBXplorer y Bitcoin Core XXS en testnet; puede avanzarse en paralelo con el catálogo y las cuentas.
 - [ ] **Plan 3 — [Persistencia y gestión de reservas](reservas/README.md).** Requiere el plan 2; el recorrido de huéspedes incorpora además la fase H.
   **Implementación y corte local 3.1–3.3 completados**, integrados en el checkout original
@@ -92,11 +93,13 @@ explícitos, sin precios, cambios de estado comercial ni borrados.
 - [x] Asociar cada reserva nueva a la cuenta autenticada en el servidor y ofrecer una vista de sus propias reservas y pagos. Autorizar cada consulta y mutación por propietario; no aceptar un ID de usuario enviado por el cliente como prueba de propiedad.
 - [x] No asociar reservas anteriores automáticamente solo por coincidencia de correo. Conservar la credencial de checkout para históricos sin propietario; las nuevas exigen también la sesión del propietario, sin exponer reservas ajenas.
 
-Estos checks describen la implementación, no el cierre de H: ver
-[evidencia, migración y pendientes](huespedes/README.md). El corte local autorizado
+**H cerrada y aceptada localmente el 2026-11-05** por petición explícita
+«marcalo como completada»: ver [evidencia, migración y límites](huespedes/README.md).
+El corte local autorizado
 con «bien» ya se completó tras las pruebas de integración. Registro, acceso y
 checkout local están disponibles en `http://localhost:3001`; no se crearon datos
-sintéticos en la base operativa. No registrar aceptación de la entrega por anticipado.
+sintéticos en la base operativa. La recuperación de cuentas sigue pendiente antes
+de habilitar su uso fuera del entorno local; T/P permanecen fuera de este cierre.
 
 ## Fase T — Infraestructura local de prueba
 

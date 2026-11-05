@@ -3,7 +3,9 @@
 Implementación local del 2026-11-05 UTC con subagentes **GPT-6 Luna**. No incluye
 BTCPay (T/P), administración de reservas (3.4) ni recuperación de cuentas pública.
 **Corte local autorizado y completado**, con respaldo final, preservación y smoke
-sin escrituras sintéticas. La aceptación de la entrega corresponde a la persona solicitante.
+sin escrituras sintéticas. **Entrega aceptada y cerrada para el entorno local el
+2026-11-05** por petición explícita de la persona solicitante: «marcalo como completada».
+El cierre no habilita producción ni incluye las fases T/P.
 
 ## Contrato y límites
 
@@ -196,7 +198,7 @@ ejecuciones del controlador: se hicieron con Node 24 y los comandos indicados.
 - [x] Verificar recorrido UI aislado, dos cuentas y pago mock sin tocar datos operativos.
 - [x] Obtener autorización explícita del corte: respuesta «bien» a la pregunta de aplicar H al Compose local después de verificar la integración.
 - [x] Aplicar H al Compose operativo local después de la verificación final.
-- [ ] Registrar aceptación de la persona solicitante; el índice no cierra H por anticipado.
+- [x] Registrar aceptación local de la persona solicitante el 2026-11-05: «marcalo como completada». Fase H cerrada en el índice.
 - [ ] Definir/ensayar recuperación de acceso antes de habilitar cuentas fuera de local.
 
 ### Corte autorizado del Compose local

@@ -21,7 +21,7 @@ de esta guía; no marcar controles de funcionalidades aún no implementadas.
 - [ ] **Plan 1 / A:** identidad, revocación, credenciales, último ADMIN, throttle y autorización real del blog.
 - [x] **Plan 2 / B1 local:** importación y comparación directa de catálogo, IDs/secuencias y bytes completadas; autorización implementada, sin prueba de roles ni testing por la excepción solicitada. [Evidencia](../catalogo-y-medios/04-evidencia-local.md).
 - [x] **Plan 3 / B2 local (3.1–3.3):** importación privada, snapshots, checkout, concurrencia, referidos y fuente única compartida; testing y aceptación local completados. [Cierre y excepción de restauración pendiente](../reservas/06-testing-b2.md#aceptación-y-cierre-local). No certifica producción.
-- [ ] **Fase H:** implementación, [verificación de cuentas/propietarios y corte local autorizado](../huespedes/README.md) completados; pendiente aceptación formal. No habilitar producción sin recuperación de cuentas.
+- [x] **Fase H local:** implementación, [verificación de cuentas/propietarios y corte local autorizado](../huespedes/README.md) completados; aceptada y cerrada el 2026-11-05 por petición «marcalo como completada». No habilita producción ni sustituye la recuperación de cuentas pendiente.
 - [ ] **Plan 3 / C1 (3.4):** acceso operativo, contacto/notas, cancelación, privacidad y conflictos.
 - [ ] **Plan 4 / C2:** frontera editorial/comercial, ciclo de vida, historial, imágenes e invalidación pública.
 
