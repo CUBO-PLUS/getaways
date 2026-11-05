@@ -4,9 +4,9 @@ import type { CheckoutMethod } from "@/components/organisms/CheckoutMethods";
 import { getBookingBySessionId, getListing } from "@/modules/bookings/server/bookings";
 import { isCheckoutSessionId } from "@/modules/checkout/checkout-session";
 
-export async function getCheckoutData(sessionId: string | undefined) {
+export async function getCheckoutData(sessionId: string | undefined, request?: Request) {
   if (!sessionId || !isCheckoutSessionId(sessionId)) return null;
-  const booking = await getBookingBySessionId(sessionId);
+  const booking = await getBookingBySessionId(sessionId, request);
   if (!booking) return null;
   const listing = await getListing(booking.listing_id);
   const isDev = process.env.NODE_ENV !== "production";

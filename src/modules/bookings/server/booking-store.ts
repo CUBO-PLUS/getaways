@@ -8,6 +8,7 @@ export type BookingStatus = "pending_payment" | "confirmed" | "cancelled";
 
 export type Booking = {
   id: number; listing_id: number; check_in: string; check_out: string; nights: number;
+  guest_account_id: number | null;
   guest_name: string; guest_email: string; guest_phone: string | null; guest_notes: string | null;
   guests: number | null; currency: "USD"; price_per_night_cents: number; cleaning_fee_cents: number;
   pet_fee_cents: number; extra_guest_fee_cents: number; discount_cents: number; tax_cents: number;
@@ -34,6 +35,7 @@ function mapBooking(row: NonNullable<BookingRow>): Booking {
   const snapshot = parsePricingSnapshot(row.pricingSnapshot);
   return {
     id: row.id, listing_id: row.listingId, check_in: String(row.checkIn), check_out: String(row.checkOut), nights: row.nights,
+    guest_account_id: row.guestAccountId,
     guest_name: row.guestName, guest_email: row.guestEmail, guest_phone: row.guestPhone, guest_notes: row.guestNotes,
     guests: row.guests, currency: "USD", price_per_night_cents: cents(row.pricePerNightCents),
     cleaning_fee_cents: cents(row.cleaningFeeCents), pet_fee_cents: cents(row.petFeeCents),
@@ -51,6 +53,7 @@ function mapBooking(row: NonNullable<BookingRow>): Booking {
 function bookingData(fields: NewBooking) {
   return {
     listingId: fields.listing_id, checkIn: fields.check_in, checkOut: fields.check_out, nights: fields.nights,
+    guestAccountId: fields.guest_account_id,
     guestName: fields.guest_name, guestEmail: fields.guest_email, guestPhone: fields.guest_phone,
     guestNotes: fields.guest_notes, guests: fields.guests, currency: fields.currency,
     pricePerNightCents: BigInt(fields.price_per_night_cents), cleaningFeeCents: BigInt(fields.cleaning_fee_cents),
@@ -93,6 +96,7 @@ export async function getBookingBySessionId(sessionId: string): Promise<Booking 
 /** New rows carry the complete catalogue snapshot and historical title supplied by the caller. */
 export async function createBooking(fields: NewBooking): Promise<Booking | null> {
   if (![fields.listing_id, fields.nights].every((value) => isInt4(value) && value > 0) ||
+    !Number.isSafeInteger(fields.guest_account_id) || (fields.guest_account_id ?? 0) < 1 || (fields.guest_account_id ?? 0) > MAX_INT4 ||
     (fields.guests !== null && (!isInt4(fields.guests) || fields.guests < 1)) ||
     !fields.pricing_snapshot || fields.pricing_review_required ||
     !isInt4(fields.pricing_snapshot.baseGuests) || !isInt4(fields.pricing_snapshot.maxGuests) ||
@@ -103,6 +107,7 @@ export async function createBooking(fields: NewBooking): Promise<Booking | null>
   }
   return db.transaction(async (tx) => {
     if (!await lockListing(tx, fields.listing_id)) return null;
+    if (!await tx.orm.public.GuestAccount.where({ id: fields.guest_account_id!, active: true }).first()) return null;
     const listing = await tx.orm.public.Listing.where({ id: fields.listing_id, active: true, archivedAt: null }).first();
     if (!listing) return null;
     const conflicts = await tx.orm.public.Booking.where({ listingId: fields.listing_id, status: "confirmed" }).all();

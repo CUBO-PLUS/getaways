@@ -4,9 +4,13 @@ Estado: **plan 1 aceptado por la persona solicitante el 2026-11-03, con excepcio
 **plan 2 implementado y migrado localmente el 2026-11-04**, sin testing por petición
 expresa; código de 3.1–3.3 implementado, revisado y **migrado al Compose local**
 el 2026-11-04, con cero reservas iniciales por confirmación de la persona solicitante.
-El [testing funcional/concurrencia B2](reservas/06-testing-b2.md) está completado;
-la aceptación de la entrega sigue pendiente, al igual que plan 4 y las nuevas fases
-de huéspedes y pagos pendientes. La prioridad es un
+**Fases 3.1–3.3 / B2 cerradas y aceptadas para el entorno local el 2026-11-05 UTC**
+por la persona solicitante tras el [testing funcional/concurrencia](reservas/06-testing-b2.md).
+Se conserva como excepción operativa el ensayo pendiente de restauración del respaldo
+fresco; no certifica producción ni pagos reales. **H está implementada, verificada
+y migrada al Compose local el 2026-11-05 UTC**, con corte autorizado por la persona
+solicitante; su aceptación formal sigue pendiente. Plan 4, 3.4 y las fases de infraestructura
+y pagos siguen pendientes. La prioridad es un
 recorrido local de reserva y pago en testnet asociado a una cuenta de huésped.
 Inventario de referencia: 2026-10-31.
 
@@ -46,18 +50,18 @@ conservan la aceptación anterior y no certifican los nuevos alcances.
   - [x] 2.1 — Modelo y contrato del catálogo.
   - [x] 2.2 — Importación verificada de hospedajes y medios.
   - [x] 2.3 — Lectores públicos, checkout y acceso a medios sobre PostgreSQL.
-- [ ] **Fase H — Cuentas de huéspedes.** Registro, sesiones y acceso a reservas propias, separados de las cuentas del personal. Puede avanzarse tras el plan 1, coordinando migraciones con el plan 2.
+- [ ] **Fase H — [Cuentas de huéspedes](huespedes/README.md).** Implementada con subagentes Luna, verificada y migrada localmente; registro, sesiones y reservas propias separados del personal. Corte autorizado con «bien» y completado tras las pruebas, con respaldo final y 16 tablas previas preservadas. Solo falta aceptación formal de la entrega; no habilita producción.
 - [ ] **Fase T — BTCPay en Docker Compose local.** Preparar BTCPay Server, NBXplorer y Bitcoin Core XXS en testnet; puede avanzarse en paralelo con el catálogo y las cuentas.
 - [ ] **Plan 3 — [Persistencia y gestión de reservas](reservas/README.md).** Requiere el plan 2; el recorrido de huéspedes incorpora además la fase H.
   **Implementación y corte local 3.1–3.3 completados**, integrados en el checkout original
   y activos sobre PostgreSQL; [evidencia](reservas/05-evidencia-local.md).
   [Testing técnico B2 completado](reservas/06-testing-b2.md), con recorrido mock y
-  carreras reales sobre PostgreSQL desechable. Sus casillas conservan pendiente la
-  aceptación de la entrega por la persona solicitante; no indican que falte código,
-  migración local o ejecutar ese testing. 3.4 continúa después de H/T/P.
-  - [ ] 3.1 — Modelo e importación privada de reservas.
-  - [ ] 3.2 — Consistencia financiera, snapshots y concurrencia.
-  - [ ] 3.3 — Adaptación de entradas, corte a PostgreSQL y verificación. **Hito B2 de persistencia.**
+  carreras reales sobre PostgreSQL desechable. **Aceptación local registrada** por
+  petición «cierra en @src/docs/plans/», con la excepción de restauración indicada
+  arriba. El plan 3 completo no se cierra: 3.4 continúa después de H/T/P.
+  - [x] 3.1 — Modelo e importación privada de reservas.
+  - [x] 3.2 — Consistencia financiera, snapshots y concurrencia.
+  - [x] 3.3 — Adaptación de entradas, corte a PostgreSQL y verificación. **Hito B2 de persistencia aceptado localmente.**
   - [ ] **Fase P — Integración de reservas y pagos BTCPay en testnet.** Requiere H, T y B2; completa el recorrido prioritario.
   - [ ] 3.4 — Panel operativo de reservas, después del recorrido prioritario.
 - [ ] **Plan 4 — [Administración de hospedajes](gestion-hospedajes/README.md).** Mantenerlo después del recorrido prioritario. Sus dependencias funcionales siguen siendo los planes 1–2 y B2, no el panel 3.4.
@@ -83,10 +87,16 @@ explícitos, sin precios, cambios de estado comercial ni borrados.
 
 ## Fase H — Cuentas de huéspedes
 
-- [ ] Crear registro con nombre, correo único normalizado y contraseña; inicio y cierre de sesión. Reutilizar los mecanismos de seguridad existentes sin conceder roles ni acceso de personal al registrarse.
-- [ ] Almacenar contraseñas con hash seguro; proteger sesiones, origen y accesos de fuerza bruta. Definir recuperación de acceso antes de habilitar cuentas fuera del entorno local.
-- [ ] Asociar cada reserva nueva a la cuenta autenticada en el servidor y ofrecer una vista de sus propias reservas y pagos. Autorizar cada consulta y mutación por propietario; no aceptar un ID de usuario enviado por el cliente como prueba de propiedad.
-- [ ] No asociar reservas anteriores automáticamente solo por coincidencia de correo. Conservar la credencial de checkout existente cuando corresponda y definir su transición sin exponer reservas ajenas.
+- [x] Crear registro con nombre, correo único normalizado y contraseña; inicio y cierre de sesión. Reutilizar los mecanismos de seguridad existentes sin conceder roles ni acceso de personal al registrarse.
+- [x] Almacenar contraseñas con hash seguro; proteger sesiones, origen y accesos de fuerza bruta. Mantener bloqueadas las cuentas fuera del entorno local hasta definir recuperación de acceso.
+- [x] Asociar cada reserva nueva a la cuenta autenticada en el servidor y ofrecer una vista de sus propias reservas y pagos. Autorizar cada consulta y mutación por propietario; no aceptar un ID de usuario enviado por el cliente como prueba de propiedad.
+- [x] No asociar reservas anteriores automáticamente solo por coincidencia de correo. Conservar la credencial de checkout para históricos sin propietario; las nuevas exigen también la sesión del propietario, sin exponer reservas ajenas.
+
+Estos checks describen la implementación, no el cierre de H: ver
+[evidencia, migración y pendientes](huespedes/README.md). El corte local autorizado
+con «bien» ya se completó tras las pruebas de integración. Registro, acceso y
+checkout local están disponibles en `http://localhost:3001`; no se crearon datos
+sintéticos en la base operativa. No registrar aceptación de la entrega por anticipado.
 
 ## Fase T — Infraestructura local de prueba
 

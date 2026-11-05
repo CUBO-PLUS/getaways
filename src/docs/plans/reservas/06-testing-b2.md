@@ -251,9 +251,26 @@ pasó con 472 pruebas. No se podó ni relajó esa regresión de autorización.
   `readFileSync|writeFileSync|__getawaysBookingStore|updateBooking(` sin coincidencias
   en `modules/bookings/server/*.ts`.
 
-**Testing técnico B2 completado.** No equivale a la aceptación de la entrega por
-la persona solicitante, a un despliegue ni al recorrido BTCPay de H/T/P. Los
-contenedores de prueba fueron eliminados; Compose operativo sigue sano.
+**Testing técnico B2 completado.** Los contenedores de prueba fueron eliminados;
+Compose operativo sigue sano. La aceptación local posterior se registra abajo y
+no convierte estas pruebas en un despliegue ni en el recorrido BTCPay de H/T/P.
+
+## Aceptación y cierre local
+
+**2026-11-05 UTC — aceptación de la persona solicitante:** tras los resultados y
+la aclaración de los límites del cierre, solicitó «cierra en @src/docs/plans/».
+Se dan por terminadas **3.1, 3.2, 3.3 y el hito B2 para el entorno local**.
+Responsable de aceptación: la persona solicitante; registro documental: asistente.
+La evidencia técnica anterior se conserva, sin presentar pruebas nuevas como ejecutadas.
+
+**Excepción operativa pendiente:** ensayar la restauración del respaldo fresco del
+corte. Se acepta el cierre local con ese pendiente explícito; no se declara
+recuperación certificada para producción u otro destino ni se omite su verificación
+antes de certificarla. La restauración del clon anterior no sustituye ese ensayo.
+
+No cierra el plan 3 completo: **3.4/C1, H/T/P y el plan 4 siguen pendientes**.
+La siguiente prioridad del índice es H (cuentas de huéspedes), con T como trabajo
+paralelo posible y P después de H/T/B2. Sin habilitar pagos reales ni desplegar.
 
 ## Límites
 

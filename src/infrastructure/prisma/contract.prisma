@@ -191,6 +191,7 @@ model Listing {
 model Booking {
   id                     Int       @id @default(autoincrement())
   listingId              Int
+  guestAccountId         Int?
   checkIn                DateString
   checkOut               DateString
   nights                 Int
@@ -223,9 +224,11 @@ model Booking {
   createdAt              DateTime  @default(now())
   updatedAt              temporal.updatedAt()
   listing                Listing   @relation(fields: [listingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  guestAccount           GuestAccount? @relation(fields: [guestAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([listingId, status, checkIn])
   @@index([createdAt])
+  @@index([guestAccountId])
   @@check(expression: sql`nights > 0 AND "checkIn" < "checkOut"`, name: "booking_stay_valid")
   @@check(expression: sql`"guestName" <> '' AND "guestEmail" <> '' AND "agreedListingTitle" <> ''`, name: "booking_guest_fields_nonempty")
   @@check(expression: sql`"pricePerNightCents" >= 0 AND "cleaningFeeCents" >= 0 AND "petFeeCents" >= 0 AND "extraGuestFeeCents" >= 0 AND "discountCents" >= 0 AND "taxCents" >= 0 AND "totalAmountCents" >= 0`, name: "booking_amounts_nonnegative")
@@ -234,6 +237,22 @@ model Booking {
   @@check(expression: sql`currency = 'USD'`, name: "booking_currency_usd")
   @@check(expression: sql`version > 0`, name: "booking_version_positive")
   @@check(expression: sql`("pricingSnapshot" IS NULL) = "pricingReviewRequired"`, name: "booking_pricing_review_consistent")
+}
+
+model GuestAccount {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  authVersion  Int       @default(1)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    temporal.updatedAt()
+  bookings     Booking[]
+
+  @@check(expression: sql`"authVersion" > 0`, name: "guest_account_auth_version_positive")
+  @@check(expression: sql`lower(btrim(email)) = email AND email <> ''`, name: "guest_account_email_normalized")
+  @@check(expression: sql`btrim(name) <> ''`, name: "guest_account_name_nonempty")
 }
 
 model ListingTerm {

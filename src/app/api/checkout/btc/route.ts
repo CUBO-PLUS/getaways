@@ -5,6 +5,7 @@ import { privateCheckoutJson } from "@/modules/checkout/private-response";
 import { activePaymentProvider } from "@/modules/payments";
 import type { PaymentSession } from "@/modules/payments";
 import { syncReferralStatusForBooking } from "@/modules/referrals/referral-lifecycle";
+import { assertSameOrigin } from "@/modules/auth/server/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -26,12 +27,13 @@ function validProviderEvidence(payment: Awaited<ReturnType<typeof activePaymentP
 }
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null) as { session_id?: unknown; action?: unknown } | null;
-  const sessionId = typeof body?.session_id === "string" ? body.session_id : "";
-  if (!isCheckoutSessionId(sessionId)) return badSession();
-
   try {
-    const booking = await getBookingBySessionId(sessionId);
+    if (!assertSameOrigin(request)) return privateCheckoutJson({ ok: false, error: "Invalid request origin." }, { status: 403 });
+    const body = await request.json().catch(() => null) as { session_id?: unknown; action?: unknown } | null;
+    const sessionId = typeof body?.session_id === "string" ? body.session_id : "";
+    if (!isCheckoutSessionId(sessionId)) return badSession();
+
+    const booking = await getBookingBySessionId(sessionId, request);
     if (!booking) return privateCheckoutJson({ ok: false, error: "Checkout session not found." }, { status: 404 });
 
     if (body?.action === "reconcile") {
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
       id: booking.id, expectedVersion: booking.version, amountCents: booking.total_amount_cents, paymentReference: payment.id,
     });
     if (!saved) {
-      const current = await getBookingBySessionId(sessionId);
+      const current = await getBookingBySessionId(sessionId, request);
       if (current?.payment_reference === payment.id && current.status === "pending_payment") {
         const reused = await activePaymentProvider.getPayment(payment.id);
         if (validProviderEvidence(reused, current)) return privateCheckoutJson({ ok: true, data: { payment: reused } });
@@ -117,7 +119,7 @@ export async function GET(request: Request) {
   const sessionId = new URL(request.url).searchParams.get("session_id") ?? "";
   if (!isCheckoutSessionId(sessionId)) return badSession();
   try {
-    const booking = await getBookingBySessionId(sessionId);
+    const booking = await getBookingBySessionId(sessionId, request);
     if (!booking) return privateCheckoutJson({ ok: false, error: "Checkout session not found." }, { status: 404 });
     if (booking.status === "pending_payment" && !isBookingReadyForPayment(booking)) {
       return privateCheckoutJson({ ok: false, error: "This booking cannot be charged safely. Contact us." }, { status: 409 });

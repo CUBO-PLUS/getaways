@@ -18,9 +18,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'03338025e81ccb1e61e9bbb29b7f143a122e1f1676b5986e4065564af03abe34'>;
+  StorageHashBase<'2deb3c565ad1d334c7e7cef4c50b31feeae096e88fedc03cfe6b4d38384ff18a'>;
 export type ExecutionHash =
-  ExecutionHashBase<'b57f18bf241bb2a8474ccb7b1dc7c507a8043da5584d2b5d0a48cab639c916d1'>;
+  ExecutionHashBase<'35e21ca65e616f837215ef4f562b2a4fc36f37313fc05a60852381f58541d01a'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -318,6 +318,7 @@ export type FieldOutputTypes = {
       readonly currency: CodecTypes['pg/text@1']['output'];
       readonly discountCents: CodecTypes['pg/int8@1']['output'];
       readonly extraGuestFeeCents: CodecTypes['pg/int8@1']['output'];
+      readonly guestAccountId: CodecTypes['pg/int4@1']['output'] | null;
       readonly guestEmail: CodecTypes['pg/text@1']['output'];
       readonly guestName: CodecTypes['pg/text@1']['output'];
       readonly guestNotes: CodecTypes['pg/text@1']['output'] | null;
@@ -337,6 +338,16 @@ export type FieldOutputTypes = {
       readonly totalAmountCents: CodecTypes['pg/int8@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly version: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly GuestAccount: {
+      readonly active: CodecTypes['pg/bool@1']['output'];
+      readonly authVersion: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly passwordHash: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly Listing: {
       readonly active: CodecTypes['pg/bool@1']['output'];
@@ -495,6 +506,7 @@ export type FieldInputTypes = {
       readonly currency: CodecTypes['pg/text@1']['input'];
       readonly discountCents: CodecTypes['pg/int8@1']['input'];
       readonly extraGuestFeeCents: CodecTypes['pg/int8@1']['input'];
+      readonly guestAccountId: CodecTypes['pg/int4@1']['input'] | null;
       readonly guestEmail: CodecTypes['pg/text@1']['input'];
       readonly guestName: CodecTypes['pg/text@1']['input'];
       readonly guestNotes: CodecTypes['pg/text@1']['input'] | null;
@@ -514,6 +526,16 @@ export type FieldInputTypes = {
       readonly totalAmountCents: CodecTypes['pg/int8@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly version: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly GuestAccount: {
+      readonly active: CodecTypes['pg/bool@1']['input'];
+      readonly authVersion: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly passwordHash: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly Listing: {
       readonly active: CodecTypes['pg/bool@1']['input'];
@@ -672,6 +694,7 @@ export type StorageColumnTypes = {
       readonly currency: CodecTypes['pg/text@1']['output'];
       readonly discountCents: CodecTypes['pg/int8@1']['output'];
       readonly extraGuestFeeCents: CodecTypes['pg/int8@1']['output'];
+      readonly guestAccountId: CodecTypes['pg/int4@1']['output'] | null;
       readonly guestEmail: CodecTypes['pg/text@1']['output'];
       readonly guestName: CodecTypes['pg/text@1']['output'];
       readonly guestNotes: CodecTypes['pg/text@1']['output'] | null;
@@ -691,6 +714,16 @@ export type StorageColumnTypes = {
       readonly totalAmountCents: CodecTypes['pg/int8@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly version: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly GuestAccount: {
+      readonly active: CodecTypes['pg/bool@1']['output'];
+      readonly authVersion: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly passwordHash: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly Listing: {
       readonly active: CodecTypes['pg/bool@1']['output'];
@@ -849,6 +882,7 @@ export type StorageColumnInputTypes = {
       readonly currency: CodecTypes['pg/text@1']['input'];
       readonly discountCents: CodecTypes['pg/int8@1']['input'];
       readonly extraGuestFeeCents: CodecTypes['pg/int8@1']['input'];
+      readonly guestAccountId: CodecTypes['pg/int4@1']['input'] | null;
       readonly guestEmail: CodecTypes['pg/text@1']['input'];
       readonly guestName: CodecTypes['pg/text@1']['input'];
       readonly guestNotes: CodecTypes['pg/text@1']['input'] | null;
@@ -868,6 +902,16 @@ export type StorageColumnInputTypes = {
       readonly totalAmountCents: CodecTypes['pg/int8@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly version: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly GuestAccount: {
+      readonly active: CodecTypes['pg/bool@1']['input'];
+      readonly authVersion: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly passwordHash: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly Listing: {
       readonly active: CodecTypes['pg/bool@1']['input'];
@@ -1046,6 +1090,7 @@ export namespace Models {
     currency: CodecTypes['pg/text@1']['output'];
     discountCents: CodecTypes['pg/int8@1']['output'];
     extraGuestFeeCents: CodecTypes['pg/int8@1']['output'];
+    guestAccountId: CodecTypes['pg/int4@1']['output'] | null;
     guestEmail: CodecTypes['pg/text@1']['output'];
     guestName: CodecTypes['pg/text@1']['output'];
     guestNotes: CodecTypes['pg/text@1']['output'] | null;
@@ -1065,8 +1110,21 @@ export namespace Models {
     totalAmountCents: CodecTypes['pg/int8@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     version: CodecTypes['pg/int4@1']['output'];
+    guestAccount: public_GuestAccount | null;
     listing: public_Listing;
-    readonly [RelationKeys]?: 'listing';
+    readonly [RelationKeys]?: 'guestAccount' | 'listing';
+  };
+  export type public_GuestAccount = {
+    active: CodecTypes['pg/bool@1']['output'];
+    authVersion: CodecTypes['pg/int4@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    email: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/int4@1']['output'];
+    name: CodecTypes['pg/text@1']['output'];
+    passwordHash: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    bookings: public_Booking[];
+    readonly [RelationKeys]?: 'bookings';
   };
   export type public_Listing = {
     active: CodecTypes['pg/bool@1']['output'];
@@ -1169,6 +1227,7 @@ export declare const models: {
     BlogPublication: Models.public_BlogPublication;
     BlogPublicationCategory: Models.public_BlogPublicationCategory;
     Booking: Models.public_Booking;
+    GuestAccount: Models.public_GuestAccount;
     Listing: Models.public_Listing;
     ListingMedia: Models.public_ListingMedia;
     ListingTerm: Models.public_ListingTerm;
@@ -1851,6 +1910,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly guestAccountId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly guestEmail: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -1995,6 +2060,12 @@ type ContractBase = Omit<
                   readonly unique: false;
                 },
                 {
+                  readonly name: 'Booking_guestAccountId_idx_6d9963ad';
+                  readonly prefix: 'Booking_guestAccountId_idx';
+                  readonly columns: readonly ['guestAccountId'];
+                  readonly unique: false;
+                },
+                {
                   readonly name: 'Booking_listingId_idx_953decda';
                   readonly prefix: 'Booking_listingId_idx';
                   readonly columns: readonly ['listingId'];
@@ -2020,7 +2091,88 @@ type ContractBase = Omit<
                     readonly columns: readonly ['id'];
                   };
                 },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Booking';
+                    readonly columns: readonly ['guestAccountId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'GuestAccount';
+                    readonly columns: readonly ['id'];
+                  };
+                },
               ];
+            };
+            readonly GuestAccount: {
+              columns: {
+                readonly active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly authVersion: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly passwordHash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['email'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [];
             };
             readonly Listing: {
               columns: {
@@ -2600,6 +2752,10 @@ type ContractBase = Omit<
       readonly model: 'BlogPublicationCategory';
     };
     readonly Booking: { readonly namespace: 'public' & NamespaceId; readonly model: 'Booking' };
+    readonly GuestAccount: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'GuestAccount';
+    };
     readonly Listing: { readonly namespace: 'public' & NamespaceId; readonly model: 'Listing' };
     readonly ListingMedia: {
       readonly namespace: 'public' & NamespaceId;
@@ -3225,6 +3381,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
               };
+              readonly guestAccountId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly guestEmail: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -3306,6 +3466,18 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly guestAccount: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'GuestAccount';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['guestAccountId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
               readonly listing: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -3337,6 +3509,7 @@ type ContractBase = Omit<
                 readonly currency: { readonly column: 'currency' };
                 readonly discountCents: { readonly column: 'discountCents' };
                 readonly extraGuestFeeCents: { readonly column: 'extraGuestFeeCents' };
+                readonly guestAccountId: { readonly column: 'guestAccountId' };
                 readonly guestEmail: { readonly column: 'guestEmail' };
                 readonly guestName: { readonly column: 'guestName' };
                 readonly guestNotes: { readonly column: 'guestNotes' };
@@ -3356,6 +3529,75 @@ type ContractBase = Omit<
                 readonly totalAmountCents: { readonly column: 'totalAmountCents' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly version: { readonly column: 'version' };
+              };
+            };
+          };
+          readonly GuestAccount: {
+            readonly fields: {
+              readonly active: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly authVersion: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly passwordHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly bookings: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Booking';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['guestAccountId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'GuestAccount';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly active: { readonly column: 'active' };
+                readonly authVersion: { readonly column: 'authVersion' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly email: { readonly column: 'email' };
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly passwordHash: { readonly column: 'passwordHash' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -3956,6 +4198,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'Booking';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'GuestAccount';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

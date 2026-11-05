@@ -3,6 +3,7 @@ import { quoteStay } from "@/modules/bookings/booking-quote";
 import { isCheckoutSessionId } from "@/modules/checkout/checkout-session";
 import { privateCheckoutJson } from "@/modules/checkout/private-response";
 import { previewCoupon } from "@/modules/coupons/server/coupons";
+import { assertSameOrigin } from "@/modules/auth/server/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -40,14 +41,15 @@ function bookingChangedResponse() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as Body | null;
-  const sessionId = typeof body?.session_id === "string" ? body.session_id : "";
-  if (!isCheckoutSessionId(sessionId)) {
-    return privateCheckoutJson({ ok: false, error: "Invalid checkout session." }, { status: 400 });
-  }
-
   try {
-    const booking = await getBookingBySessionId(sessionId);
+    if (!assertSameOrigin(request)) return privateCheckoutJson({ ok: false, error: "Invalid request origin." }, { status: 403 });
+    const body = (await request.json().catch(() => null)) as Body | null;
+    const sessionId = typeof body?.session_id === "string" ? body.session_id : "";
+    if (!isCheckoutSessionId(sessionId)) {
+      return privateCheckoutJson({ ok: false, error: "Invalid checkout session." }, { status: 400 });
+    }
+
+    const booking = await getBookingBySessionId(sessionId, request);
     if (!booking) {
       return privateCheckoutJson({ ok: false, error: "Checkout session not found." }, { status: 404 });
     }

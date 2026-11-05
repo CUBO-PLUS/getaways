@@ -40,6 +40,10 @@
       "model": "Booking",
       "namespace": "public"
     },
+    "GuestAccount": {
+      "model": "GuestAccount",
+      "namespace": "public"
+    },
     "Listing": {
       "model": "Listing",
       "namespace": "public"
@@ -1009,6 +1013,13 @@
                   "kind": "scalar"
                 }
               },
+              "guestAccountId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "guestEmail": {
                 "nullable": false,
                 "type": {
@@ -1144,6 +1155,22 @@
               }
             },
             "relations": {
+              "guestAccount": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "guestAccountId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "GuestAccount",
+                  "namespace": "public"
+                }
+              },
               "listing": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -1205,6 +1232,9 @@
                 "extraGuestFeeCents": {
                   "column": "extraGuestFeeCents"
                 },
+                "guestAccountId": {
+                  "column": "guestAccountId"
+                },
                 "guestEmail": {
                   "column": "guestEmail"
                 },
@@ -1265,6 +1295,113 @@
               },
               "namespaceId": "public",
               "table": "Booking"
+            }
+          },
+          "GuestAccount": {
+            "fields": {
+              "active": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "authVersion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "email": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "passwordHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "bookings": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "guestAccountId"
+                  ]
+                },
+                "to": {
+                  "model": "Booking",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "active": {
+                  "column": "active"
+                },
+                "authVersion": {
+                  "column": "authVersion"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "passwordHash": {
+                  "column": "passwordHash"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "GuestAccount"
             }
           },
           "Listing": {
@@ -2909,6 +3046,11 @@
                   "dataType": "pg/int8",
                   "nullable": false
                 },
+                "guestAccountId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "guestEmail": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -3042,6 +3184,27 @@
                     "namespaceId": "public",
                     "tableName": "Listing"
                   }
+                },
+                {
+                  "index": {
+                    "name": "Booking_guestAccountId_idx_6d9963ad"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "guestAccountId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Booking"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "GuestAccount"
+                  }
                 }
               ],
               "indexes": [
@@ -3051,6 +3214,14 @@
                   ],
                   "name": "Booking_createdAt_idx_9575dbd7",
                   "prefix": "Booking_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "guestAccountId"
+                  ],
+                  "name": "Booking_guestAccountId_idx_6d9963ad",
+                  "prefix": "Booking_guestAccountId_idx",
                   "unique": false
                 },
                 {
@@ -3086,6 +3257,97 @@
                 {
                   "columns": [
                     "paymentReference"
+                  ]
+                }
+              ]
+            },
+            "GuestAccount": {
+              "checks": [
+                {
+                  "expression": "\"authVersion\" > 0",
+                  "name": "guest_account_auth_version_positive_e4ec2ac8",
+                  "prefix": "guest_account_auth_version_positive"
+                },
+                {
+                  "expression": "lower(btrim(email)) = email AND email <> ''",
+                  "name": "guest_account_email_normalized_32441ce4",
+                  "prefix": "guest_account_email_normalized"
+                },
+                {
+                  "expression": "btrim(name) <> ''",
+                  "name": "guest_account_name_nonempty_00a4830a",
+                  "prefix": "guest_account_name_nonempty"
+                }
+              ],
+              "columns": {
+                "active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "authVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "passwordHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "email"
                   ]
                 }
               ]
@@ -3769,10 +4031,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "03338025e81ccb1e61e9bbb29b7f143a122e1f1676b5986e4065564af03abe34"
+    "storageHash": "2deb3c565ad1d334c7e7cef4c50b31feeae096e88fedc03cfe6b4d38384ff18a"
   },
   "execution": {
-    "executionHash": "b57f18bf241bb2a8474ccb7b1dc7c507a8043da5584d2b5d0a48cab639c916d1",
+    "executionHash": "35e21ca65e616f837215ef4f562b2a4fc36f37313fc05a60852381f58541d01a",
     "mutations": {
       "defaults": [
         {
@@ -3831,6 +4093,21 @@
           },
           "ref": {
             "entry": "Booking",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "GuestAccount",
             "field": "updatedAt",
             "namespace": "public"
           }

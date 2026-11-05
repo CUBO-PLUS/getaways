@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const booking = await getBookingBySessionId(sessionId);
+    const booking = await getBookingBySessionId(sessionId, request);
     if (!booking) {
       return privateCheckoutJson({ ok: false, error: "Checkout session not found." }, { status: 404 });
     }

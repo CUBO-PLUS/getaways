@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, CalendarDays, Loader2, ShieldCheck } from "lucide-react";
 import BookingDatePicker from "@/components/molecules/BookingDatePicker";
 import { useBookingDates } from "@/modules/bookings/providers/BookingDates";
-import { addDaysIso, nightsBetween, todayIso } from "@/modules/bookings/booking-dates";
+import { addDaysIso, isoDateToLocalDate, nightsBetween, todayIso } from "@/modules/bookings/booking-dates";
 import PaymentButtonIcon from "@/components/atoms/PaymentButtonIcon";
 import PhoneNumberField from "@/components/molecules/PhoneNumberField";
 import { Button } from "@/components/atoms/ui/button";
@@ -97,6 +97,17 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
   const [checkoutUnavailable, setCheckoutUnavailable] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const start = params.get("check_in") ?? "";
+    const end = params.get("check_out") ?? "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end) &&
+      isoDateToLocalDate(start) && isoDateToLocalDate(end) && start >= todayIso() && nightsBetween(start, end) >= minStay) {
+      updateCheckIn(start);
+      setCheckOut(end);
+    }
+  }, [listingId, minStay, updateCheckIn, setCheckOut]);
+
+  useEffect(() => {
     let active = true;
     fetchBlockedRanges(listingId).then((ranges) => {
       if (!active) return;
@@ -182,6 +193,14 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
       });
       const json = await response.json();
       if (!response.ok || !json?.ok) {
+        if (response.status === 401) {
+          const params = new URLSearchParams(window.location.search);
+          params.set("check_in", checkIn);
+          params.set("check_out", checkOut);
+          const returnTo = `/listing/${encodeURIComponent(listingSlug)}?${params}`;
+          router.push(`/account/login?returnTo=${encodeURIComponent(returnTo)}&notice=login-required`);
+          return;
+        }
         // 409: somebody else took the dates since this page loaded. Reload the
         // calendar so they show as taken instead of inviting the same click.
         if (response.status === 409) void reloadAvailability();

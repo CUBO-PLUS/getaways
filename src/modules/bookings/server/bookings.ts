@@ -5,7 +5,7 @@ import {
   createBooking,
   confirmedRangesForListing,
   getBookingById,
-  getBookingBySessionId,
+  getBookingBySessionId as findBookingBySessionId,
   saveBookingQuote,
   setCheckoutSession,
   type Booking,
@@ -15,6 +15,7 @@ import {
 import { parsePricingSnapshot } from "@/modules/bookings/booking-persistence";
 import { priceFieldsFromAttributes } from "@/modules/bookings/booking-quote";
 import { readCatalogListings } from "@/modules/listings/server/catalog";
+import { getGuestSession } from "@/modules/guests/server/auth";
 
 /*
  * The booking rules: what counts as a valid stay, what dates are taken, and
@@ -25,11 +26,19 @@ import { readCatalogListings } from "@/modules/listings/server/catalog";
  * remains in booking-store; this module does not talk to a payment provider.
  */
 
-export { getBookingById, getBookingBySessionId } from "@/modules/bookings/server/booking-store";
+export { getBookingById } from "@/modules/bookings/server/booking-store";
 export type { Booking, BookingStatus } from "@/modules/bookings/server/booking-store";
 export { DatesUnavailableError, NotFoundError, ValidationError } from "@/modules/bookings/booking-errors";
 
 export type BlockedRange = { start_date: string; end_date: string };
+
+/** Legacy capabilities remain valid only for unowned rows; new rows also require their owner. */
+export async function getBookingBySessionId(sessionId: string, request?: Request): Promise<Booking | null> {
+  const booking = await findBookingBySessionId(sessionId);
+  if (!booking || booking.guest_account_id === null) return booking;
+  const guest = await getGuestSession(request);
+  return guest?.id === booking.guest_account_id ? booking : null;
+}
 
 export type BookingInput = {
   listing_id: number;
@@ -51,8 +60,8 @@ export async function getListing(id: number): Promise<ListingRow | null> {
 }
 
 /** Read-only receipt data, including missing sessions; the template owns the status messages. */
-export async function getBookingConfirmationData(sessionId: string | undefined) {
-  const booking = sessionId ? await getBookingBySessionId(sessionId) : null;
+export async function getBookingConfirmationData(sessionId: string | undefined, request?: Request) {
+  const booking = sessionId ? await getBookingBySessionId(sessionId, request) : null;
   const listing = booking ? await getListing(booking.listing_id) : null;
   return {
     sessionId: booking ? sessionId : undefined,
@@ -155,8 +164,11 @@ export function rangesOverlapPublic(aStart: string, aEnd: string, bStart: string
  * is nights x nightly rate plus the cleaning fee. The checkout quote adds the
  * extra guests, pet, coupon and taxes later (see app/api/checkout/quote).
  */
-export async function createPendingBooking(input: BookingInput): Promise<Booking> {
+export async function createPendingBooking(input: BookingInput, guestAccountId: number): Promise<Booking> {
   const maxInt4 = 2_147_483_647;
+  if (!Number.isSafeInteger(guestAccountId) || guestAccountId < 1 || guestAccountId > maxInt4) {
+    throw new ValidationError("Sign in to a guest account before booking.");
+  }
   if (!Number.isSafeInteger(input.listing_id) || input.listing_id <= 0 || input.listing_id > maxInt4) {
     throw new ValidationError("This property cannot be booked safely.");
   }
@@ -227,6 +239,7 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
     throw new ValidationError("This property's booking limits cannot be represented safely.");
   }
   const fresh: NewBooking = {
+    guest_account_id: guestAccountId,
     listing_id: input.listing_id,
     check_in: checkIn,
     check_out: checkOut,

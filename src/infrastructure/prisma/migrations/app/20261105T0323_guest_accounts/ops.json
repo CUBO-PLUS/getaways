@@ -1,0 +1,206 @@
+[
+  {
+    "id": "table.GuestAccount",
+    "label": "Create table \"GuestAccount\"",
+    "summary": "Creates table \"GuestAccount\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "GuestAccount"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"GuestAccount\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"GuestAccount\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"GuestAccount\"",
+        "sql": "CREATE TABLE \"public\".\"GuestAccount\" (\n  \"active\" bool DEFAULT true NOT NULL,\n  \"authVersion\" int4 DEFAULT 1 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"passwordHash\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"guest_account_auth_version_positive_e4ec2ac8\" CHECK (\"authVersion\" > 0),\n  CONSTRAINT \"guest_account_email_normalized_32441ce4\" CHECK (lower(btrim(email)) = email AND email <> ''),\n  CONSTRAINT \"guest_account_name_nonempty_00a4830a\" CHECK (btrim(name) <> '')\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"GuestAccount\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"GuestAccount\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Booking.guestAccountId",
+    "label": "Add column \"guestAccountId\" to \"Booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "guestAccountId",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"guestAccountId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Booking",
+          "guestAccountId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"guestAccountId\"",
+        "sql": "ALTER TABLE \"public\".\"Booking\" ADD COLUMN \"guestAccountId\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"guestAccountId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Booking",
+          "guestAccountId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.GuestAccount.GuestAccount_email_key",
+    "label": "Add unique constraint on \"GuestAccount\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "GuestAccount_email_key",
+        "table": "GuestAccount"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"GuestAccount_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "GuestAccount_email_key",
+          "public",
+          "\"public\".\"GuestAccount\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"GuestAccount_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"GuestAccount\" ADD CONSTRAINT \"GuestAccount_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"GuestAccount_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "GuestAccount_email_key",
+          "public",
+          "\"public\".\"GuestAccount\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Booking.Booking_guestAccountId_idx_6d9963ad",
+    "label": "Create index \"Booking_guestAccountId_idx_6d9963ad\" on \"Booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Booking_guestAccountId_idx_6d9963ad",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Booking_guestAccountId_idx_6d9963ad\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking_guestAccountId_idx_6d9963ad\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Booking_guestAccountId_idx_6d9963ad\"",
+        "sql": "CREATE INDEX \"Booking_guestAccountId_idx_6d9963ad\" ON \"public\".\"Booking\" (\"guestAccountId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Booking_guestAccountId_idx_6d9963ad\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking_guestAccountId_idx_6d9963ad\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Booking.Booking_guestAccountId_fkey",
+    "label": "Add foreign key \"Booking_guestAccountId_fkey\" on \"Booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Booking_guestAccountId_fkey",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Booking_guestAccountId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Booking_guestAccountId_fkey",
+          "public",
+          "\"public\".\"Booking\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Booking_guestAccountId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Booking\"\nADD CONSTRAINT \"Booking_guestAccountId_fkey\"\nFOREIGN KEY (\"guestAccountId\")\nREFERENCES \"public\".\"GuestAccount\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Booking_guestAccountId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Booking_guestAccountId_fkey",
+          "public",
+          "\"public\".\"Booking\""
+        ]
+      }
+    ]
+  }
+]

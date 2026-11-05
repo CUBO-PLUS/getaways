@@ -100,21 +100,23 @@ final pausado, migración de `Booking` aplicada, importación/verificación de c
 filas y app original activa sobre PostgreSQL. Se conservaron las 15 tablas previas.
 [Evidencia](../reservas/05-evidencia-local.md). Las comprobaciones funcionales y de
 concurrencia se ejecutaron posteriormente en el [testing B2](../reservas/06-testing-b2.md).
-El ensayo del respaldo fresco y la aceptación de entrega siguen pendientes;
-no declara producción lista.
+**Aceptación local B2 registrada el 2026-11-05 UTC** por petición de cierre de la
+persona solicitante. El ensayo de restauración del respaldo fresco se conserva
+como excepción operativa pendiente; no declara producción ni recuperación listas.
 
 Requiere B1 y fases 3.1–3.3 listas y ensayadas. No requiere el panel de reservas
 3.4 ni el plan 4; su aceptación desbloquea ambos.
 
-- [ ] Aprobar modelo, snapshots, reglas financieras, cancelaciones/pagos tardíos y tratamiento de términos históricos faltantes.
-- [ ] Ensayar migración, importación privada repetida, carreras y restauración sobre una copia aislada.
-- [ ] Bloquear todas las escrituras de reservas/checkout/pagos mientras se captura el estado final. Pausar reconciliadores y coordinar eventos pendientes para reanudarlos sin perder ni duplicar confirmaciones.
-- [ ] Consolidar fuentes de reservas de todas las instancias: detenerse ante conflictos.
-- [ ] Obtener respaldo final de BD, archivos y objetos; verificar ruta de migraciones desde el destino aprobado B1.
-- [ ] Aplicar migración de reservas e importar solo datos aprobados, conservando IDs, sesiones, referencias, importes y atribuciones. Verificar valores y relaciones, no solo cantidades.
-- [ ] Cambiar todos los lectores/escritores de reservas a PostgreSQL; retirar instancias con stores en memoria/archivo. Nunca dual-write improvisado o fallback automático.
-- [ ] Verificar navegador, dos procesos, disponibilidad, checkout, referidos e historial; abrir escrituras solo cuando la fuente única y la consistencia estén confirmadas.
-- [ ] Registrar aceptación B2 y limitaciones del mock de desarrollo. No habilitar pagos reales por este corte ni afirmar soporte multiinstancia del proveedor.
+- [x] Aprobar modelo, snapshots, reglas financieras, cancelaciones/pagos tardíos y tratamiento de términos históricos faltantes para el cierre local.
+- [x] Ensayar migración, importación privada repetida, carreras y restauración del clon previo sobre una copia aislada; evidencia 05 y 06.
+- [ ] Ensayar restauración del respaldo fresco del corte: excepción operativa pendiente, distinta de la restauración del clon previo.
+- [x] Bloquear las escrituras mientras se captura el estado final local; app detenida y ausencia de reservas operativas confirmada, sin pagos/eventos pendientes en este corte.
+- [x] Consolidar la fuente local explícita vacía autorizada; no importar el archivo candidato de desarrollo de otro worktree.
+- [x] Obtener respaldo final de BD, archivos y objetos; verificar ruta de migraciones desde el destino aprobado B1.
+- [x] Aplicar migración de reservas e importar solo datos aprobados, conservando IDs, sesiones, referencias, importes y atribuciones. Verificar valores y relaciones, no solo cantidades.
+- [x] Cambiar todos los lectores/escritores de reservas a PostgreSQL; retirar instancias con stores en memoria/archivo. Nunca dual-write improvisado o fallback automático.
+- [x] Verificar navegador, dos procesos, disponibilidad, checkout, referidos e historial; fuente única y consistencia comprobadas en el testing B2.
+- [x] Registrar aceptación B2 local y limitaciones del mock de desarrollo. No habilitar pagos reales por este corte ni afirmar soporte multiinstancia del proveedor.
 
 ## Hito C1 — Panel operativo de reservas
 

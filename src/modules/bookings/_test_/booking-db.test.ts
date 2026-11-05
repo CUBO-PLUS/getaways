@@ -18,7 +18,7 @@ let env: NodeJS.ProcessEnv;
 
 async function startWorker() {
   const child = fork(path.join(root, "infrastructure/prisma/_test_/support/booking-worker.mts"), [], {
-    cwd: temporary, env, execArgv: ["--experimental-strip-types"], stdio: ["ignore", "pipe", "pipe", "ipc"],
+    cwd: temporary, env, execArgv: ["--experimental-strip-types", "--experimental-loader", path.join(root, "infrastructure/prisma/_test_/support/booking-loader.mjs")], stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
   children.push(child);
   let stderr = "";
@@ -95,7 +95,8 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
 
   beforeAll(async () => {
     temporary = mkdtempSync("/tmp/opencode/booking-postgres-");
-    env = { PATH: process.env.PATH, HOME: temporary, TMPDIR: temporary, NODE_ENV: "development" };
+    env = { PATH: process.env.PATH, HOME: temporary, TMPDIR: temporary, NODE_ENV: "development",
+      BLOG_APP_ORIGIN: "http://localhost:3000", BLOG_SESSION_SECRET: "synthetic-test-secret-with-at-least-32-bytes" };
     symlinkSync(path.join(root, "node_modules"), path.join(temporary, "node_modules"), "dir");
     writeFileSync(path.join(temporary, "prisma.config.ts"), `import { definePrismaConfig } from 'prisma/config';
       import { defineConfig } from '@prisma/orm-postgres/config';
@@ -107,7 +108,7 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     created = true;
     execFileSync("docker", ["run", "--detach", "--name", container, "--publish", "127.0.0.1::5432", "--env", "POSTGRES_HOST_AUTH_METHOD=trust",
       "--env", "POSTGRES_DB=booking_test", "--mount", "type=tmpfs,destination=/var/lib/postgresql/data", "postgres:17-bookworm"], { timeout: 30_000, stdio: "pipe" });
-    execFileSync("docker", ["exec", container, "sh", "-c", "until pg_isready -U postgres -d booking_test >/dev/null 2>&1; do sleep 0.1; done"], { timeout: 30_000 });
+    execFileSync("docker", ["exec", container, "sh", "-c", "until pg_isready -h 127.0.0.1 -U postgres -d booking_test >/dev/null 2>&1; do sleep 0.1; done"], { timeout: 30_000 });
     const port = execFileSync("docker", ["port", container, "5432/tcp"], { encoding: "utf8" }).trim();
     if (!/^127\.0\.0\.1:\d+$/.test(port)) throw new Error("Unexpected PostgreSQL binding");
     env.DATABASE_URL = `postgresql://postgres@${port}/booking_test?sslmode=disable`;
@@ -117,11 +118,13 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
   }, 120_000);
 
   beforeEach(async () => {
-    sql(`TRUNCATE "ReferralAttribution", "ReferralCode", "Booking", "Listing", "ListingTermAssignment", "ListingMedia" RESTART IDENTITY;
+    sql(`TRUNCATE "ReferralAttribution", "ReferralCode", "Booking", "GuestAccount", "AdminUser", "AdminLoginThrottle", "Listing", "ListingTermAssignment", "ListingMedia" RESTART IDENTITY;
       INSERT INTO "Listing" (slug, title, "contentHtml", attributes, active, "updatedAt", "pricePerNightCents", "cleaningFeeCents", "extraGuestFeeCents", "petFeeCents", "ivaBasisPoints", "tourismBasisPoints", "maxGuests", "baseGuests", "petsAllowed")
         VALUES ('synthetic-stay', 'Agreed historical title', '', '{}', true, now(), 10000, 2000, 1500, 3000, 1300, 500, 4, 2, true);
       INSERT INTO "ReferralCode" (code, active) VALUES ('SYNTHETIC-A', true), ('SYNTHETIC-B', true), ('SYNTHETIC-OFF', false);`);
     [a, b] = await Promise.all([startWorker(), startWorker()]);
+    await a.run({ action: "guest", email: "shared-worker@example.test" });
+    await b.run({ action: "guestLogin", email: "shared-worker@example.test", password: "synthetic-password-123" });
   }, 30_000);
 
   afterEach(async () => {
@@ -281,6 +284,83 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect(missing.receipt.booking).toBeNull();
   });
 
+  it("keeps every booking reader and checkout mutation within the owning guest account", async () => {
+    const booking = await create();
+    await b.run({ action: "guest", email: "second-owner@example.test" });
+    const session = booking.checkout_session_id!;
+    const stolen = await b.run<Api>({ action: "request", route: "status", method: "GET", sessionId: session });
+    expect(stolen.status).toBe(404);
+    expect(await b.run({ action: "dto", sessionId: session })).toEqual({ checkout: null, receipt: { booking: null, listing: null } });
+    expect(await b.run({ action: "history" })).toEqual([]);
+    const ownedHistory = await a.run<Array<{ id: number }>>({ action: "history" });
+    expect(ownedHistory.map(row => row.id)).toEqual([booking.id]);
+    for (const route of ["quote", "btc"] as const) {
+      const result = await b.run<Api>({ action: "request", route, method: "POST", body: { session_id: session, guests: 3 } });
+      expect(result.status).toBe(404);
+      expect(await a.run({ action: "get", id: booking.id })).toEqual(booking);
+    }
+    expect((await b.run<Api>({ action: "request", route: "btc", method: "GET", sessionId: session })).status).toBe(404);
+    const forged = await b.run<Booking>({ action: "create", input: {
+      listing_id: 1, check_in: "2099-06-20", check_out: "2099-06-22", guest_name: "Attacker", guest_email: "victim@example.test",
+      guest_account_id: 1, user_id: 1,
+    } });
+    expect(forged.guest_account_id).toBeGreaterThan(1);
+    expect(forged.guest_email).toBe("victim@example.test");
+    const noSession = await a.run<Api>({ action: "request", route: "bookings", method: "POST", cookie: "", body: {
+      listing_id: 1, check_in: "2099-06-24", check_out: "2099-06-26", guest_name: "No Session", guest_email: "none@example.test",
+    } });
+    expect(noSession.status).toBe(401);
+    expect(sql(`SELECT count(*) FROM "Booking" WHERE "guestEmail" = 'none@example.test';`)).toBe("0");
+  });
+
+  it("normalizes guest identity, stores only a password hash, and rejects duplicate accounts without creating staff access", async () => {
+    // Same ids/version and signing secret: audience checks alone must separate these accounts.
+    sql(`INSERT INTO "AdminUser" (email, name, "passwordHash", role, "updatedAt") VALUES ('staff@example.test', 'Staff', 'unused-login-hash', 'ADMIN', now());`);
+    expect(await a.run({ action: "crossAudience" })).toEqual({ guestFromStaff: null, staffFromGuest: null });
+    for (const password of ["short", "😀".repeat(20)]) {
+      expect((await a.run<{ status: number }>({ action: "guest", email: "invalid@example.test", password })).status).toBe(400);
+    }
+    const [first, duplicate] = await Promise.all([
+      a.run<{ status: number }>({ action: "guest", name: "  Guest One ", email: "  Mixed@Example.test " }),
+      b.run<{ status: number }>({ action: "guest", name: "Other", email: "mixed@example.test" }),
+    ]);
+    expect([first.status, duplicate.status].sort()).toEqual([200, 409]);
+    expect(sql(`SELECT email || ':' || (left("passwordHash", 7) = '$2b$12$') FROM "GuestAccount" WHERE email = 'mixed@example.test';`)).toBe("mixed@example.test:true");
+    expect(sql(`SELECT count(*) FROM "GuestAccount" WHERE "passwordHash" = 'synthetic-password-123';`)).toBe("0");
+    expect(sql(`SELECT count(*) FROM "AdminUser" WHERE email = 'mixed@example.test';`)).toBe("0");
+  });
+
+  it("revokes retained guest cookies on logout and account deactivation; throttles guest authentication persistently", async () => {
+    const booking = await create();
+    const retained = a.run<{ status: number; cookie: string }>({ action: "guestLogout" });
+    expect((await retained).status).toBe(200);
+    expect(await a.run({ action: "history" })).toBeNull();
+    expect(await b.run({ action: "history" })).toBeNull();
+    expect(await b.run({ action: "history", cookie: "guest_session=malformed" })).toBeNull();
+    const loggedIn = await a.run<{ status: number }>({ action: "guestLogin", email: "shared-worker@example.test", password: "synthetic-password-123" });
+    expect(loggedIn.status).toBe(200);
+    sql(`UPDATE "GuestAccount" SET active = false WHERE id = ${booking.guest_account_id};`);
+    expect(await a.run({ action: "history" })).toBeNull();
+    const attempts: Array<{ status: number }> = [];
+    for (let index = 0; index < 6; index++) attempts.push(await b.run<{ status: number }>({ action: "guestLogin", email: "throttle@example.test", password: "wrong-password" }));
+    expect(attempts.slice(0, 5).every(value => value.status === 401)).toBe(true);
+    expect(attempts[5].status).toBe(429);
+    const fresh = await startWorker();
+    expect((await fresh.run<{ status: number }>({ action: "guestLogin", email: "throttle@example.test", password: "wrong-password" })).status).toBe(429);
+  }, 30_000);
+
+  it("rejects missing or hostile origins and disables guest auth in production", async () => {
+    expect((await a.run<{ status: number }>({ action: "guest", origin: "https://attacker.example" })).status).toBe(403);
+    expect((await a.run<{ status: number }>({ action: "guest", origin: "" })).status).toBe(403);
+    expect((await a.run<{ status: number }>({ action: "guest", production: true })).status).toBe(503);
+    const booking = await create();
+    for (const route of ["quote", "btc"] as const) {
+      expect((await a.run<Api>({ action: "request", route, method: "POST", sessionId: booking.checkout_session_id!, origin: "https://attacker.example",
+        body: { session_id: booking.checkout_session_id, guests: 3 } })).status).toBe(403);
+    }
+    expect(await a.run({ action: "get", id: booking.id })).toEqual(booking);
+  });
+
   it("GET never reconciles paid evidence; POST validates provider identity, booking, amount and currency before confirming", async () => {
     const booking = await payable(a, "SYNTHETIC-A");
     const reused = await a.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
@@ -315,11 +395,14 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     const uncharged = await create();
     const priced = await a.run<Booking>({ action: "quote", id: uncharged.id, version: uncharged.version, quote });
     for (const [current, action] of [[booking, "simulate_paid"], [priced, undefined]] as const) {
+      // Historical unowned rows intentionally remain capability-accessible; production guards must run beyond owner checks.
+      sql(`UPDATE "Booking" SET "guestAccountId" = NULL WHERE id = ${current.id};`);
+      const legacy = await b.run<Booking>({ action: "get", id: current.id });
       const rejected = await a.run<Api>({ action: "request", route: "btc", method: "POST", production: true,
         body: { session_id: current.checkout_session_id, action } });
       expect(rejected.status).toBe(404);
       privateResponse(rejected);
-      expect(await b.run({ action: "get", id: current.id })).toEqual(current);
+      expect(await b.run({ action: "get", id: current.id })).toEqual(legacy);
     }
   });
 
@@ -366,7 +449,7 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     const conflicting = path.join(temporary, "synthetic-conflict.json");
     const session = `cko_70_${randomUUID()}`;
     const historical = { id: 70, listing_id: 1, check_in: "2099-08-10", check_out: "2099-08-12", nights: 2,
-      guest_name: "Historical Guest", guest_email: "history@example.test", guest_phone: null, guest_notes: "Historical note",
+      guest_name: "Historical Guest", guest_email: "shared-worker@example.test", guest_phone: null, guest_notes: "Historical note",
       guests: 2, currency: "USD", price_per_night_cents: 2_000_000_000, cleaning_fee_cents: 12345, pet_fee_cents: 0,
       extra_guest_fee_cents: 0, discount_cents: 0, tax_cents: 0, total_amount_cents: 4_000_012_345, coupon_code: null,
       status: "pending_payment", checkout_session_id: session, payment_reference: "historical-payment", admin_notes: "Historical internal note",
@@ -397,6 +480,8 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect(Date.parse(imported.created_at)).toBe(Date.parse(created_at));
     expect(Date.parse(imported.updated_at)).toBe(Date.parse(updated_at));
     expect((await request(b, "status", session)).body).toEqual({ ok: true, data: { status: "pending_payment" } });
+    expect(await b.run({ action: "history" })).toEqual([]);
+    expect((await b.run<{ checkout: CheckoutData | null; receipt: BookingConfirmationData }>({ action: "dto", sessionId: session })).checkout).not.toBeNull();
     const quoteRejected = await b.run<Api>({ action: "request", route: "quote", method: "POST", body: { session_id: session, guests: 2 } });
     expect(quoteRejected.status).toBe(409);
     expect(await b.run({ action: "get", id: 70 })).toEqual(imported);

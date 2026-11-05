@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Concierge", href: "/concierge" },
   { label: "Journal", href: "/blog" },
   { label: "Contact Us", href: "/contact-us" },
+  { label: "Account", href: "/account" },
 ];
 
 /**
@@ -50,8 +51,7 @@ export function navItemsWithCategories(categories: Array<{ name: string; slug: s
 // The live "List a Property" button points at HivePress's /submit-listing flow,
 // which this migration has no equivalent for, so it is aimed at the contact page
 // (the same substitution app/page.tsx already makes for its own CTA). Declared
-// here so the header's desktop copy stays in sync. The live "Sign In" item has
-// been removed entirely -- the site no longer has user accounts or auth.
+// here so the header's desktop copy stays in sync.
 export const SUBMIT_LISTING_HREF = "/contact-us";
 
 // The live breakpoint between the full nav and the burger menu:
