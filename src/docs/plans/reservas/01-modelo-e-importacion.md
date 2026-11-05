@@ -3,6 +3,28 @@
 Dependencia: [plan 2 completo](../catalogo-y-medios/README.md).
 [Plan 3 y checklist](README.md). No implementar proveedor de pagos real.
 
+**Implementación local disponible — 2026-11-04:** contrato `Booking`, migración
+`20261104T2124_add_booking_persistence` e importador privado listos y revisados.
+La [evidencia](05-evidencia-local.md) registra la restauración/migración aislada,
+dos reservas sintéticas, repetición/verificación exacta y preservación de 15 tablas.
+El corte local posterior ya fue autorizado y ejecutado con fuente explícita vacía,
+sin usar las reservas sintéticas del clon ni el archivo candidato de otro worktree.
+No se sustituyen las pruebas de aplicación omitidas por aceptar el esquema local.
+El [testing B2 posterior](06-testing-b2.md) añade comprobación automatizada del
+importador sobre PostgreSQL desechable; no reimporta datos operativos.
+
+Comando seguro del importador (ejecutar desde `src/`, conexión en entorno protegido):
+
+```bash
+node --conditions=react-server --experimental-strip-types scripts/bookings-import.mts \
+  --source /ruta/privada/bookings.json
+# --apply o --verify requieren --target host:puerto/nombre_base, sin credenciales.
+```
+
+Sin flags, solo realiza inventario. Acepta varias opciones `--source`, rechaza fuentes
+inexistentes/conflictivas y no sobrescribe reservas distintas. Una reserva histórica
+sin snapshot mantiene sus importes y queda bloqueada para recotización.
+
 ## Problemas del almacenamiento actual
 
 `booking-store.ts` conserva copias globales y escribe un archivo por renombrado.

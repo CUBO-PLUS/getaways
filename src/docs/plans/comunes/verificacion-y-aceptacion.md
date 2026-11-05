@@ -1,7 +1,9 @@
 # Guía común — Pruebas mínimas y aceptación
 
 Aplicación: acompaña cada implementación; aceptación final por entrega habilitada.
-Esta entrega no crea ni ejecuta pruebas de aplicación. No medir éxito por número de tests.
+La entrega original no creó ni ejecutó pruebas de aplicación. La petición posterior
+autoriza el [testing de reservas B2](../reservas/06-testing-b2.md), con escrituras
+solo en PostgreSQL desechable. No medir éxito por número de tests.
 
 Para el **plan 2 local del 2026-11-04**, por petición expresa se omiten también
 lint, typecheck, build, fixtures y navegador. Validación mínima: inventario,
@@ -85,9 +87,10 @@ la BD y llamar «integración» al resultado.
    obtiene conflicto y puede archivar sin perderlas. Quitar imagen de una galería
    no borra un objeto usado por otra ficha/publicación. Cambiar alt contextual no
    modifica una publicación de blog.
-- [ ] **Dinero y carreras:** una reserva mantiene tarifa, cargos y tasas tras cambiar
+- [x] **Dinero y carreras:** una reserva mantiene tarifa, cargos y tasas tras cambiar
    catálogo; un quote con pago abierto no se guarda. Dos confirmaciones solapadas
-   no ganan ambas; repetir pago es idempotente y pago tardío no reconfirma cancelada.
+    no ganan ambas; repetir pago es idempotente y pago tardío no reconfirma cancelada.
+    Verificado en [testing B2](../reservas/06-testing-b2.md) con procesos y conexiones reales.
 - [ ] **Privacidad:** EDITOR/anónimo no reciben datos de huéspedes, notas internas o
    credenciales de checkout. Poseer solo ID numérico no permite consultar reserva.
    Origen ajeno/ausente no modifica usuarios, hospedajes o reservas.

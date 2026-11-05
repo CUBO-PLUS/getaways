@@ -8,6 +8,29 @@ Sustituir memoria/archivo por PostgreSQL, preservar checkout y referidos, manten
 condiciones económicas acordadas y habilitar operación limitada de reservas.
 Requiere el **plan 2 completo** y la identidad del plan 1.
 
+**Avance local — 2026-11-04:** 3.1 implementada con subagentes Luna, ensayada
+en un clon PostgreSQL y posteriormente migrada al Compose local autorizado:
+migración aditiva, importación privada y preservación de las tablas anteriores.
+Código de 3.2–3.3 implementado,
+con correcciones de consistencia/recibos/privacidad aplicadas. Revisión global de
+Luna: **especificación y calidad aprobadas, sin hallazgos importantes**; no acredita
+comportamiento de aplicación/concurrencia que no se ejecutó.
+**Corte local B2 ejecutado:** código integrado en el checkout original, app reiniciada
+y conectada a `gateways`; cero reservas importadas, siguiente ID 1, sin huérfanos y
+15 tablas previas intactas. La persona solicitante autorizó continuar la migración
+y confirmó ausencia de datos de reservas. [Evidencia y límites](05-evidencia-local.md).
+Las casillas de aceptación de entrega se mantienen pendientes; el corte original
+no ejecutó pruebas de aplicación/concurrencia ni aceptó producción. El testing
+posterior sí está completado sobre PostgreSQL desechable y con recorrido de
+navegador mock: [resultados finales](06-testing-b2.md#resultado-final-repetido-por-el-controlador).
+No falta migración local y no se habilitan pagos reales.
+La restricción de no tests correspondía a aquella entrega. Una petición posterior
+autoriza ahora el testing de B2; resultados y límites en
+[06-testing-b2.md](06-testing-b2.md), sin atribuirlos retroactivamente al corte.
+Seguimiento solicitado: corregidos los 23 errores anteriores de TypeScript con
+otro subagente Luna; typecheck completo aprobado con salida 0, sin supresiones.
+La persona solicitante confirmó además que no hay reservas pendientes.
+
 No implementa proveedor de pagos real, reembolsos automáticos, reprogramaciones,
 reservas manuales ni cambios arbitrarios de importes/estados.
 
@@ -17,6 +40,9 @@ reservas manuales ni cambios arbitrarios de importes/estados.
 - [ ] **3.2 — [Consistencia financiera y concurrencia](02-consistencia-financiera-y-concurrencia.md).** Cotizaciones estables y transiciones atómicas. Requiere 3.1.
 - [ ] **3.3 — [Entradas, corte y verificación](03-entradas-corte-y-verificacion.md).** Todos los lectores/escritores en PostgreSQL, importación final y comprobación multiinstancia. Requiere 3.2. **Cierra el hito de persistencia B2.**
 - [ ] **3.4 — [Panel de reservas](04-panel-reservas.md).** ADMIN/BOOKING_MANAGER consultan, corrigen contacto, anotan y cancelan. Requiere 3.3; no requiere el plan 4.
+
+Para el orden actualizado prevalece el índice raíz: 3.4 se entrega **después** de
+las fases H/T/P del recorrido prioritario, no automáticamente al implementar B2.
 
 La importación de 3.1 se ensaya en entorno aislado. El corte de la fuente operativa
 solo ocurre al aceptar 3.3; no se entregan stores mixtos durante 3.1–3.2.

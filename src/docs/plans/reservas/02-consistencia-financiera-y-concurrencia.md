@@ -3,6 +3,16 @@
 Dependencia: [fase 3.1](01-modelo-e-importacion.md).
 [Plan 3 y checklist](README.md). Prerrequisito del corte B2 y de la gestión comercial.
 
+**Implementación local — 2026-11-04:** store PostgreSQL y cotización desde
+`pricingSnapshot` V1 entregados en `feature/reservas-fase3`, con revisión técnica final aprobada.
+Las confirmaciones serializan por fila `Listing` antes de bloquear `Booking`;
+cotizaciones y asociaciones de pago usan versión/estado/importe observados.
+El código y la tabla `Booking` ya están activos en el Compose local tras el corte autorizado.
+En aquella entrega no se ejecutaron pruebas de aplicación ni carreras entre dos
+conexiones. [Evidencia del corte](05-evidencia-local.md). La petición posterior
+autoriza el [testing B2](06-testing-b2.md), donde se registra por separado la
+verificación ejecutada y lo que sigue pendiente de aceptación.
+
 ## Reglas financieras
 
 - [ ] Conservar el comportamiento y las pruebas actuales de céntimos/impuestos al adaptar `quoteStay()`; el cálculo actual con `number` no garantiza precisión para todos los valores admitidos.
@@ -31,8 +41,11 @@ No implementar un proveedor real como parte de esta fase.
 
 ## Verificación y cierre
 
-- [ ] Verificar snapshots estables tras modificar catálogo y rechazo de quote con pago abierto.
-- [ ] Verificar con dos conexiones reales que dos confirmaciones solapadas no ganan ambas.
-- [ ] Verificar pago repetido idempotente y pago tardío/cancelación sin reconfirmación.
-- [ ] Conservar las pruebas financieras existentes y añadir solo los huecos reales según la [verificación común](../comunes/verificacion-y-aceptacion.md).
-- [ ] Registrar la limitación del mock y mantener bloqueada cualquier afirmación de pagos reales/multiinstancia listos para producción.
+- [x] Verificar snapshots estables tras modificar catálogo y rechazo de quote con pago abierto.
+- [x] Verificar con dos conexiones reales que dos confirmaciones solapadas no ganan ambas.
+- [x] Verificar pago repetido idempotente y pago tardío/cancelación sin reconfirmación, incluida la carrera en ambos órdenes.
+- [x] Conservar las pruebas financieras existentes y añadir solo los huecos reales según la [verificación común](../comunes/verificacion-y-aceptacion.md).
+- [x] Registrar la limitación del mock y mantener bloqueada cualquier afirmación de pagos reales/multiinstancia listos para producción.
+
+Comandos y resultados: [testing B2](06-testing-b2.md). Estos checks registran
+verificación técnica, no aceptación de producción ni de la entrega completa.

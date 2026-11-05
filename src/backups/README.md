@@ -37,6 +37,22 @@ Un fallo deja el intento incompleto identificado; no usarlo como checkpoint vál
 
 ### Último checkpoint verificado — 2026-11-04
 
+`progreso-20261104T224003331Z-UcgQFM.tar.gz`
+
+SHA-256: `b5509d31e48a34678d28122de76115bb2cca6dc09576d6c6c465bcc393c87349`.
+Respaldo previo al corte B2 autorizado: BD `gateways` completa, 179 objetos del
+bucket `blog-media` (186 655 527 bytes), 11 hospedajes y 9 borradores/publicaciones.
+Hash exterior, 186 checksums internos y helper de 179 objetos verificados.
+**Restauración de este checkpoint no ensayada.**
+
+Complemento privado `b2-corte-20261104T2242-3l4xp4xa/`: dump final con app detenida,
+fuente explícita vacía, hashes previos de tablas y patch integrado de código. Hash
+del dump: `ee5f754ac8bf1e80be540093a47a50e3ae8662e8f54ec29a7d97dd6a181de596`.
+Su `SHA256SUMS` permite comprobar los archivos. Este complemento no reemplaza el
+archivo completo que contiene los objetos RustFS. Ver [el corte B2](../docs/plans/reservas/05-evidencia-local.md).
+
+### Checkpoint posterior al catálogo — 2026-11-04
+
 `progreso-20261104T203633013Z-zRoteV.tar.gz`
 
 SHA-256: `367712df2e564a9881f663d99516590b20bee6a6ea56460e669970aca3b4ee54`.

@@ -2,9 +2,18 @@
 
 Estado: **plan 1 aceptado por la persona solicitante el 2026-11-03, con excepciones operativas pendientes**;
 **plan 2 implementado y migrado localmente el 2026-11-04**, sin testing por petición
-expresa; planes 3–4 y las nuevas fases de huéspedes y pagos pendientes. La prioridad es un
+expresa; código de 3.1–3.3 implementado, revisado y **migrado al Compose local**
+el 2026-11-04, con cero reservas iniciales por confirmación de la persona solicitante.
+El [testing funcional/concurrencia B2](reservas/06-testing-b2.md) está completado;
+la aceptación de la entrega sigue pendiente, al igual que plan 4 y las nuevas fases
+de huéspedes y pagos pendientes. La prioridad es un
 recorrido local de reserva y pago en testnet asociado a una cuenta de huésped.
 Inventario de referencia: 2026-10-31.
+
+**Seguimiento posterior:** la persona solicitante autoriza el testing de la fase
+actual 3.1–3.3/B2. Comandos, resultados y límites en
+[testing B2](reservas/06-testing-b2.md); las restricciones históricas de no testing
+no impiden esta verificación y no se convierten en evidencia de pruebas anteriores.
 
 **Actualización de alcance — 2026-11-04:** completar el plan 2 en el Compose local
 con subagentes Luna y **sin crear ni ejecutar tests, lint, typecheck o build** por
@@ -40,6 +49,12 @@ conservan la aceptación anterior y no certifican los nuevos alcances.
 - [ ] **Fase H — Cuentas de huéspedes.** Registro, sesiones y acceso a reservas propias, separados de las cuentas del personal. Puede avanzarse tras el plan 1, coordinando migraciones con el plan 2.
 - [ ] **Fase T — BTCPay en Docker Compose local.** Preparar BTCPay Server, NBXplorer y Bitcoin Core XXS en testnet; puede avanzarse en paralelo con el catálogo y las cuentas.
 - [ ] **Plan 3 — [Persistencia y gestión de reservas](reservas/README.md).** Requiere el plan 2; el recorrido de huéspedes incorpora además la fase H.
+  **Implementación y corte local 3.1–3.3 completados**, integrados en el checkout original
+  y activos sobre PostgreSQL; [evidencia](reservas/05-evidencia-local.md).
+  [Testing técnico B2 completado](reservas/06-testing-b2.md), con recorrido mock y
+  carreras reales sobre PostgreSQL desechable. Sus casillas conservan pendiente la
+  aceptación de la entrega por la persona solicitante; no indican que falte código,
+  migración local o ejecutar ese testing. 3.4 continúa después de H/T/P.
   - [ ] 3.1 — Modelo e importación privada de reservas.
   - [ ] 3.2 — Consistencia financiera, snapshots y concurrencia.
   - [ ] 3.3 — Adaptación de entradas, corte a PostgreSQL y verificación. **Hito B2 de persistencia.**

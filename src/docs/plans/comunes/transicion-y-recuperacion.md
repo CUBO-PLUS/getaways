@@ -94,6 +94,15 @@ habilita administración comercial. La autorización de medios usa identidad de 
 
 ## Hito B2 — Reservas compartidas y consistencia
 
+**Corte local realizado — 2026-11-04:** autorizado expresamente por la persona
+solicitante, sin reservas operativas iniciales. Respaldo fresco completo y dump
+final pausado, migración de `Booking` aplicada, importación/verificación de cero
+filas y app original activa sobre PostgreSQL. Se conservaron las 15 tablas previas.
+[Evidencia](../reservas/05-evidencia-local.md). Las comprobaciones funcionales y de
+concurrencia se ejecutaron posteriormente en el [testing B2](../reservas/06-testing-b2.md).
+El ensayo del respaldo fresco y la aceptación de entrega siguen pendientes;
+no declara producción lista.
+
 Requiere B1 y fases 3.1–3.3 listas y ensayadas. No requiere el panel de reservas
 3.4 ni el plan 4; su aceptación desbloquea ambos.
 
