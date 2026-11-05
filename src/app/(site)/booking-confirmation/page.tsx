@@ -2,7 +2,7 @@ import BookingConfirmationTemplate from "@/components/templates/BookingConfirmat
 import { getBookingConfirmationData } from "@/modules/bookings/server/bookings";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Booking Confirmation — Getaways El Salvador" };
+export const metadata = { title: "Booking Confirmation — Getaways El Salvador", robots: { index: false, follow: false, noarchive: true } };
 
 export default async function BookingConfirmationPage({
   searchParams,

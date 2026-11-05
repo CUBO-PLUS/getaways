@@ -1,203 +1,241 @@
 import "server-only";
 
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import path from "node:path";
-
-/*
- * The bookings table, kept in memory and written to `.data/bookings.json`.
- *
- * Why a file and not a database: this copy of the site runs on one laptop, for
- * a class. Dev reloads and restarts keep the bookings because the file survives
- * them. Nothing here ships to the repo: `.data/` is gitignored, and no guest
- * data is in the code.
- *
- * Everything is synchronous on purpose. Node runs one JS thread, so a read and
- * a write cannot interleave in the middle of a status change, and the file is
- * never read half-written.
- *
- * The only way a booking becomes "confirmed" is markPaid(paymentId) below.
- * Pages and routes never set the status themselves.
- */
+import { Temporal } from "temporal-polyfill/full";
+import { db } from "@/infrastructure/prisma/db";
+import { isCanonicalCheckoutSessionId, parsePricingSnapshot, type PricingSnapshotV1 } from "@/modules/bookings/booking-persistence";
 
 export type BookingStatus = "pending_payment" | "confirmed" | "cancelled";
 
 export type Booking = {
-  id: number;
-  listing_id: number;
-  check_in: string;
-  check_out: string;
-  nights: number;
-  guest_name: string;
-  guest_email: string;
-  guest_phone: string | null;
-  guest_notes: string | null;
-  /** Party size the guest picked at checkout. Null until they pick one. */
-  guests: number | null;
-  currency: "USD";
-  price_per_night_cents: number;
-  cleaning_fee_cents: number;
-  /** The quote the guest agreed to. Written by /api/checkout/quote. */
-  pet_fee_cents: number;
-  extra_guest_fee_cents: number;
-  discount_cents: number;
-  /** IVA plus tourism tax, the two taxes on the bill added together. */
-  tax_cents: number;
-  total_amount_cents: number;
-  coupon_code: string | null;
-  status: BookingStatus;
-  /** The handle the guest's checkout URL carries (`?session_id=`). */
-  checkout_session_id: string | null;
-  /** The payment id from the payment provider. Set once a payment is opened. */
-  payment_reference: string | null;
-  admin_notes: string | null;
-  created_at: string;
-  updated_at: string;
+  id: number; listing_id: number; check_in: string; check_out: string; nights: number;
+  guest_name: string; guest_email: string; guest_phone: string | null; guest_notes: string | null;
+  guests: number | null; currency: "USD"; price_per_night_cents: number; cleaning_fee_cents: number;
+  pet_fee_cents: number; extra_guest_fee_cents: number; discount_cents: number; tax_cents: number;
+  total_amount_cents: number; coupon_code: string | null; status: BookingStatus;
+  checkout_session_id: string | null; payment_reference: string | null; admin_notes: string | null;
+  pricing_snapshot: PricingSnapshotV1 | null; pricing_review_required: boolean; agreed_listing_title: string;
+  version: number; cancelled_at: string | null; cancellation_reason: string | null; cancelled_by: string | null;
+  payment_review_required: boolean; created_at: string; updated_at: string;
 };
 
-export type NewBooking = Omit<Booking, "id" | "created_at" | "updated_at">;
+export type NewBooking = Omit<Booking, "id" | "created_at" | "updated_at" | "version" | "cancelled_at" | "cancellation_reason" | "cancelled_by" | "payment_review_required">;
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type BookingRow = Awaited<ReturnType<typeof db.orm.public.Booking.first>>;
+const MAX_INT4 = 2_147_483_647;
+const isInt4 = (value: number) => Number.isSafeInteger(value) && value >= 0 && value <= MAX_INT4;
 
-type StoreState = { nextId: number; bookings: Booking[] };
-
-const DATA_FILE = path.join(process.cwd(), ".data", "bookings.json");
-
-/* Kept on globalThis so a hot reload of this module does not forget the
-   bookings made a minute ago. The file is the copy that survives a restart. */
-const globalForStore = globalThis as typeof globalThis & { __getawaysBookingStore?: StoreState };
-
-function readFromDisk(): StoreState | null {
-  try {
-    const parsed = JSON.parse(readFileSync(DATA_FILE, "utf8")) as Partial<StoreState>;
-    if (!Array.isArray(parsed.bookings)) return null;
-    const highest = parsed.bookings.reduce((max, booking) => Math.max(max, booking.id), 0);
-    return {
-      bookings: parsed.bookings,
-      nextId: typeof parsed.nextId === "number" && parsed.nextId > highest ? parsed.nextId : highest + 1,
-    };
-  } catch (error) {
-    // No file yet is the normal first run. Anything else is logged and the store starts empty.
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.error("Could not read .data/bookings.json, starting with no bookings:", error);
-    }
-    return null;
-  }
+function cents(value: bigint): number {
+  const result = Number(value);
+  if (!Number.isSafeInteger(result) || result < 0) throw new RangeError("Stored booking amount is outside the safe integer range.");
+  return result;
 }
 
-function state(): StoreState {
-  if (!globalForStore.__getawaysBookingStore) {
-    globalForStore.__getawaysBookingStore = readFromDisk() ?? { nextId: 1, bookings: [] };
-  }
-  return globalForStore.__getawaysBookingStore;
+function mapBooking(row: NonNullable<BookingRow>): Booking {
+  const snapshot = parsePricingSnapshot(row.pricingSnapshot);
+  return {
+    id: row.id, listing_id: row.listingId, check_in: String(row.checkIn), check_out: String(row.checkOut), nights: row.nights,
+    guest_name: row.guestName, guest_email: row.guestEmail, guest_phone: row.guestPhone, guest_notes: row.guestNotes,
+    guests: row.guests, currency: "USD", price_per_night_cents: cents(row.pricePerNightCents),
+    cleaning_fee_cents: cents(row.cleaningFeeCents), pet_fee_cents: cents(row.petFeeCents),
+    extra_guest_fee_cents: cents(row.extraGuestFeeCents), discount_cents: cents(row.discountCents),
+    tax_cents: cents(row.taxCents), total_amount_cents: cents(row.totalAmountCents), coupon_code: row.couponCode,
+    status: row.status as BookingStatus, checkout_session_id: row.checkoutSessionId, payment_reference: row.paymentReference,
+    admin_notes: row.adminNotes, pricing_snapshot: snapshot, pricing_review_required: row.pricingReviewRequired,
+    agreed_listing_title: row.agreedListingTitle, version: row.version,
+    cancelled_at: row.cancelledAt?.toString() ?? null, cancellation_reason: row.cancellationReason,
+    cancelled_by: row.cancelledBy, payment_review_required: row.paymentReviewRequired,
+    created_at: row.createdAt.toString(), updated_at: row.updatedAt.toString(),
+  };
 }
 
-function persist(): void {
-  mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-  const tmp = `${DATA_FILE}.tmp`;
-  writeFileSync(tmp, JSON.stringify(state(), null, 2));
-  renameSync(tmp, DATA_FILE);
+function bookingData(fields: NewBooking) {
+  return {
+    listingId: fields.listing_id, checkIn: fields.check_in, checkOut: fields.check_out, nights: fields.nights,
+    guestName: fields.guest_name, guestEmail: fields.guest_email, guestPhone: fields.guest_phone,
+    guestNotes: fields.guest_notes, guests: fields.guests, currency: fields.currency,
+    pricePerNightCents: BigInt(fields.price_per_night_cents), cleaningFeeCents: BigInt(fields.cleaning_fee_cents),
+    petFeeCents: BigInt(fields.pet_fee_cents), extraGuestFeeCents: BigInt(fields.extra_guest_fee_cents),
+    discountCents: BigInt(fields.discount_cents), taxCents: BigInt(fields.tax_cents),
+    totalAmountCents: BigInt(fields.total_amount_cents), couponCode: fields.coupon_code,
+    status: fields.status, checkoutSessionId: fields.checkout_session_id, paymentReference: fields.payment_reference,
+    adminNotes: fields.admin_notes, pricingSnapshot: fields.pricing_snapshot, pricingReviewRequired: fields.pricing_review_required,
+    agreedListingTitle: fields.agreed_listing_title,
+  };
 }
 
-/* Copies out, so a caller that edits its copy cannot change the store behind
-   the back of the next write. */
-function copy(booking: Booking): Booking {
-  return { ...booking };
+async function lockListing(tx: Transaction, listingId: number): Promise<boolean> {
+  const rows = await tx.query(db.raw.sql`SELECT id FROM "Listing" WHERE id = ${listingId} FOR NO KEY UPDATE`
+    .returnsRow({ id: "pg/int4@1" }).build());
+  return rows.length > 0;
+}
+
+async function lockedBooking(tx: Transaction, id: number) {
+  return tx.orm.public.Booking.where({ id }).forUpdate().first();
 }
 
 export async function listBookings(): Promise<Booking[]> {
-  return state().bookings.map(copy);
+  return (await db.orm.public.Booking.all()).map(mapBooking);
 }
 
 export async function getBookingById(id: number): Promise<Booking | null> {
-  const found = state().bookings.find((booking) => booking.id === id);
-  return found ? copy(found) : null;
+  if (!isInt4(id) || id <= 0) return null;
+  const row = await db.orm.public.Booking.where({ id }).first();
+  return row ? mapBooking(row) : null;
 }
 
 export async function getBookingBySessionId(sessionId: string): Promise<Booking | null> {
-  const found = state().bookings.find((booking) => booking.checkout_session_id === sessionId);
-  return found ? copy(found) : null;
+  if (!isCanonicalCheckoutSessionId(sessionId)) return null;
+  const row = await db.orm.public.Booking.where({ checkoutSessionId: sessionId }).first();
+  if (!row || !isCanonicalCheckoutSessionId(row.checkoutSessionId, row.id)) return null;
+  return mapBooking(row);
 }
 
-export async function createBooking(fields: NewBooking): Promise<Booking> {
-  const store = state();
-  const now = new Date().toISOString();
-  const booking: Booking = { ...fields, id: store.nextId, created_at: now, updated_at: now };
-  store.nextId += 1;
-  store.bookings.push(booking);
-  persist();
-  return copy(booking);
+/** New rows carry the complete catalogue snapshot and historical title supplied by the caller. */
+export async function createBooking(fields: NewBooking): Promise<Booking | null> {
+  if (![fields.listing_id, fields.nights].every((value) => isInt4(value) && value > 0) ||
+    (fields.guests !== null && (!isInt4(fields.guests) || fields.guests < 1)) ||
+    !fields.pricing_snapshot || fields.pricing_review_required ||
+    !isInt4(fields.pricing_snapshot.baseGuests) || !isInt4(fields.pricing_snapshot.maxGuests) ||
+    ![fields.price_per_night_cents, fields.cleaning_fee_cents, fields.pet_fee_cents, fields.extra_guest_fee_cents,
+      fields.discount_cents, fields.tax_cents, fields.total_amount_cents].every((value) => Number.isSafeInteger(value) && value >= 0) ||
+    !fields.agreed_listing_title.trim()) {
+    throw new RangeError("Booking values cannot be represented safely.");
+  }
+  return db.transaction(async (tx) => {
+    if (!await lockListing(tx, fields.listing_id)) return null;
+    const listing = await tx.orm.public.Listing.where({ id: fields.listing_id, active: true, archivedAt: null }).first();
+    if (!listing) return null;
+    const conflicts = await tx.orm.public.Booking.where({ listingId: fields.listing_id, status: "confirmed" }).all();
+    if (conflicts.some((row) => String(row.checkIn) < fields.check_out && fields.check_in < String(row.checkOut))) return null;
+    const row = await tx.orm.public.Booking.create(bookingData(fields));
+    return mapBooking(row);
+  });
 }
 
-/**
- * Changes fields on one booking. The status is not guarded here, so callers
- * (modules/bookings/server/bookings.ts) must check it before they write. Returns null if no such booking.
- */
-export async function updateBooking(
-  id: number,
-  patch: Partial<Omit<Booking, "id" | "created_at">>
-): Promise<Booking | null> {
-  const booking = state().bookings.find((entry) => entry.id === id);
-  if (!booking) return null;
-  Object.assign(booking, patch, { updated_at: new Date().toISOString() });
-  persist();
-  return copy(booking);
+export async function setCheckoutSession(id: number, expectedVersion: number, sessionId: string): Promise<Booking | null> {
+  if (!isCanonicalCheckoutSessionId(sessionId, id) || !isInt4(expectedVersion) || expectedVersion >= MAX_INT4) return null;
+  return db.transaction(async (tx) => {
+    const current = await tx.orm.public.Booking.where({ id, version: expectedVersion, status: "pending_payment", checkoutSessionId: null }).first();
+    if (!current) return null;
+    const row = await tx.orm.public.Booking.where({ id, version: expectedVersion, status: "pending_payment", checkoutSessionId: null }).update({
+      checkoutSessionId: sessionId, version: expectedVersion + 1,
+    });
+    return row ? mapBooking(row) : null;
+  });
 }
 
-/** Stays already paid for on a listing, as half-open date ranges. Used for the availability calendar. */
+export type QuoteUpdate = {
+  guests: number; price_per_night_cents: number; cleaning_fee_cents: number; pet_fee_cents: number;
+  extra_guest_fee_cents: number; discount_cents: number; tax_cents: number; total_amount_cents: number; coupon_code: string | null;
+};
+
+export async function saveBookingQuote(id: number, expectedVersion: number, quote: QuoteUpdate): Promise<Booking | null> {
+  if (!isInt4(id) || id < 1 || !isInt4(expectedVersion) || expectedVersion >= MAX_INT4 ||
+    !isInt4(quote.guests) || quote.guests < 1 ||
+    ![quote.price_per_night_cents, quote.cleaning_fee_cents, quote.pet_fee_cents, quote.extra_guest_fee_cents,
+      quote.discount_cents, quote.tax_cents, quote.total_amount_cents].every((value) => Number.isSafeInteger(value) && value >= 0) ||
+    quote.total_amount_cents <= 0) return null;
+  return db.transaction(async (tx) => {
+    const current = await tx.orm.public.Booking.where({ id, version: expectedVersion, status: "pending_payment", paymentReference: null, pricingReviewRequired: false }).first();
+    if (!current) return null;
+    const row = await tx.orm.public.Booking.where({ id, version: expectedVersion, status: "pending_payment", paymentReference: null, pricingReviewRequired: false }).update({
+      guests: quote.guests, pricePerNightCents: BigInt(quote.price_per_night_cents),
+      cleaningFeeCents: BigInt(quote.cleaning_fee_cents), petFeeCents: BigInt(quote.pet_fee_cents),
+      extraGuestFeeCents: BigInt(quote.extra_guest_fee_cents), discountCents: BigInt(quote.discount_cents),
+      taxCents: BigInt(quote.tax_cents), totalAmountCents: BigInt(quote.total_amount_cents), couponCode: quote.coupon_code,
+      version: expectedVersion + 1,
+    });
+    return row ? mapBooking(row) : null;
+  });
+}
+
+/** Persist a provider result only if this attempt still owns the quoted pending booking. */
+export async function associatePaymentReference(input: { id: number; expectedVersion: number; amountCents: number; paymentReference: string }): Promise<Booking | null> {
+  if (!isInt4(input.id) || input.id < 1 || !isInt4(input.expectedVersion) || input.expectedVersion >= MAX_INT4 ||
+    !Number.isSafeInteger(input.amountCents) || input.amountCents <= 0 ||
+    !input.paymentReference || input.paymentReference.length > 200) return null;
+  const before = await db.orm.public.Booking.where({ id: input.id }).select("listingId").first();
+  if (!before) return null;
+  return db.transaction(async (tx) => {
+    if (!await lockListing(tx, before.listingId)) return null;
+    const current = await lockedBooking(tx, input.id);
+    if (!current || current.listingId !== before.listingId || current.version !== input.expectedVersion || current.status !== "pending_payment" ||
+      current.paymentReference !== null || current.pricingReviewRequired || current.totalAmountCents !== BigInt(input.amountCents)) return null;
+    const row = await tx.orm.public.Booking.where({ id: input.id, version: input.expectedVersion, paymentReference: null, status: "pending_payment" }).update({
+      paymentReference: input.paymentReference, version: input.expectedVersion + 1,
+    });
+    return row ? mapBooking(row) : null;
+  });
+}
+
 export async function confirmedRangesForListing(listingId: number): Promise<Array<{ start_date: string; end_date: string }>> {
-  return state()
-    .bookings.filter((booking) => booking.listing_id === listingId && booking.status === "confirmed")
-    .map((booking) => ({ start_date: booking.check_in, end_date: booking.check_out }));
+  const rows = await db.orm.public.Booking.where({ listingId, status: "confirmed" }).select("checkIn", "checkOut").all();
+  return rows.map((row) => ({ start_date: String(row.checkIn), end_date: String(row.checkOut) }));
 }
 
-export type MarkPaidResult =
-  | { found: false }
-  | { found: true; booking: Booking; alreadyConfirmed: boolean; doubleBooked: boolean };
+export type MarkPaidResult = { found: false } | { found: true; booking: Booking; alreadyConfirmed: boolean; doubleBooked: boolean };
 
-/**
- * The ONLY place a booking becomes confirmed.
- *
- * Called by the payment provider (modules/payments/btc-mock.ts, once students
- * implement it) or by the dev-only "simulate payment" button in
- * app/api/checkout/btc/route.ts. Looks the booking up by its payment id.
- *
- * - Already confirmed: a no-op, so a repeated call is safe.
- * - Cancelled: the money is recorded on the row and the status stays cancelled,
- *   so someone can refund it by hand.
- * - Dates taken by a confirmed booking since the payment opened: cancelled, same as above.
- */
-export async function markPaid(paymentId: string): Promise<MarkPaidResult> {
-  const store = state();
-  const booking = store.bookings.find((entry) => entry.payment_reference === paymentId);
-  if (!booking) return { found: false };
+export async function markPaid(evidence: { paymentId: string; bookingId: number; amountCents: number; currency: "USD" }): Promise<MarkPaidResult> {
+  if (typeof evidence.paymentId !== "string" || evidence.paymentId.length < 1 || evidence.paymentId.length > 200 ||
+    !isInt4(evidence.bookingId) || evidence.bookingId < 1 || !Number.isSafeInteger(evidence.amountCents) ||
+    evidence.amountCents <= 0 || evidence.currency !== "USD") return { found: false };
+  const before = await db.orm.public.Booking.where({ paymentReference: evidence.paymentId, id: evidence.bookingId }).select("id", "listingId").first();
+  if (!before) return { found: false };
+  return db.transaction(async (tx) => {
+    if (!await lockListing(tx, before.listingId)) return { found: false } as const;
+    const row = await lockedBooking(tx, before.id);
+    if (!row || row.listingId !== before.listingId || row.paymentReference !== evidence.paymentId ||
+      row.totalAmountCents !== BigInt(evidence.amountCents)) return { found: false } as const;
+    const booking = mapBooking(row);
+    if (booking.status === "confirmed") return { found: true, booking, alreadyConfirmed: true, doubleBooked: false } as const;
+    if (booking.status === "cancelled" && booking.payment_review_required) {
+      return { found: true, booking, alreadyConfirmed: false, doubleBooked: booking.admin_notes?.includes("dates overlap") ?? false } as const;
+    }
 
-  if (booking.status === "confirmed") {
-    return { found: true, booking: copy(booking), alreadyConfirmed: true, doubleBooked: false };
-  }
+    const others = await tx.orm.public.Booking.where({ listingId: row.listingId, status: "confirmed" }).all();
+    const overlap = others.some((other) => other.id !== row.id && String(other.checkIn) < booking.check_out && booking.check_in < String(other.checkOut));
+    if (booking.status === "cancelled" || overlap) {
+      const note = overlap
+        ? "Payment received but dates overlap a confirmed booking; manual payment review/refund required."
+        : "Payment received after cancellation; manual payment review/refund required.";
+      const autoCancelled = booking.status === "pending_payment" && overlap;
+      const notes = booking.admin_notes?.split("\n") ?? [];
+      if (!notes.includes(note)) notes.push(note);
+      const saved = await tx.orm.public.Booking.where({ id: row.id, version: row.version }).update({
+        status: "cancelled", adminNotes: notes.filter(Boolean).join("\n"), paymentReviewRequired: true, version: row.version + 1,
+        ...(autoCancelled ? {
+          cancelledAt: row.cancelledAt ?? Temporal.Now.instant(),
+          cancellationReason: row.cancellationReason ?? note,
+          cancelledBy: row.cancelledBy ?? "system",
+        } : {}),
+      });
+      return { found: true, booking: mapBooking(saved ?? row), alreadyConfirmed: false, doubleBooked: overlap } as const;
+    }
+    const saved = await tx.orm.public.Booking.where({ id: row.id, version: row.version, status: "pending_payment", paymentReference: evidence.paymentId }).update({
+      status: "confirmed", version: row.version + 1,
+    });
+    return saved
+      ? { found: true, booking: mapBooking(saved), alreadyConfirmed: false, doubleBooked: false } as const
+      : { found: false } as const;
+  });
+}
 
-  const stamp = new Date().toISOString();
-  const overlaps = store.bookings.some(
-    (other) =>
-      other.id !== booking.id &&
-      other.listing_id === booking.listing_id &&
-      other.status === "confirmed" &&
-      other.check_in < booking.check_out &&
-      booking.check_in < other.check_out
-  );
-
-  if (booking.status === "cancelled" || overlaps) {
-    const note = overlaps
-      ? "Auto-cancelled: these dates were confirmed by another booking while this payment was open."
-      : "Payment received after this booking was cancelled.";
-    booking.status = "cancelled";
-    booking.admin_notes = [booking.admin_notes, note, "Refund the payment to the guest by hand."]
-      .filter(Boolean)
-      .join("\n");
-    booking.updated_at = stamp;
-    persist();
-    return { found: true, booking: copy(booking), alreadyConfirmed: false, doubleBooked: overlaps };
-  }
-
-  booking.status = "confirmed";
-  booking.updated_at = stamp;
-  persist();
-  return { found: true, booking: copy(booking), alreadyConfirmed: false, doubleBooked: false };
+/** Concrete cancellation transition; intentionally not wired to a public/admin route in this phase. */
+export async function cancelBooking(id: number, expectedVersion: number, reason: string, actor: string): Promise<Booking | null> {
+  const cleanReason = reason.trim();
+  const cleanActor = actor.trim();
+  if (!cleanReason || cleanReason.length > 500 || !cleanActor || cleanActor.length > 200) throw new RangeError("Invalid cancellation details.");
+  if (!isInt4(id) || id < 1 || !isInt4(expectedVersion) || expectedVersion >= MAX_INT4) return null;
+  const before = await db.orm.public.Booking.where({ id }).select("listingId").first();
+  if (!before) return null;
+  return db.transaction(async (tx) => {
+    if (!await lockListing(tx, before.listingId)) return null;
+    const row = await lockedBooking(tx, id);
+    if (!row || row.listingId !== before.listingId || row.version !== expectedVersion || row.status === "cancelled") return null;
+    const saved = await tx.orm.public.Booking.where({ id, version: expectedVersion, status: row.status }).update({
+      status: "cancelled", cancelledAt: Temporal.Now.instant(), cancellationReason: cleanReason,
+      cancelledBy: cleanActor, version: expectedVersion + 1,
+    });
+    return saved ? mapBooking(saved) : null;
+  });
 }

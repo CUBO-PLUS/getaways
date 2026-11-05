@@ -18,9 +18,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b3b6063e6e046aeb330bcb6c54502a2d20efa4c8e4aebb86346f522aafe9258d'>;
+  StorageHashBase<'03338025e81ccb1e61e9bbb29b7f143a122e1f1676b5986e4065564af03abe34'>;
 export type ExecutionHash =
-  ExecutionHashBase<'488d8df800ea5dd186d7087f4ea68b3c59716316d33af834ce4b783da2ed69a5'>;
+  ExecutionHashBase<'b57f18bf241bb2a8474ccb7b1dc7c507a8043da5584d2b5d0a48cab639c916d1'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -303,6 +303,41 @@ export type FieldOutputTypes = {
       readonly categoryId: CodecTypes['pg/int4@1']['output'];
       readonly publicationPostId: CodecTypes['pg/int4@1']['output'];
     };
+    readonly Booking: {
+      readonly adminNotes: CodecTypes['pg/text@1']['output'] | null;
+      readonly agreedListingTitle: CodecTypes['pg/text@1']['output'];
+      readonly cancellationReason: CodecTypes['pg/text@1']['output'] | null;
+      readonly cancelledAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly cancelledBy: CodecTypes['pg/text@1']['output'] | null;
+      readonly checkIn: CodecTypes['pg/date-string@1']['output'];
+      readonly checkOut: CodecTypes['pg/date-string@1']['output'];
+      readonly checkoutSessionId: CodecTypes['pg/text@1']['output'] | null;
+      readonly cleaningFeeCents: CodecTypes['pg/int8@1']['output'];
+      readonly couponCode: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly currency: CodecTypes['pg/text@1']['output'];
+      readonly discountCents: CodecTypes['pg/int8@1']['output'];
+      readonly extraGuestFeeCents: CodecTypes['pg/int8@1']['output'];
+      readonly guestEmail: CodecTypes['pg/text@1']['output'];
+      readonly guestName: CodecTypes['pg/text@1']['output'];
+      readonly guestNotes: CodecTypes['pg/text@1']['output'] | null;
+      readonly guestPhone: CodecTypes['pg/text@1']['output'] | null;
+      readonly guests: CodecTypes['pg/int4@1']['output'] | null;
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly listingId: CodecTypes['pg/int4@1']['output'];
+      readonly nights: CodecTypes['pg/int4@1']['output'];
+      readonly paymentReference: CodecTypes['pg/text@1']['output'] | null;
+      readonly paymentReviewRequired: CodecTypes['pg/bool@1']['output'];
+      readonly petFeeCents: CodecTypes['pg/int8@1']['output'];
+      readonly pricePerNightCents: CodecTypes['pg/int8@1']['output'];
+      readonly pricingReviewRequired: CodecTypes['pg/bool@1']['output'];
+      readonly pricingSnapshot: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly taxCents: CodecTypes['pg/int8@1']['output'];
+      readonly totalAmountCents: CodecTypes['pg/int8@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+    };
     readonly Listing: {
       readonly active: CodecTypes['pg/bool@1']['output'];
       readonly archivedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
@@ -444,6 +479,41 @@ export type FieldInputTypes = {
     readonly BlogPublicationCategory: {
       readonly categoryId: CodecTypes['pg/int4@1']['input'];
       readonly publicationPostId: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly Booking: {
+      readonly adminNotes: CodecTypes['pg/text@1']['input'] | null;
+      readonly agreedListingTitle: CodecTypes['pg/text@1']['input'];
+      readonly cancellationReason: CodecTypes['pg/text@1']['input'] | null;
+      readonly cancelledAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly cancelledBy: CodecTypes['pg/text@1']['input'] | null;
+      readonly checkIn: CodecTypes['pg/date-string@1']['input'];
+      readonly checkOut: CodecTypes['pg/date-string@1']['input'];
+      readonly checkoutSessionId: CodecTypes['pg/text@1']['input'] | null;
+      readonly cleaningFeeCents: CodecTypes['pg/int8@1']['input'];
+      readonly couponCode: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly currency: CodecTypes['pg/text@1']['input'];
+      readonly discountCents: CodecTypes['pg/int8@1']['input'];
+      readonly extraGuestFeeCents: CodecTypes['pg/int8@1']['input'];
+      readonly guestEmail: CodecTypes['pg/text@1']['input'];
+      readonly guestName: CodecTypes['pg/text@1']['input'];
+      readonly guestNotes: CodecTypes['pg/text@1']['input'] | null;
+      readonly guestPhone: CodecTypes['pg/text@1']['input'] | null;
+      readonly guests: CodecTypes['pg/int4@1']['input'] | null;
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly listingId: CodecTypes['pg/int4@1']['input'];
+      readonly nights: CodecTypes['pg/int4@1']['input'];
+      readonly paymentReference: CodecTypes['pg/text@1']['input'] | null;
+      readonly paymentReviewRequired: CodecTypes['pg/bool@1']['input'];
+      readonly petFeeCents: CodecTypes['pg/int8@1']['input'];
+      readonly pricePerNightCents: CodecTypes['pg/int8@1']['input'];
+      readonly pricingReviewRequired: CodecTypes['pg/bool@1']['input'];
+      readonly pricingSnapshot: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly taxCents: CodecTypes['pg/int8@1']['input'];
+      readonly totalAmountCents: CodecTypes['pg/int8@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
     };
     readonly Listing: {
       readonly active: CodecTypes['pg/bool@1']['input'];
@@ -587,6 +657,41 @@ export type StorageColumnTypes = {
       readonly categoryId: CodecTypes['pg/int4@1']['output'];
       readonly publicationPostId: CodecTypes['pg/int4@1']['output'];
     };
+    readonly Booking: {
+      readonly adminNotes: CodecTypes['pg/text@1']['output'] | null;
+      readonly agreedListingTitle: CodecTypes['pg/text@1']['output'];
+      readonly cancellationReason: CodecTypes['pg/text@1']['output'] | null;
+      readonly cancelledAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly cancelledBy: CodecTypes['pg/text@1']['output'] | null;
+      readonly checkIn: CodecTypes['pg/date-string@1']['output'];
+      readonly checkOut: CodecTypes['pg/date-string@1']['output'];
+      readonly checkoutSessionId: CodecTypes['pg/text@1']['output'] | null;
+      readonly cleaningFeeCents: CodecTypes['pg/int8@1']['output'];
+      readonly couponCode: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly currency: CodecTypes['pg/text@1']['output'];
+      readonly discountCents: CodecTypes['pg/int8@1']['output'];
+      readonly extraGuestFeeCents: CodecTypes['pg/int8@1']['output'];
+      readonly guestEmail: CodecTypes['pg/text@1']['output'];
+      readonly guestName: CodecTypes['pg/text@1']['output'];
+      readonly guestNotes: CodecTypes['pg/text@1']['output'] | null;
+      readonly guestPhone: CodecTypes['pg/text@1']['output'] | null;
+      readonly guests: CodecTypes['pg/int4@1']['output'] | null;
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly listingId: CodecTypes['pg/int4@1']['output'];
+      readonly nights: CodecTypes['pg/int4@1']['output'];
+      readonly paymentReference: CodecTypes['pg/text@1']['output'] | null;
+      readonly paymentReviewRequired: CodecTypes['pg/bool@1']['output'];
+      readonly petFeeCents: CodecTypes['pg/int8@1']['output'];
+      readonly pricePerNightCents: CodecTypes['pg/int8@1']['output'];
+      readonly pricingReviewRequired: CodecTypes['pg/bool@1']['output'];
+      readonly pricingSnapshot: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly taxCents: CodecTypes['pg/int8@1']['output'];
+      readonly totalAmountCents: CodecTypes['pg/int8@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+    };
     readonly Listing: {
       readonly active: CodecTypes['pg/bool@1']['output'];
       readonly archivedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
@@ -728,6 +833,41 @@ export type StorageColumnInputTypes = {
     readonly BlogPublicationCategory: {
       readonly categoryId: CodecTypes['pg/int4@1']['input'];
       readonly publicationPostId: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly Booking: {
+      readonly adminNotes: CodecTypes['pg/text@1']['input'] | null;
+      readonly agreedListingTitle: CodecTypes['pg/text@1']['input'];
+      readonly cancellationReason: CodecTypes['pg/text@1']['input'] | null;
+      readonly cancelledAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly cancelledBy: CodecTypes['pg/text@1']['input'] | null;
+      readonly checkIn: CodecTypes['pg/date-string@1']['input'];
+      readonly checkOut: CodecTypes['pg/date-string@1']['input'];
+      readonly checkoutSessionId: CodecTypes['pg/text@1']['input'] | null;
+      readonly cleaningFeeCents: CodecTypes['pg/int8@1']['input'];
+      readonly couponCode: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly currency: CodecTypes['pg/text@1']['input'];
+      readonly discountCents: CodecTypes['pg/int8@1']['input'];
+      readonly extraGuestFeeCents: CodecTypes['pg/int8@1']['input'];
+      readonly guestEmail: CodecTypes['pg/text@1']['input'];
+      readonly guestName: CodecTypes['pg/text@1']['input'];
+      readonly guestNotes: CodecTypes['pg/text@1']['input'] | null;
+      readonly guestPhone: CodecTypes['pg/text@1']['input'] | null;
+      readonly guests: CodecTypes['pg/int4@1']['input'] | null;
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly listingId: CodecTypes['pg/int4@1']['input'];
+      readonly nights: CodecTypes['pg/int4@1']['input'];
+      readonly paymentReference: CodecTypes['pg/text@1']['input'] | null;
+      readonly paymentReviewRequired: CodecTypes['pg/bool@1']['input'];
+      readonly petFeeCents: CodecTypes['pg/int8@1']['input'];
+      readonly pricePerNightCents: CodecTypes['pg/int8@1']['input'];
+      readonly pricingReviewRequired: CodecTypes['pg/bool@1']['input'];
+      readonly pricingSnapshot: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly taxCents: CodecTypes['pg/int8@1']['input'];
+      readonly totalAmountCents: CodecTypes['pg/int8@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
     };
     readonly Listing: {
       readonly active: CodecTypes['pg/bool@1']['input'];
@@ -891,6 +1031,43 @@ export namespace Models {
     publication: public_BlogPublication;
     readonly [RelationKeys]?: 'category' | 'publication';
   };
+  export type public_Booking = {
+    adminNotes: CodecTypes['pg/text@1']['output'] | null;
+    agreedListingTitle: CodecTypes['pg/text@1']['output'];
+    cancellationReason: CodecTypes['pg/text@1']['output'] | null;
+    cancelledAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+    cancelledBy: CodecTypes['pg/text@1']['output'] | null;
+    checkIn: CodecTypes['pg/date-string@1']['output'];
+    checkOut: CodecTypes['pg/date-string@1']['output'];
+    checkoutSessionId: CodecTypes['pg/text@1']['output'] | null;
+    cleaningFeeCents: CodecTypes['pg/int8@1']['output'];
+    couponCode: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    currency: CodecTypes['pg/text@1']['output'];
+    discountCents: CodecTypes['pg/int8@1']['output'];
+    extraGuestFeeCents: CodecTypes['pg/int8@1']['output'];
+    guestEmail: CodecTypes['pg/text@1']['output'];
+    guestName: CodecTypes['pg/text@1']['output'];
+    guestNotes: CodecTypes['pg/text@1']['output'] | null;
+    guestPhone: CodecTypes['pg/text@1']['output'] | null;
+    guests: CodecTypes['pg/int4@1']['output'] | null;
+    id: CodecTypes['pg/int4@1']['output'];
+    listingId: CodecTypes['pg/int4@1']['output'];
+    nights: CodecTypes['pg/int4@1']['output'];
+    paymentReference: CodecTypes['pg/text@1']['output'] | null;
+    paymentReviewRequired: CodecTypes['pg/bool@1']['output'];
+    petFeeCents: CodecTypes['pg/int8@1']['output'];
+    pricePerNightCents: CodecTypes['pg/int8@1']['output'];
+    pricingReviewRequired: CodecTypes['pg/bool@1']['output'];
+    pricingSnapshot: CodecTypes['pg/jsonb@1']['output'] | null;
+    status: CodecTypes['pg/text@1']['output'];
+    taxCents: CodecTypes['pg/int8@1']['output'];
+    totalAmountCents: CodecTypes['pg/int8@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    version: CodecTypes['pg/int4@1']['output'];
+    listing: public_Listing;
+    readonly [RelationKeys]?: 'listing';
+  };
   export type public_Listing = {
     active: CodecTypes['pg/bool@1']['output'];
     archivedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
@@ -991,6 +1168,7 @@ export declare const models: {
     BlogPostCategory: Models.public_BlogPostCategory;
     BlogPublication: Models.public_BlogPublication;
     BlogPublicationCategory: Models.public_BlogPublicationCategory;
+    Booking: Models.public_Booking;
     Listing: Models.public_Listing;
     ListingMedia: Models.public_ListingMedia;
     ListingTerm: Models.public_ListingTerm;
@@ -1582,6 +1760,268 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly Booking: {
+              columns: {
+                readonly adminNotes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly agreedListingTitle: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly cancellationReason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cancelledAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cancelledBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly checkIn: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly checkOut: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly checkoutSessionId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cleaningFeeCents: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly couponCode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly currency: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'USD'>;
+                  };
+                  readonly many: false;
+                };
+                readonly discountCents: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly extraGuestFeeCents: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly guestEmail: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly guestName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly guestNotes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly guestPhone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly guests: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                  readonly many: false;
+                };
+                readonly listingId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly nights: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly paymentReference: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly paymentReviewRequired: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly petFeeCents: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly pricePerNightCents: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly pricingReviewRequired: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly pricingSnapshot: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly taxCents: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly totalAmountCents: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly version: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['checkoutSessionId'] },
+                { readonly columns: readonly ['paymentReference'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'Booking_createdAt_idx_9575dbd7';
+                  readonly prefix: 'Booking_createdAt_idx';
+                  readonly columns: readonly ['createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Booking_listingId_idx_953decda';
+                  readonly prefix: 'Booking_listingId_idx';
+                  readonly columns: readonly ['listingId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Booking_listingId_status_checkIn_idx_91c07b52';
+                  readonly prefix: 'Booking_listingId_status_checkIn_idx';
+                  readonly columns: readonly ['listingId', 'status', 'checkIn'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Booking';
+                    readonly columns: readonly ['listingId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Listing';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly Listing: {
               columns: {
                 readonly active: {
@@ -2159,6 +2599,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'BlogPublicationCategory';
     };
+    readonly Booking: { readonly namespace: 'public' & NamespaceId; readonly model: 'Booking' };
     readonly Listing: { readonly namespace: 'public' & NamespaceId; readonly model: 'Listing' };
     readonly ListingMedia: {
       readonly namespace: 'public' & NamespaceId;
@@ -2717,6 +3158,204 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly categoryId: { readonly column: 'categoryId' };
                 readonly publicationPostId: { readonly column: 'publicationPostId' };
+              };
+            };
+          };
+          readonly Booking: {
+            readonly fields: {
+              readonly adminNotes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly agreedListingTitle: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly cancellationReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly cancelledAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly cancelledBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly checkIn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly checkOut: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly checkoutSessionId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly cleaningFeeCents: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly couponCode: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly currency: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly discountCents: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly extraGuestFeeCents: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly guestEmail: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly guestName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly guestNotes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly guestPhone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly guests: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly listingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly nights: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly paymentReference: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly paymentReviewRequired: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly petFeeCents: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly pricePerNightCents: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly pricingReviewRequired: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly pricingSnapshot: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly taxCents: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly totalAmountCents: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly version: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly listing: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Listing';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['listingId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Booking';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly adminNotes: { readonly column: 'adminNotes' };
+                readonly agreedListingTitle: { readonly column: 'agreedListingTitle' };
+                readonly cancellationReason: { readonly column: 'cancellationReason' };
+                readonly cancelledAt: { readonly column: 'cancelledAt' };
+                readonly cancelledBy: { readonly column: 'cancelledBy' };
+                readonly checkIn: { readonly column: 'checkIn' };
+                readonly checkOut: { readonly column: 'checkOut' };
+                readonly checkoutSessionId: { readonly column: 'checkoutSessionId' };
+                readonly cleaningFeeCents: { readonly column: 'cleaningFeeCents' };
+                readonly couponCode: { readonly column: 'couponCode' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly currency: { readonly column: 'currency' };
+                readonly discountCents: { readonly column: 'discountCents' };
+                readonly extraGuestFeeCents: { readonly column: 'extraGuestFeeCents' };
+                readonly guestEmail: { readonly column: 'guestEmail' };
+                readonly guestName: { readonly column: 'guestName' };
+                readonly guestNotes: { readonly column: 'guestNotes' };
+                readonly guestPhone: { readonly column: 'guestPhone' };
+                readonly guests: { readonly column: 'guests' };
+                readonly id: { readonly column: 'id' };
+                readonly listingId: { readonly column: 'listingId' };
+                readonly nights: { readonly column: 'nights' };
+                readonly paymentReference: { readonly column: 'paymentReference' };
+                readonly paymentReviewRequired: { readonly column: 'paymentReviewRequired' };
+                readonly petFeeCents: { readonly column: 'petFeeCents' };
+                readonly pricePerNightCents: { readonly column: 'pricePerNightCents' };
+                readonly pricingReviewRequired: { readonly column: 'pricingReviewRequired' };
+                readonly pricingSnapshot: { readonly column: 'pricingSnapshot' };
+                readonly status: { readonly column: 'status' };
+                readonly taxCents: { readonly column: 'taxCents' };
+                readonly totalAmountCents: { readonly column: 'totalAmountCents' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly version: { readonly column: 'version' };
               };
             };
           };
@@ -3308,6 +3947,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'BlogPublication';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'instantNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Booking';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

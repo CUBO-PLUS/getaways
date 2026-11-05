@@ -188,6 +188,54 @@ model Listing {
   @@check(expression: sql`jsonb_typeof(attributes) = 'object' AND NOT (attributes ?| ARRAY['price', 'cleaning_fee', 'extra_guest_fee', 'pet_fee', 'iva', 'tourism_tax', 'pricePerNightCents', 'cleaningFeeCents', 'extraGuestFeeCents', 'petFeeCents', 'ivaBasisPoints', 'tourismBasisPoints'])`, name: "listing_attributes_descriptive")
 }
 
+model Booking {
+  id                     Int       @id @default(autoincrement())
+  listingId              Int
+  checkIn                DateString
+  checkOut               DateString
+  nights                 Int
+  guestName              String
+  guestEmail             String
+  guestPhone             String?
+  guestNotes             String?
+  guests                 Int?
+  currency               String    @default("USD")
+  pricePerNightCents     BigInt
+  cleaningFeeCents       BigInt
+  petFeeCents            BigInt
+  extraGuestFeeCents     BigInt
+  discountCents          BigInt
+  taxCents               BigInt
+  totalAmountCents       BigInt
+  couponCode             String?
+  status                 String
+  checkoutSessionId      String?   @unique
+  paymentReference       String?   @unique
+  adminNotes             String?
+  pricingSnapshot        Jsonb?
+  pricingReviewRequired  Boolean   @default(false)
+  agreedListingTitle     String
+  version                Int       @default(1)
+  cancelledAt            DateTime?
+  cancellationReason     String?
+  cancelledBy            String?
+  paymentReviewRequired  Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              temporal.updatedAt()
+  listing                Listing   @relation(fields: [listingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([listingId, status, checkIn])
+  @@index([createdAt])
+  @@check(expression: sql`nights > 0 AND "checkIn" < "checkOut"`, name: "booking_stay_valid")
+  @@check(expression: sql`"guestName" <> '' AND "guestEmail" <> '' AND "agreedListingTitle" <> ''`, name: "booking_guest_fields_nonempty")
+  @@check(expression: sql`"pricePerNightCents" >= 0 AND "cleaningFeeCents" >= 0 AND "petFeeCents" >= 0 AND "extraGuestFeeCents" >= 0 AND "discountCents" >= 0 AND "taxCents" >= 0 AND "totalAmountCents" >= 0`, name: "booking_amounts_nonnegative")
+  @@check(expression: sql`"guests" IS NULL OR "guests" > 0`, name: "booking_guests_positive")
+  @@check(expression: sql`status IN ('pending_payment', 'confirmed', 'cancelled')`, name: "booking_status_valid")
+  @@check(expression: sql`currency = 'USD'`, name: "booking_currency_usd")
+  @@check(expression: sql`version > 0`, name: "booking_version_positive")
+  @@check(expression: sql`("pricingSnapshot" IS NULL) = "pricingReviewRequired"`, name: "booking_pricing_review_consistent")
+}
+
 model ListingTerm {
   id          Int                     @id @default(autoincrement())
   wpId        BigInt?

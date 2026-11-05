@@ -84,6 +84,7 @@ export default function CheckoutExtras({
      answers either, so the booking's own party size, pet and coupon are kept
      rather than overwritten with defaults. */
   const sent = useRef<Answers | undefined>(undefined);
+  const initialQuote = useRef<{ sessionId: string; result: Promise<QuoteResult> } | null>(null);
   /* Which request owns the screen. Answers can come back out of order, and a
      slow reply to an older question must not replace a newer one. */
   const latest = useRef(0);
@@ -182,14 +183,18 @@ export default function CheckoutExtras({
   useEffect(() => {
     let active = true;
     const id = ++latest.current;
-    requestQuote().then((result) => {
+    // Strict Mode replays setup; share the write, not just ignore its first response.
+    if (initialQuote.current?.sessionId !== sessionId) {
+      initialQuote.current = { sessionId, result: requestQuote() };
+    }
+    initialQuote.current.result.then((result) => {
       if (!active || id !== latest.current) return;
       commit(result);
     });
     return () => {
       active = false;
     };
-  }, [requestQuote, commit]);
+  }, [sessionId, requestQuote, commit]);
 
   /* From the saved quote, so the chip can only say "applied" about a code the
      booking actually carries. */

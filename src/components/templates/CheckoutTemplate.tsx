@@ -100,6 +100,10 @@ export default function CheckoutTemplate({ data }: { data: CheckoutData }) {
             </p>
             <CheckoutMethods sessionId={sessionId} methods={methods} totalAmountCents={booking.total_amount_cents} />
           </>
+        ) : !booking.pricing_available ? (
+          <p className="mt-0 mb-6.5 text-[13px] leading-[1.6] text-body-text mx-0" role="status">
+            This booking needs a price review before checkout. Please contact our team.
+          </p>
         ) : (
           /* The party size, the pet and any coupon come first, and the payment method is
              handed to that component rather than rendered beside it: a guest who has not

@@ -10,7 +10,7 @@ import type { PaymentSession } from "@/modules/payments/types";
  * The Bitcoin payment panel. It shows what the provider returned and waits.
  *
  * It does not decide anything about money. The page asks the server
- * (GET /api/checkout/btc) every few seconds, and when the booking is confirmed
+ * (POST /api/checkout/btc with action=reconcile) every few seconds, and when the booking is confirmed
  * it moves on. Only markPaid() on the server confirms a booking.
  *
  * Students: the amount in sats, the QR and the expiry all come from the
@@ -73,7 +73,10 @@ export default function BitcoinPanel({
 
   const checkStatus = useCallback(async () => {
     try {
-      const res = await fetch(`/api/checkout/btc?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" });
+      const res = await fetch("/api/checkout/btc", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, action: "reconcile" }), cache: "no-store",
+      });
       const json = await res.json().catch(() => null);
       if (json?.ok && json.data?.status === "confirmed" && !paidRef.current) {
         paidRef.current = true;

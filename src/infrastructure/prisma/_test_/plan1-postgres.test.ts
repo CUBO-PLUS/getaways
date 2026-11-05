@@ -28,7 +28,11 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("Plan 1 on disposable 
 
   function snapshot() {
     return JSON.parse(sql(`SELECT jsonb_object_agg(name, rows) FROM (
-      ${["ReferralCode", "ReferralAttribution", "MediaAsset", "BlogPost", "BlogPublication", "BlogCategory", "BlogPostCategory", "BlogPublicationCategory", "BlogImportMapping"].map((table) => `SELECT '${table}' AS name, (SELECT jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text) FROM "${table}" t) AS rows`).join(" UNION ALL ")}
+      ${["ReferralCode", "ReferralAttribution", "MediaAsset", "BlogPost", "BlogPublication", "BlogCategory", "BlogPostCategory", "BlogPublicationCategory", "BlogImportMapping"].map((table) => {
+        // Phase 2 adds only this nullable column; all pre-existing media values still compare exactly.
+        const row = table === "MediaAsset" ? "to_jsonb(t) - 'legacyMediaId'" : "to_jsonb(t)";
+        return `SELECT '${table}' AS name, (SELECT jsonb_agg(${row} ORDER BY (${row})::text) FROM "${table}" t) AS rows`;
+      }).join(" UNION ALL ")}
     ) snapshots;`));
   }
 

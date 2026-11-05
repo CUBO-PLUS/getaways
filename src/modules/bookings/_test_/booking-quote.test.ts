@@ -184,20 +184,28 @@ describe("quoteStay", () => {
     expect(quote.totalCents).toBe(quote.subtotalCents - quote.discountCents + quote.taxTotalCents);
   });
 
-  it("cannot be talked into a negative total", () => {
+  it("rejects invalid inputs rather than silently pricing a different stay", () => {
     // Guest counts and fees arrive from a form. None of them may produce a
     // credit.
-    const quote = quoteStay({
+    expect(() => quoteStay({
       ...BASE,
       guests: -5,
       extraGuestFeeCents: -100,
       petFeeCents: -100,
       withPet: true,
       nights: -2,
-    });
-    expect(quote.subtotalCents).toBe(0);
-    expect(quote.totalCents).toBe(0);
-    expect(quote.extraGuests).toBe(0);
+    })).toThrow(RangeError);
+  });
+
+  it("rounds tax exactly even for large representable totals", () => {
+    const quote = quoteStay({ ...BASE, nights: 1, pricePerNightCents: 6_000_000_000_000_011, ivaRate: 0.13, tourismRate: 0 });
+    expect(quote.taxCents).toBe(780_000_000_000_001);
+    expect(quote.totalCents).toBe(6_780_000_000_000_012);
+  });
+
+  it("rejects unrepresentable products and totals instead of losing cents", () => {
+    expect(() => quoteStay({ ...BASE, nights: 2, pricePerNightCents: Number.MAX_SAFE_INTEGER, ivaRate: 0, tourismRate: 0 })).toThrow(RangeError);
+    expect(() => quoteStay({ ...BASE, nights: 1, pricePerNightCents: Number.MAX_SAFE_INTEGER, ivaRate: 0.13, tourismRate: 0 })).toThrow(RangeError);
   });
 });
 
@@ -300,6 +308,10 @@ describe("priceFieldsFromAttributes", () => {
       expect(priceFieldsFromAttributes({ cleaning_fee: raw }).cleaningFeeCents, raw).toBe(0);
     }
     expect(priceFieldsFromAttributes({ price: "$1,275.50" }).pricePerNightCents).toBe(127_550);
+  });
+
+  it("rejects subcent prices rather than rounding the catalogue's agreed amount", () => {
+    expect(() => priceFieldsFromAttributes({ price: "100.001" })).toThrow(RangeError);
   });
 
   it("reads nothing at all without throwing", () => {

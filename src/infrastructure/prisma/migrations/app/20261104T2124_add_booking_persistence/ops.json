@@ -1,0 +1,284 @@
+[
+  {
+    "id": "table.Booking",
+    "label": "Create table \"Booking\"",
+    "summary": "Creates table \"Booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Booking\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Booking\"",
+        "sql": "CREATE TABLE \"public\".\"Booking\" (\n  \"adminNotes\" text,\n  \"agreedListingTitle\" text NOT NULL,\n  \"cancellationReason\" text,\n  \"cancelledAt\" timestamptz,\n  \"cancelledBy\" text,\n  \"checkIn\" date NOT NULL,\n  \"checkOut\" date NOT NULL,\n  \"checkoutSessionId\" text,\n  \"cleaningFeeCents\" int8 NOT NULL,\n  \"couponCode\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"currency\" text DEFAULT 'USD' NOT NULL,\n  \"discountCents\" int8 NOT NULL,\n  \"extraGuestFeeCents\" int8 NOT NULL,\n  \"guestEmail\" text NOT NULL,\n  \"guestName\" text NOT NULL,\n  \"guestNotes\" text,\n  \"guestPhone\" text,\n  \"guests\" int4,\n  \"id\" SERIAL NOT NULL,\n  \"listingId\" int4 NOT NULL,\n  \"nights\" int4 NOT NULL,\n  \"paymentReference\" text,\n  \"paymentReviewRequired\" bool DEFAULT false NOT NULL,\n  \"petFeeCents\" int8 NOT NULL,\n  \"pricePerNightCents\" int8 NOT NULL,\n  \"pricingReviewRequired\" bool DEFAULT false NOT NULL,\n  \"pricingSnapshot\" jsonb,\n  \"status\" text NOT NULL,\n  \"taxCents\" int8 NOT NULL,\n  \"totalAmountCents\" int8 NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"version\" int4 DEFAULT 1 NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"booking_amounts_nonnegative_7fdc2176\" CHECK (\"pricePerNightCents\" >= 0 AND \"cleaningFeeCents\" >= 0 AND \"petFeeCents\" >= 0 AND \"extraGuestFeeCents\" >= 0 AND \"discountCents\" >= 0 AND \"taxCents\" >= 0 AND \"totalAmountCents\" >= 0),\n  CONSTRAINT \"booking_currency_usd_261bd47b\" CHECK (currency = 'USD'),\n  CONSTRAINT \"booking_guest_fields_nonempty_16c46ccc\" CHECK (\"guestName\" <> '' AND \"guestEmail\" <> '' AND \"agreedListingTitle\" <> ''),\n  CONSTRAINT \"booking_guests_positive_b4d03f1a\" CHECK (\"guests\" IS NULL OR \"guests\" > 0),\n  CONSTRAINT \"booking_pricing_review_consistent_87ed60fc\" CHECK ((\"pricingSnapshot\" IS NULL) = \"pricingReviewRequired\"),\n  CONSTRAINT \"booking_status_valid_c9b680e8\" CHECK (status IN ('pending_payment', 'confirmed', 'cancelled')),\n  CONSTRAINT \"booking_stay_valid_2d172355\" CHECK (nights > 0 AND \"checkIn\" < \"checkOut\"),\n  CONSTRAINT \"booking_version_positive_341aaa74\" CHECK (version > 0)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Booking\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Booking.Booking_checkoutSessionId_key",
+    "label": "Add unique constraint on \"Booking\" (checkoutSessionId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Booking_checkoutSessionId_key",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Booking_checkoutSessionId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Booking_checkoutSessionId_key",
+          "public",
+          "\"public\".\"Booking\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Booking_checkoutSessionId_key\"",
+        "sql": "ALTER TABLE \"public\".\"Booking\" ADD CONSTRAINT \"Booking_checkoutSessionId_key\" UNIQUE (\"checkoutSessionId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Booking_checkoutSessionId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Booking_checkoutSessionId_key",
+          "public",
+          "\"public\".\"Booking\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Booking.Booking_paymentReference_key",
+    "label": "Add unique constraint on \"Booking\" (paymentReference)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Booking_paymentReference_key",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Booking_paymentReference_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Booking_paymentReference_key",
+          "public",
+          "\"public\".\"Booking\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Booking_paymentReference_key\"",
+        "sql": "ALTER TABLE \"public\".\"Booking\" ADD CONSTRAINT \"Booking_paymentReference_key\" UNIQUE (\"paymentReference\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Booking_paymentReference_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Booking_paymentReference_key",
+          "public",
+          "\"public\".\"Booking\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Booking.Booking_createdAt_idx_9575dbd7",
+    "label": "Create index \"Booking_createdAt_idx_9575dbd7\" on \"Booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Booking_createdAt_idx_9575dbd7",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Booking_createdAt_idx_9575dbd7\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking_createdAt_idx_9575dbd7\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Booking_createdAt_idx_9575dbd7\"",
+        "sql": "CREATE INDEX \"Booking_createdAt_idx_9575dbd7\" ON \"public\".\"Booking\" (\"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Booking_createdAt_idx_9575dbd7\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking_createdAt_idx_9575dbd7\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Booking.Booking_listingId_idx_953decda",
+    "label": "Create index \"Booking_listingId_idx_953decda\" on \"Booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Booking_listingId_idx_953decda",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Booking_listingId_idx_953decda\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking_listingId_idx_953decda\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Booking_listingId_idx_953decda\"",
+        "sql": "CREATE INDEX \"Booking_listingId_idx_953decda\" ON \"public\".\"Booking\" (\"listingId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Booking_listingId_idx_953decda\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking_listingId_idx_953decda\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Booking.Booking_listingId_status_checkIn_idx_91c07b52",
+    "label": "Create index \"Booking_listingId_status_checkIn_idx_91c07b52\" on \"Booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Booking_listingId_status_checkIn_idx_91c07b52",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Booking_listingId_status_checkIn_idx_91c07b52\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking_listingId_status_checkIn_idx_91c07b52\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Booking_listingId_status_checkIn_idx_91c07b52\"",
+        "sql": "CREATE INDEX \"Booking_listingId_status_checkIn_idx_91c07b52\" ON \"public\".\"Booking\" (\"listingId\", \"status\", \"checkIn\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Booking_listingId_status_checkIn_idx_91c07b52\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Booking_listingId_status_checkIn_idx_91c07b52\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Booking.Booking_listingId_fkey",
+    "label": "Add foreign key \"Booking_listingId_fkey\" on \"Booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Booking_listingId_fkey",
+        "table": "Booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Booking_listingId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Booking_listingId_fkey",
+          "public",
+          "\"public\".\"Booking\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Booking_listingId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Booking\"\nADD CONSTRAINT \"Booking_listingId_fkey\"\nFOREIGN KEY (\"listingId\")\nREFERENCES \"public\".\"Listing\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Booking_listingId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Booking_listingId_fkey",
+          "public",
+          "\"public\".\"Booking\""
+        ]
+      }
+    ]
+  }
+]

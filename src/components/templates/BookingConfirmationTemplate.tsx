@@ -222,28 +222,13 @@ export default function BookingConfirmationTemplate({ data }: { data: BookingCon
   }
 
   if (booking.status === "cancelled") {
-    /*
-     * Only a booking that took money gets the money talk. An unpaid one was
-     * cancelled before anything was charged, and telling that guest they had
-     * been refunded would be telling them they had paid.
-     *
-     * A paid booking that is still "cancelled" has NOT been refunded yet: the
-     * refund is on its way, or the owner still has to send it. So the text
-     * promises the return, not that it already happened.
-     */
-    // A payment id on the row means money was sent, so the refund wording applies.
-    const paid = Boolean(booking.payment_reference);
     return (
       <ReceiptShell
         state="cancelled"
         icon={<XCircle size={26} />}
         eyebrow="Booking cancelled"
         title="This booking was cancelled"
-        lede={
-          paid
-            ? "Your payment is being returned to you in full. It can take a few days to show on your statement. If it has not arrived after that, contact our team and quote the reference below."
-            : "This booking was cancelled and you were not charged. If you still want to stay with us, please pick your dates again."
-        }
+        lede="This booking was cancelled. Contact our team to review any payment and discuss next steps."
         actions={browseActions}
         footnote={<>Reference: {sessionId}</>}
       />
@@ -275,7 +260,7 @@ export default function BookingConfirmationTemplate({ data }: { data: BookingCon
           </Link>
         </>
       }
-      footnote={<>Payment reference: {sessionId}. Confirmation email: {booking.guest_email}.</>}
+          footnote={<>Reference: {sessionId}</>}
     >
       <section className="bg-background shadow-[0_5px_30px_rgba(7,_36,_86,_0.075)] overflow-hidden rounded-[10px]" aria-label="Booking details">
         <div className="flex items-baseline justify-between border-b border-border px-5 py-4 gap-3">

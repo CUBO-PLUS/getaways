@@ -31,6 +31,7 @@ const PLACEHOLDER_ADDRESS = "bc1qstudentmockaddressreplaceme000000000";
 
 /* Survives dev reloads, so getPayment can find what createPayment made. */
 const globalForMock = globalThis as typeof globalThis & { __btcMockSessions?: Map<string, PaymentSession> };
+// ponytail: process-local mock only; restart or another instance loses provider evidence, so this is never production-ready.
 const sessions = globalForMock.__btcMockSessions ?? new Map<string, PaymentSession>();
 globalForMock.__btcMockSessions = sessions;
 
@@ -40,6 +41,12 @@ export const btcMockProvider: PaymentProvider = {
 
   async createPayment({ bookingId, amountCents }) {
     if (!Number.isSafeInteger(amountCents) || amountCents <= 0) throw new RangeError("Invalid payment amount.");
+    const id = `btc_mock_${bookingId}`;
+    const existing = sessions.get(id);
+    if (existing) {
+      if (existing.amountCents !== amountCents) throw new Error("Mock payment amount changed for this booking.");
+      return existing;
+    }
     // TODO(student): fetch a live USD/BTC price here instead of the constant below.
     const centsPerBtc = BigInt(MOCK_USD_PER_BTC) * 100n;
     const sats = (BigInt(amountCents) * 100_000_000n + centsPerBtc / 2n) / centsPerBtc;
@@ -49,7 +56,7 @@ export const btcMockProvider: PaymentProvider = {
     // TODO(student): generate a real address or Lightning invoice here.
     // TODO(student): set expiresAt to a real expiry time, e.g. 15 minutes from now.
     const session: PaymentSession = {
-      id: `btc_mock_${bookingId}_${Date.now()}`,
+      id,
       bookingId,
       amountCents,
       currency: "USD",

@@ -3,7 +3,7 @@ import CheckoutTemplate from "@/components/templates/CheckoutTemplate";
 import { getCheckoutData } from "@/modules/checkout/server/checkout";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Checkout - Getaways El Salvador" };
+export const metadata = { title: "Checkout - Getaways El Salvador", robots: { index: false, follow: false, noarchive: true } };
 
 export default async function CheckoutPage({
   searchParams,

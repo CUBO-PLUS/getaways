@@ -6,10 +6,13 @@ import {
   confirmedRangesForListing,
   getBookingById,
   getBookingBySessionId,
-  updateBooking,
+  saveBookingQuote,
+  setCheckoutSession,
   type Booking,
   type NewBooking,
+  type QuoteUpdate,
 } from "@/modules/bookings/server/booking-store";
+import { parsePricingSnapshot } from "@/modules/bookings/booking-persistence";
 import { priceFieldsFromAttributes } from "@/modules/bookings/booking-quote";
 import { readCatalogListings } from "@/modules/listings/server/catalog";
 
@@ -51,7 +54,14 @@ export async function getListing(id: number): Promise<ListingRow | null> {
 export async function getBookingConfirmationData(sessionId: string | undefined) {
   const booking = sessionId ? await getBookingBySessionId(sessionId) : null;
   const listing = booking ? await getListing(booking.listing_id) : null;
-  return { sessionId, booking, listing };
+  return {
+    sessionId: booking ? sessionId : undefined,
+    booking: booking ? {
+      status: booking.status, guest_name: booking.guest_name, check_in: booking.check_in, check_out: booking.check_out,
+      nights: booking.nights, total_amount_cents: booking.total_amount_cents,
+    } : null,
+    listing: booking ? { title: booking.agreed_listing_title || listing?.title || "Your listing", slug: listing?.slug ?? null } : null,
+  };
 }
 
 export type BookingConfirmationData = Awaited<ReturnType<typeof getBookingConfirmationData>>;
@@ -90,6 +100,12 @@ export function nightsForStay(checkIn: string, checkOut: string): number {
 
 export function isBookingReadyForPayment(booking: Booking): boolean {
   try {
+    const int4 = (value: number) => Number.isSafeInteger(value) && value >= 0 && value <= 2_147_483_647;
+    const snapshot = booking.pricing_snapshot;
+    if (!snapshot || booking.pricing_review_required || !int4(booking.id) || !int4(booking.listing_id) ||
+      !int4(booking.nights) || !int4(booking.version) ||
+      !int4(snapshot.baseGuests) || !int4(snapshot.maxGuests) || snapshot.baseGuests < 1 || snapshot.maxGuests < 1 ||
+      (booking.guests !== null && (!int4(booking.guests) || booking.guests < 1))) return false;
     return nightsForStay(booking.check_in, booking.check_out) === booking.nights &&
       Number.isSafeInteger(booking.guests) && (booking.guests ?? 0) > 0 &&
       [booking.price_per_night_cents, booking.cleaning_fee_cents, booking.pet_fee_cents,
@@ -140,6 +156,10 @@ export function rangesOverlapPublic(aStart: string, aEnd: string, bStart: string
  * extra guests, pet, coupon and taxes later (see app/api/checkout/quote).
  */
 export async function createPendingBooking(input: BookingInput): Promise<Booking> {
+  const maxInt4 = 2_147_483_647;
+  if (!Number.isSafeInteger(input.listing_id) || input.listing_id <= 0 || input.listing_id > maxInt4) {
+    throw new ValidationError("This property cannot be booked safely.");
+  }
   const guestName = requireNonEmptyString(input.guest_name, "guest_name");
   const guestEmail = requireNonEmptyString(input.guest_email, "guest_email");
   const checkIn = requireNonEmptyString(input.check_in, "check_in");
@@ -149,6 +169,10 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
   }
   if (checkIn >= checkOut) {
     throw new ValidationError("Check-out must be after check-in.");
+  }
+  if (guestName.trim().length > 200 || guestEmail.trim().length > 254 ||
+      (input.guest_phone?.length ?? 0) > 100 || (input.guest_notes?.length ?? 0) > 4000) {
+    throw new ValidationError("Booking details are too long.");
   }
   const today = new Date().toISOString().slice(0, 10);
   if (checkIn < today) {
@@ -173,6 +197,7 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
   }
 
   const nights = nightsForStay(checkIn, checkOut);
+  if (nights > maxInt4) throw new ValidationError("Those dates are too far apart to store safely.");
   const attrs = listing.attributes ?? {};
   if (attrs.booking_min_length && attrs.booking_min_length.trim() !== "") {
     const minNights = Number(attrs.booking_min_length);
@@ -191,13 +216,23 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
 
   const initialTotal = BigInt(nights) * BigInt(pricePerNightCents) + BigInt(cleaningFeeCents);
   if (initialTotal > BigInt(Number.MAX_SAFE_INTEGER)) throw new ValidationError("This stay total cannot be represented safely.");
+  const snapshot = parsePricingSnapshot({
+    version: 1, currency: "USD", pricePerNightCents: fields.pricePerNightCents,
+    cleaningFeeCents: fields.cleaningFeeCents, petFeeCents: fields.petFeeCents,
+    extraGuestFeeCents: fields.extraGuestFeeCents, ivaBasisPoints: Math.round(fields.ivaRate * 10_000),
+    tourismBasisPoints: Math.round(fields.tourismRate * 10_000), baseGuests: fields.baseGuests,
+    maxGuests: fields.maxGuests, petsAllowed: fields.petsAllowed,
+  });
+  if (!snapshot || [input.listing_id, nights, fields.baseGuests, fields.maxGuests].some((value) => !Number.isSafeInteger(value) || value < 1 || value > maxInt4)) {
+    throw new ValidationError("This property's booking limits cannot be represented safely.");
+  }
   const fresh: NewBooking = {
     listing_id: input.listing_id,
     check_in: checkIn,
     check_out: checkOut,
     nights,
-    guest_name: guestName,
-    guest_email: guestEmail,
+    guest_name: guestName.trim(),
+    guest_email: guestEmail.trim(),
     guest_phone: input.guest_phone?.trim() || null,
     guest_notes: input.guest_notes?.trim() || null,
     guests: null,
@@ -214,12 +249,17 @@ export async function createPendingBooking(input: BookingInput): Promise<Booking
     checkout_session_id: null,
     payment_reference: null,
     admin_notes: null,
+    pricing_snapshot: snapshot,
+    pricing_review_required: false,
+    agreed_listing_title: listing.title,
   };
-  return createBooking(fresh);
+  const created = await createBooking(fresh);
+  if (!created) throw new DatesUnavailableError("Those dates are no longer available for this listing.");
+  return created;
 }
 
-export async function attachCheckoutSession(bookingId: number, sessionId: string): Promise<void> {
-  const updated = await updateBooking(bookingId, { checkout_session_id: sessionId });
+export async function attachCheckoutSession(bookingId: number, sessionId: string, expectedVersion: number): Promise<void> {
+  const updated = await setCheckoutSession(bookingId, expectedVersion, sessionId);
   if (!updated) throw new NotFoundError("This booking was not found. It may have been deleted.");
 }
 
@@ -230,7 +270,8 @@ export async function attachCheckoutSession(bookingId: number, sessionId: string
  */
 export async function saveQuote(
   bookingId: number,
-  patch: Partial<Omit<Booking, "id" | "created_at">>
+  expectedVersion: number,
+  patch: QuoteUpdate
 ): Promise<Booking | null> {
   for (const key of ["price_per_night_cents", "cleaning_fee_cents", "pet_fee_cents", "extra_guest_fee_cents", "discount_cents", "tax_cents", "total_amount_cents"] as const) {
     const amount = patch[key];
@@ -242,6 +283,7 @@ export async function saveQuote(
     throw new ValidationError("Choose a valid number of guests.");
   }
   const current = await getBookingById(bookingId);
-  if (!current || current.status !== "pending_payment" || current.payment_reference) return null;
-  return updateBooking(bookingId, patch);
+  if (!current || current.version !== expectedVersion || current.status !== "pending_payment" || current.payment_reference ||
+    current.pricing_review_required || !current.pricing_snapshot) return null;
+  return saveBookingQuote(bookingId, expectedVersion, patch);
 }

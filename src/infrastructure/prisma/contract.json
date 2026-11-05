@@ -36,6 +36,10 @@
       "model": "BlogPublicationCategory",
       "namespace": "public"
     },
+    "Booking": {
+      "model": "Booking",
+      "namespace": "public"
+    },
     "Listing": {
       "model": "Listing",
       "namespace": "public"
@@ -903,6 +907,364 @@
               },
               "namespaceId": "public",
               "table": "BlogPublicationCategory"
+            }
+          },
+          "Booking": {
+            "fields": {
+              "adminNotes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "agreedListingTitle": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "cancellationReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "cancelledAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "cancelledBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "checkIn": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "checkOut": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "checkoutSessionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "cleaningFeeCents": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "couponCode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "currency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "discountCents": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "extraGuestFeeCents": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "guestEmail": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "guestName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "guestNotes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "guestPhone": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "guests": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "listingId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "nights": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "paymentReference": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "paymentReviewRequired": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "petFeeCents": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "pricePerNightCents": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "pricingReviewRequired": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "pricingSnapshot": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "taxCents": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "totalAmountCents": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "version": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "listing": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "listingId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Listing",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "adminNotes": {
+                  "column": "adminNotes"
+                },
+                "agreedListingTitle": {
+                  "column": "agreedListingTitle"
+                },
+                "cancellationReason": {
+                  "column": "cancellationReason"
+                },
+                "cancelledAt": {
+                  "column": "cancelledAt"
+                },
+                "cancelledBy": {
+                  "column": "cancelledBy"
+                },
+                "checkIn": {
+                  "column": "checkIn"
+                },
+                "checkOut": {
+                  "column": "checkOut"
+                },
+                "checkoutSessionId": {
+                  "column": "checkoutSessionId"
+                },
+                "cleaningFeeCents": {
+                  "column": "cleaningFeeCents"
+                },
+                "couponCode": {
+                  "column": "couponCode"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "currency": {
+                  "column": "currency"
+                },
+                "discountCents": {
+                  "column": "discountCents"
+                },
+                "extraGuestFeeCents": {
+                  "column": "extraGuestFeeCents"
+                },
+                "guestEmail": {
+                  "column": "guestEmail"
+                },
+                "guestName": {
+                  "column": "guestName"
+                },
+                "guestNotes": {
+                  "column": "guestNotes"
+                },
+                "guestPhone": {
+                  "column": "guestPhone"
+                },
+                "guests": {
+                  "column": "guests"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "listingId": {
+                  "column": "listingId"
+                },
+                "nights": {
+                  "column": "nights"
+                },
+                "paymentReference": {
+                  "column": "paymentReference"
+                },
+                "paymentReviewRequired": {
+                  "column": "paymentReviewRequired"
+                },
+                "petFeeCents": {
+                  "column": "petFeeCents"
+                },
+                "pricePerNightCents": {
+                  "column": "pricePerNightCents"
+                },
+                "pricingReviewRequired": {
+                  "column": "pricingReviewRequired"
+                },
+                "pricingSnapshot": {
+                  "column": "pricingSnapshot"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "taxCents": {
+                  "column": "taxCents"
+                },
+                "totalAmountCents": {
+                  "column": "totalAmountCents"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "version": {
+                  "column": "version"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Booking"
             }
           },
           "Listing": {
@@ -2425,6 +2787,309 @@
               },
               "uniques": []
             },
+            "Booking": {
+              "checks": [
+                {
+                  "expression": "\"pricePerNightCents\" >= 0 AND \"cleaningFeeCents\" >= 0 AND \"petFeeCents\" >= 0 AND \"extraGuestFeeCents\" >= 0 AND \"discountCents\" >= 0 AND \"taxCents\" >= 0 AND \"totalAmountCents\" >= 0",
+                  "name": "booking_amounts_nonnegative_7fdc2176",
+                  "prefix": "booking_amounts_nonnegative"
+                },
+                {
+                  "expression": "currency = 'USD'",
+                  "name": "booking_currency_usd_261bd47b",
+                  "prefix": "booking_currency_usd"
+                },
+                {
+                  "expression": "\"guestName\" <> '' AND \"guestEmail\" <> '' AND \"agreedListingTitle\" <> ''",
+                  "name": "booking_guest_fields_nonempty_16c46ccc",
+                  "prefix": "booking_guest_fields_nonempty"
+                },
+                {
+                  "expression": "\"guests\" IS NULL OR \"guests\" > 0",
+                  "name": "booking_guests_positive_b4d03f1a",
+                  "prefix": "booking_guests_positive"
+                },
+                {
+                  "expression": "(\"pricingSnapshot\" IS NULL) = \"pricingReviewRequired\"",
+                  "name": "booking_pricing_review_consistent_87ed60fc",
+                  "prefix": "booking_pricing_review_consistent"
+                },
+                {
+                  "expression": "status IN ('pending_payment', 'confirmed', 'cancelled')",
+                  "name": "booking_status_valid_c9b680e8",
+                  "prefix": "booking_status_valid"
+                },
+                {
+                  "expression": "nights > 0 AND \"checkIn\" < \"checkOut\"",
+                  "name": "booking_stay_valid_2d172355",
+                  "prefix": "booking_stay_valid"
+                },
+                {
+                  "expression": "version > 0",
+                  "name": "booking_version_positive_341aaa74",
+                  "prefix": "booking_version_positive"
+                }
+              ],
+              "columns": {
+                "adminNotes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "agreedListingTitle": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "cancellationReason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "cancelledAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "cancelledBy": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "checkIn": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "checkOut": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "checkoutSessionId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "cleaningFeeCents": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": false
+                },
+                "couponCode": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "currency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "USD"
+                  },
+                  "nullable": false
+                },
+                "discountCents": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": false
+                },
+                "extraGuestFeeCents": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": false
+                },
+                "guestEmail": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "guestName": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "guestNotes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "guestPhone": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "guests": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "listingId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "nights": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "paymentReference": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "paymentReviewRequired": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "petFeeCents": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": false
+                },
+                "pricePerNightCents": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": false
+                },
+                "pricingReviewRequired": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "pricingSnapshot": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "taxCents": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": false
+                },
+                "totalAmountCents": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "version": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Booking_listingId_idx_953decda"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "listingId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Booking"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Listing"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "Booking_createdAt_idx_9575dbd7",
+                  "prefix": "Booking_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "listingId"
+                  ],
+                  "name": "Booking_listingId_idx_953decda",
+                  "prefix": "Booking_listingId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "listingId",
+                    "status",
+                    "checkIn"
+                  ],
+                  "name": "Booking_listingId_status_checkIn_idx_91c07b52",
+                  "prefix": "Booking_listingId_status_checkIn_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "checkoutSessionId"
+                  ]
+                },
+                {
+                  "columns": [
+                    "paymentReference"
+                  ]
+                }
+              ]
+            },
             "Listing": {
               "checks": [
                 {
@@ -3104,10 +3769,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b3b6063e6e046aeb330bcb6c54502a2d20efa4c8e4aebb86346f522aafe9258d"
+    "storageHash": "03338025e81ccb1e61e9bbb29b7f143a122e1f1676b5986e4065564af03abe34"
   },
   "execution": {
-    "executionHash": "488d8df800ea5dd186d7087f4ea68b3c59716316d33af834ce4b783da2ed69a5",
+    "executionHash": "b57f18bf241bb2a8474ccb7b1dc7c507a8043da5584d2b5d0a48cab639c916d1",
     "mutations": {
       "defaults": [
         {
@@ -3151,6 +3816,21 @@
           },
           "ref": {
             "entry": "BlogPublication",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "instantNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Booking",
             "field": "updatedAt",
             "namespace": "public"
           }

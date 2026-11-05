@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
-
-import { getBookingBySessionId, getListing, nightsForStay, saveQuote, ValidationError } from "@/modules/bookings/server/bookings";
-import { priceFieldsFromAttributes, quoteStay } from "@/modules/bookings/booking-quote";
+import { getBookingBySessionId, nightsForStay, saveQuote, ValidationError } from "@/modules/bookings/server/bookings";
+import { quoteStay } from "@/modules/bookings/booking-quote";
 import { isCheckoutSessionId } from "@/modules/checkout/checkout-session";
+import { privateCheckoutJson } from "@/modules/checkout/private-response";
 import { previewCoupon } from "@/modules/coupons/server/coupons";
+
+export const dynamic = "force-dynamic";
 
 /*
  * What this stay costs, priced on the server.
@@ -32,7 +33,7 @@ const PAYMENT_OPEN_MESSAGE = "A payment is already open for this booking, so the
 
 /* The save matched no row: a payment opened, or the booking moved on, between the read and the write. */
 function bookingChangedResponse() {
-  return NextResponse.json(
+  return privateCheckoutJson(
     { ok: false, error: "This booking changed while we were pricing it. Reload the page to see where it stands." },
     { status: 409 }
   );
@@ -42,33 +43,33 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as Body | null;
   const sessionId = typeof body?.session_id === "string" ? body.session_id : "";
   if (!isCheckoutSessionId(sessionId)) {
-    return NextResponse.json({ ok: false, error: "Invalid checkout session." }, { status: 400 });
+    return privateCheckoutJson({ ok: false, error: "Invalid checkout session." }, { status: 400 });
   }
 
   try {
     const booking = await getBookingBySessionId(sessionId);
     if (!booking) {
-      return NextResponse.json({ ok: false, error: "Checkout session not found." }, { status: 404 });
+      return privateCheckoutJson({ ok: false, error: "Checkout session not found." }, { status: 404 });
     }
     if (booking.status !== "pending_payment") {
-      return NextResponse.json({ ok: false, error: "This booking is no longer awaiting payment." }, { status: 409 });
+      return privateCheckoutJson({ ok: false, error: "This booking is no longer awaiting payment." }, { status: 409 });
     }
     if (booking.payment_reference) {
-      return NextResponse.json({ ok: false, error: PAYMENT_OPEN_MESSAGE }, { status: 409 });
+      return privateCheckoutJson({ ok: false, error: PAYMENT_OPEN_MESSAGE }, { status: 409 });
     }
     if (nightsForStay(booking.check_in, booking.check_out) !== booking.nights) {
-      return NextResponse.json({ ok: false, error: "This booking's dates are invalid. Please contact us." }, { status: 409 });
+      return privateCheckoutJson({ ok: false, error: "This booking's dates are invalid. Please contact us." }, { status: 409 });
     }
 
-    const listing = await getListing(booking.listing_id);
-    if (!listing) {
-      return NextResponse.json(
-        { ok: false, error: "The price could not be worked out right now. Please try again." },
-        { status: 503 }
-      );
+    const fields = booking.pricing_snapshot;
+    if (!fields || booking.pricing_review_required) {
+      return privateCheckoutJson({ ok: false, error: "This booking needs a price review before checkout." }, { status: 409 });
     }
-
-    const fields = priceFieldsFromAttributes(listing.attributes);
+    const int4Max = 2_147_483_647;
+    if (![booking.id, booking.listing_id, booking.nights, booking.version, fields.baseGuests, fields.maxGuests]
+      .every((value) => Number.isSafeInteger(value) && value > 0 && value <= int4Max)) {
+      return privateCheckoutJson({ ok: false, error: "This booking needs a price review before checkout." }, { status: 409 });
+    }
 
     // What the booking already holds, for any answer the body does not give.
     const storedGuests = booking.guests;
@@ -81,17 +82,17 @@ export async function POST(request: Request) {
       guests = fields.maxGuests > 0 ? Math.min(defaultGuests, fields.maxGuests) : defaultGuests;
     } else {
       const requestedGuests = body.guests;
-      if (typeof requestedGuests !== "number" || !Number.isSafeInteger(requestedGuests) || requestedGuests <= 0) {
-        return NextResponse.json({ ok: false, error: "Choose a valid number of guests." }, { status: 400 });
+      if (typeof requestedGuests !== "number" || !Number.isSafeInteger(requestedGuests) || requestedGuests <= 0 || requestedGuests > int4Max) {
+        return privateCheckoutJson({ ok: false, error: "Choose a valid number of guests." }, { status: 400 });
       }
       guests = requestedGuests;
       if (fields.maxGuests > 0 && guests > fields.maxGuests) {
-        return NextResponse.json({ ok: false, error: `This property sleeps ${fields.maxGuests}.` }, { status: 400 });
+        return privateCheckoutJson({ ok: false, error: `This property sleeps ${fields.maxGuests}.` }, { status: 400 });
       }
     }
     const withPet = typeof body?.with_pet === "boolean" ? body.with_pet : defaultPet;
     if (withPet && !fields.petsAllowed) {
-      return NextResponse.json({ ok: false, error: "This property does not take pets." }, { status: 400 });
+      return privateCheckoutJson({ ok: false, error: "This property does not take pets." }, { status: 400 });
     }
 
     const code = typeof body?.coupon_code === "string" ? body.coupon_code.trim() : defaultCode;
@@ -103,8 +104,8 @@ export async function POST(request: Request) {
       petsAllowed: fields.petsAllowed,
       petFeeCents: fields.petFeeCents,
       extraGuestFeeCents: fields.extraGuestFeeCents,
-      tourismRate: fields.tourismRate,
-      ivaRate: fields.ivaRate,
+      tourismRate: fields.tourismBasisPoints / 10_000,
+      ivaRate: fields.ivaBasisPoints / 10_000,
     };
 
     let discount: { kind: "percent" | "amount"; value: number } | null = null;
@@ -122,15 +123,15 @@ export async function POST(request: Request) {
     const quoteInput = {
       nights: booking.nights,
       // The rate the BOOKING was made at, so a later price edit cannot reprice a guest mid-checkout.
-      pricePerNightCents: booking.price_per_night_cents || fields.pricePerNightCents,
+      pricePerNightCents: fields.pricePerNightCents,
       cleaningFeeCents: fields.cleaningFeeCents,
       baseGuests: fields.baseGuests,
       extraGuestFeeCents: fields.extraGuestFeeCents,
       petFeeCents: fields.petFeeCents,
       guests,
       withPet,
-      tourismRate: fields.tourismRate,
-      ivaRate: fields.ivaRate,
+      tourismRate: fields.tourismBasisPoints / 10_000,
+      ivaRate: fields.ivaBasisPoints / 10_000,
     };
 
     let quote = quoteStay({ ...quoteInput, discount });
@@ -141,8 +142,9 @@ export async function POST(request: Request) {
     }
 
     // The figure on screen becomes the figure the payment charges, and the row records why.
-    const saved = await saveQuote(booking.id, {
+    const saved = await saveQuote(booking.id, booking.version, {
       guests,
+      price_per_night_cents: fields.pricePerNightCents,
       total_amount_cents: quote.totalCents,
       cleaning_fee_cents: fields.cleaningFeeCents,
       extra_guest_fee_cents: quote.lines.find((line) => line.label.includes("extra guest"))?.amountCents ?? 0,
@@ -154,11 +156,12 @@ export async function POST(request: Request) {
     });
     if (!saved) return bookingChangedResponse();
 
-    return NextResponse.json({
+    return privateCheckoutJson({
       ok: true,
       data: {
         quote,
         guests,
+        version: saved.version,
         withPet,
         couponCode: discount ? code.trim().toUpperCase() : null,
         couponError,
@@ -167,12 +170,12 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof ValidationError) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+      return privateCheckoutJson({ ok: false, error: error.message }, { status: 400 });
     }
     if (error instanceof RangeError) {
-      return NextResponse.json({ ok: false, error: "This stay cannot be priced safely. Please contact us." }, { status: 400 });
+      return privateCheckoutJson({ ok: false, error: "This stay cannot be priced safely. Please contact us." }, { status: 400 });
     }
-    console.error("Unexpected error in POST /api/checkout/quote:", error);
-    return NextResponse.json({ ok: false, error: "The price could not be worked out." }, { status: 500 });
+    console.error("Unexpected error in POST /api/checkout/quote");
+    return privateCheckoutJson({ ok: false, error: "The price could not be worked out." }, { status: 500 });
   }
 }

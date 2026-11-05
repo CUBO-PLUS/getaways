@@ -15,7 +15,7 @@ export async function getCheckoutData(sessionId: string | undefined) {
       key: "btc",
       name: "Bitcoin (student mock)",
       detail: "Pay with bitcoin. Nothing real is charged in this class project.",
-      available: true,
+      available: isDev,
       demo: isDev,
     },
   ];
@@ -23,8 +23,19 @@ export async function getCheckoutData(sessionId: string | undefined) {
   const awaitingPayment = booking.status === "pending_payment";
   // An open payment keeps the stored total; never show editable pricing beside it.
   const priceLocked = Boolean(booking.payment_reference);
-  const pricingBelow = awaitingPayment && !priceLocked;
-  return { sessionId, booking, listing, isDev, methods, nightLabel, awaitingPayment, priceLocked, pricingBelow };
+  const pricingBelow = awaitingPayment && !priceLocked && Boolean(booking.pricing_snapshot) && !booking.pricing_review_required;
+  return {
+    sessionId,
+    booking: {
+      id: booking.id, version: booking.version, status: booking.status,
+      check_in: booking.check_in, check_out: booking.check_out, nights: booking.nights,
+      guest_name: booking.guest_name, guest_email: booking.guest_email, guests: booking.guests,
+      total_amount_cents: booking.total_amount_cents, payment_open: Boolean(booking.payment_reference),
+      pricing_available: Boolean(booking.pricing_snapshot) && !booking.pricing_review_required,
+    },
+    listing: { title: booking.agreed_listing_title || listing?.title || "Getaways stay", slug: listing?.slug ?? null },
+    isDev, methods, nightLabel, awaitingPayment, priceLocked, pricingBelow,
+  };
 }
 
 export type CheckoutData = NonNullable<Awaited<ReturnType<typeof getCheckoutData>>>;
