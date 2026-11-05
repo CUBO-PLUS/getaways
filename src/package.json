@@ -14,6 +14,7 @@
     "blog:approval-template": "node --conditions=react-server --experimental-strip-types scripts/blog-import-approval-template.mts",
     "blog:import": "node --conditions=react-server --experimental-strip-types scripts/blog-import.mts",
     "listings:import": "node --conditions=react-server --experimental-strip-types scripts/listings-import.mts",
+    "bookings:import": "node --conditions=react-server --experimental-strip-types scripts/bookings-import.mts",
     "admin:user": "node --conditions=react-server --experimental-strip-types scripts/admin-user.mts",
     "test:db": "NODE_ENV=development PRISMA_TEST_DATABASE=1 vitest run infrastructure/prisma/_test_/db.test.ts",
     "db:generate": "prisma contract emit",
@@ -58,7 +59,7 @@
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
-    "@types/node": "^20",
+    "@types/node": "^24",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
