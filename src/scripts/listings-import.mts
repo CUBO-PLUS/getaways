@@ -12,7 +12,7 @@ type Term = { id: number; wp_id: string | null; taxonomy: string; slug: string; 
 type Media = { id: number; wp_id: string | null; storage_path: string; original_filename: string; alt_text: string | null };
 const root = path.resolve(import.meta.dirname, "..");
 let s3Client: { destroy(): void } | undefined;
-const json = async <T>(name: string) => (JSON.parse as (text: string, reviver: (this: unknown, key: string, value: unknown, context?: { source?: string }) => unknown) => unknown)(
+const json = async <T,>(name: string) => (JSON.parse as (text: string, reviver: (this: unknown, key: string, value: unknown, context?: { source?: string }) => unknown) => unknown)(
   await readFile(path.join(root, "data", `${name}.json`), "utf8"),
   function (key, value, context) { return key === "wp_id" && typeof value === "number" ? context?.source ?? value : value; },
 ) as T;
@@ -49,7 +49,7 @@ async function run(apply: boolean, verify: boolean) {
     if (!meta.width || !meta.height || !meta.format) throw new Error(`invalid media ${id}`);
     const digest = hash(bytes);
     const key = `listings-import/legacy/${id}/sha256/${digest}.${meta.format}`;
-    return { id, wpId: item.wp_id, item, bytes, digest, key, mime: `image/${meta.format === "jpg" ? "jpeg" : meta.format}`, width: meta.width, height: meta.height };
+    return { id, wpId: item.wp_id, item, bytes, digest, key, mime: `image/${meta.format}`, width: meta.width, height: meta.height };
   }));
   const catalogTerms = terms.filter(t => ["hp_listing_category", "hp_listing_pets"].includes(t.taxonomy));
   const expectedTermIds = [15, 16, 17, 19, 23, 24];
