@@ -10,6 +10,13 @@ las instrucciones locales de abajo son históricas y ya no están soportadas.
 El entorno local conserva `compose.dev.yaml`, con la app, PostgreSQL y RustFS;
 los volúmenes `postgres_data` y `rustfs_data` se mantienen.
 
+**Cierre local aceptado — 2026-11-07:** T/P y el panel C1 están aceptados tras la
+verificación de la persona solicitante. El pago de USD 1.00 de testnet de la reserva
+2 quedó liquidado y reconciliado. [Evidencia y excepciones](README.md#cierre-local-aceptado--2026-11-07).
+La operación aceptada utiliza reconciliación explícita, incluido el refresco manual
+del panel; webhook automático y recuperación ensayada siguen pendientes. La prueba
+firmada conserva su vigencia de diez minutos: el cierre no la vuelve permanente.
+
 **Activación local del 2026-11-07 UTC:** las migraciones de pagos se aplicaron con
 autorización sobre la base local, sin modificar sus datos previos. El proveedor
 remoto está configurado para la app host en `http://localhost:3000`; `.env.local`
@@ -144,7 +151,7 @@ La clave API solo necesita `btcpay.store.cancreateinvoice`, `btcpay.store.canvie
 
 Cada reserva obtiene como máximo un intento durable, reservado con el total real congelado antes de cualquier solicitud de red. Por autorización del operador, los **nuevos** intentos solicitan `1.00 USD`, solo `BTC-CHAIN`; el importe real permanece como cotización separada. Los intentos anteriores conservan `0.01 USD`: no se recotizan, borran ni se les abre una factura de reemplazo. Cada factura/estado liquidado se compara contra el importe **persistido** de su intento, no contra la configuración nueva. Timeout no provoca un segundo POST: se busca la factura por `metadata.orderId` exacto y cualquier ausencia/ambigüedad queda para revisión. Las lecturas GET no reconcilian; el huésped puede iniciar reconciliación explícita con POST y el webhook firmado solo dispara un GET autoritativo.
 
-Se comprobó que USD 0.01 equivale aproximadamente a 13 satoshis con la cotización del VPS (75892.4 USD/BTC), por debajo de 294 satoshis para P2WPKH; BTCPay rechaza ese importe on-chain. El operador autorizó cambiarlo a USD 1.00, cuya prueba pagada sigue pendiente. Una cantidad BTC vacía, cero, inválida, insegura o inferior al umbral de polvo se retiene para revisión sin mostrar instrucciones ni aumentar automáticamente el importe. Para evaluar el dólar usa una reserva nueva o sin intento de pago; el intento antiguo de un centavo no cambia. No afirmar aceptación e2e ni cobro del precio de estancia.
+Se comprobó que USD 0.01 equivale aproximadamente a 13 satoshis con la cotización del VPS (75892.4 USD/BTC), por debajo de 294 satoshis para P2WPKH; BTCPay rechaza ese importe on-chain. El operador autorizó cambiarlo a USD 1.00; su pago de testnet y la confirmación de la reserva 2 están registrados en el cierre local. Una cantidad BTC vacía, cero, inválida, insegura o inferior al umbral de polvo se retiene para revisión sin mostrar instrucciones ni aumentar automáticamente el importe. Para evaluar el dólar usa una reserva nueva o sin intento de pago; el intento antiguo de un centavo no cambia. No afirmar cobro del precio de estancia ni ejecución de escenarios operativos distintos al registrado.
 
 Webhook entrante de la app: `POST /api/webhooks/btcpay` (configura ese path en el webhook de BTCPay, URL absoluta alcanzable por BTCPay). BTCPay v2.4.7 envía `BTCPay-Sig: sha256=<hex>` como HMAC-SHA256 del cuerpo exacto; la app compara en tiempo constante y vuelve a consultar la factura antes de cambiar reserva.
 
@@ -158,4 +165,6 @@ BTCPay protege sus solicitudes HTTP salientes contra SSRF; no desactives esa pro
 
 Detén servicios antes del respaldo: copia consistentemente los volúmenes `bitcoin_datadir`, `nbxplorer_datadir`, `btcpay_datadir`, `btcpay_pluginsdir` y `postgres_datadir` con una herramienta de Docker/volúmenes. Protege copias como secretos (pueden incluir datos de wallet); prueba restauración aislada. No uses `down -v` salvo que quieras borrar permanentemente los datos.
 
-La infraestructura no supone aceptación de Fase T: sync, tienda, wallet, acceso desde app y fondos de prueba se verifican explícitamente en la máquina operadora. No afirmar pagos/cobros por el simple arranque de contenedores.
+El simple arranque de infraestructura no acepta Fase T ni prueba pagos. Su cierre
+local posterior se apoya en las verificaciones y aceptación registradas, no en el
+arranque histórico de contenedores; no certifica producción ni recuperación.

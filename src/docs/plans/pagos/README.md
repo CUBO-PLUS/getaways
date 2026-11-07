@@ -1,10 +1,53 @@
-# Fases T/P — BTCPay local y pago de prueba
+# [x] Fases T/P — BTCPay remoto y pago de prueba local
 
 [Orden y criterios vigentes](../README.md) · [Configuración y operación local](infraestructura-local.md).
 
 **Implementación revisada con subagentes GPT-6 Luna, 2026-11-05.** Los cambios se
 trasladaron sin commit al directorio original, en `feature/btcpay-testnet-reservas`.
-Esto **no acepta T/P**, no habilita mainnet ni acredita el recorrido pagado.
+Aquella revisión técnica no aceptaba T/P ni acreditaba el recorrido pagado; el
+cierre local posterior se registra a continuación. No se habilita mainnet.
+
+## Cierre local aceptado — 2026-11-07
+
+La persona solicitante confirmó «ya hice mi verificacion y me parece bien todo» y
+pidió «cierra lo que queda pendiente». **T/P quedan cerradas y aceptadas para el
+entorno local**, junto con 3.4/C1 y el plan 3, con las excepciones operativas de
+este documento. Responsable de aceptación: persona solicitante; referencia del
+árbol previo a esta actualización documental: `0decd80`.
+
+Evidencia operativa posterior a la activación, sin repetir pagos ni migraciones:
+
+- La factura de la **reserva 2** se comprobó en BTCPay con `Settled/None`, importe
+  y pago de **USD 1.00**, saldo pendiente cero y pago on-chain liquidado. Identidad,
+  tienda, destino y referencia coincidieron. Acredita la pagabilidad observada del
+  dólar en testnet, no una garantía con cualquier cotización/comisión futura.
+- La prueba de despliegue había caducado y el webhook no estaba configurado. Se
+  renovó mediante el preflight existente y se ejecutó la reconciliación autoritativa
+  del proveedor, `markPaid` y sincronización de referidos. Resultado comprobado:
+  reserva `confirmed`, intento `paid`, sin revisión; cotización, fechas y referencia
+  preservadas. Repetir `markPaid` fue idempotente, sin cambiar la versión.
+- La persona solicitante confirmó «ya aparece como pagada». Esta confirmación y la
+  aceptación funcional actual no se presentan como inspección independiente de
+  todas las pantallas de administrador y huésped.
+- Se implementó el botón temporal de refresco manual en el detalle administrativo,
+  mediante POST autorizado a `/api/admin/bookings/[id]`. Reutiliza los controles de
+  proveedor, prueba vigente y evidencia de liquidación; no crea facturas ni fuerza
+  un estado financiero. Las pruebas aisladas del refresco no mutaron pagos reales.
+- Se conservan los resultados técnicos registrados abajo: **491 pruebas generales
+  y 33 integraciones de reservas aprobadas**, con los límites indicados. No se han
+  vuelto a ejecutar por esta actualización documental.
+
+**Excepciones del cierre:** no hay callback público/secreto de webhook operativos
+acreditados; se acepta por ahora la reconciliación explícita. La prueba firmada
+continúa caducando a los diez minutos y requiere renovación. El aislamiento entre
+huéspedes tiene evidencia automatizada, pero no se da por ejecutado un recorrido
+pagado real con dos cuentas. Tampoco se acredita el ensayo de restauración del
+respaldo fresco. Se mantienen pendientes antes de certificar automatización,
+recuperación u otro destino. No se cobró el precio real de la estancia, no se
+habilita producción/mainnet ni se autoriza modificar el VPS o desplegar la app.
+
+Los apartados fechados siguientes conservan el estado de cada comprobación anterior;
+sus pendientes históricos de pago y aceptación quedan sustituidos por este cierre.
 
 ## Activación local autorizada — 2026-11-07 UTC
 
@@ -52,9 +95,9 @@ obsoleta, aislamiento de huéspedes, permisos, carreras y recuperación de refer
   abre una factura de reemplazo; usar una nueva reserva para evaluar BTCPay.
 - No se crearon facturas, pagos, reembolsos ni commits. No se repitió la suite de
   código por esta operación de configuración/migración. La prueba dura diez minutos;
-  renovarla según la guía. Siguen pendientes pago confirmado, callback público y
-  secreto de webhook, además de aceptación de fase. Los apartados siguientes
-  conservan evidencia histórica anterior a esta activación.
+  renovarla según la guía. En esa activación aún faltaban pago y aceptación,
+  completados posteriormente según el cierre anterior; callback público y secreto
+  de webhook siguen pendientes. Los apartados siguientes conservan evidencia histórica.
 
 **Cambio de destino — 2026-11-06:** el operador configuró BTCPay en un VPS y pidió
 eliminar el stack local. Se retiraron únicamente los cuatro contenedores, cinco
@@ -113,7 +156,7 @@ de nuevo el preflight. No se modificó el VPS ni se reintentaron facturas.
 una nueva verificación GET aprobó y renovó la prueba por diez minutos. El 503
 anterior ya no bloquea; la factura de un dólar y su liquidación siguen sin probarse.
 
-## T — Infraestructura verificada
+## T — Histórico de infraestructura local verificada y retirada
 
 - Compose opcional con Bitcoin Core `32.1`, NBXplorer `2.6.21`, BTCPay `2.4.7`
   y PostgreSQL `18.6`. Red **testnet3**, on-chain; sin Lightning.
@@ -233,24 +276,32 @@ operativa. El servidor de pruebas se detuvo antes para no compartir `.next` con
 el build. La adaptación HTTPS repitió pruebas, TypeScript y lint, no un nuevo build.
 Este resultado no habilita el flujo testnet en producción.
 
-Los cambios siguen **sin commit ni merge**, en el worktree aislado. Integrarlos
-en el destino y habilitar C1/pagos requiere un paso posterior autorizado; no se
-deduce de esta entrega. El panel conserva el alcance mínimo (contacto, notas y
-cancelación), sin permisos implícitos para reembolsar, recotizar o modificar referidos.
+En aquella entrega los cambios estaban **sin commit ni merge**, en el worktree
+aislado. La activación y aceptación locales posteriores se registran al inicio;
+no se deducen de estas pruebas. El panel conserva contacto, notas, refresco manual
+de pago y cancelación, sin permisos implícitos para reembolsar, recotizar o modificar
+referidos.
 
-## Pendientes que impiden aceptar el recorrido
+## Seguimiento del cierre local y excepciones pendientes
 
 - [x] Sincronización reportada por la API del VPS, URL/tienda/wallet y preflight remoto verificados (2026-11-07 01:17 UTC); renovar prueba efímera antes de operar. No acredita inspección RPC/Docker del VPS.
-- [ ] Onboarding, tienda y wallet testnet del operador, claves con permisos mínimos
-  y secreto de webhook suministrados fuera de Git.
+- [x] Tienda, wallet testnet y acceso API del operador comprobados; configuración
+  privada fuera de Git y permisos necesarios documentados. No acredita auditoría
+  exhaustiva de permisos del VPS.
 - [x] Registrar el bloqueo de USD 0.01 y la autorización del operador para USD 1.00.
-- [ ] Comprobar que USD 1.00 produce una salida on-chain pagable con las reglas y
-  comisiones del destino; consultar antes de volver a cambiar el importe si no lo es.
-- [ ] Recorrido con fondos reales **de testnet** y dos cuentas aisladas: reserva,
-  factura, pago liquidado, confirmación e historial.
-- [ ] Migración y habilitación local operativa autorizadas, con respaldo y evidencia
-  de corte/recuperación. No se deducen de ejecutar pruebas sintéticas.
+- [x] USD 1.00 pagable y liquidado en testnet; reserva 2 confirmada con evidencia
+  autoritativa y visualización de pago confirmada por la persona solicitante.
+- [x] Migración y habilitación local autorizadas, con respaldo y preservación de las
+  17 tablas previas; evidencia de corte registrada. No equivale a ensayo de restauración.
+- [x] Registrar aceptación funcional local T/P y C1 por la persona solicitante el 2026-11-07.
+- [ ] Configurar y verificar callback HTTPS público y secreto de webhook; mientras
+  tanto se mantiene el refresco explícito y la renovación de la prueba de diez minutos.
+- [ ] Completar recorrido real con dos cuentas aisladas, incluido historial; las
+  pruebas automatizadas de propiedad no se presentan como ese recorrido operativo.
+- [ ] Ensayar la restauración del respaldo fresco y completar controles de recuperación
+  para otro destino; excepción operativa del cierre local.
 
-El mock de desarrollo sigue siendo solo una herramienta de prueba. Ni sus pagos
-simulados ni el servidor HTTP de integración acreditan un cobro de BTCPay o del
-precio real de la estancia.
+El proveedor mock y su acción de simulación se retiraron; se conservan referencias
+históricas sin convertirlas. Los pagos sintéticos y el servidor HTTP de integración
+no acreditan por sí mismos cobros de BTCPay. El pago operativo de USD 1.00 fue de
+testnet, no del precio real de la estancia.

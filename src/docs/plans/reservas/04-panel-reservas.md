@@ -1,4 +1,4 @@
-# [ ] Fase 3.4 — Panel de reservas
+# [x] Fase 3.4 — Panel de reservas
 
 Dependencia: [fase 3.3 aceptada (B2)](03-entradas-corte-y-verificacion.md),
 incluida la identidad del plan 1. No depende del plan 4; el recorrido conjunto se
@@ -7,16 +7,33 @@ Acceso: ADMIN y BOOKING_MANAGER. EDITOR no recibe datos de huéspedes.
 
 [Plan 3 y checklist](README.md). Entrega C1.
 
-## Operaciones mínimas propuestas
+## Cierre local aceptado — 2026-11-07
 
-- [ ] Listar con paginación y filtros de hospedaje, estado y fechas.
-- [ ] Ver detalle: estancia, contacto del huésped, notas, desglose acordado, estado y
+La persona solicitante confirmó su verificación funcional y pidió «cierra lo que
+queda pendiente». **3.4/C1 queda aceptada y cerrada para el entorno local**; el panel
+ya está disponible en la app operativa. La evidencia técnica del 2026-11-05 se
+conserva abajo y no se presenta como una nueva ejecución sobre datos reales.
+
+Se añadió el refresco manual de pago en el detalle administrativo mediante POST
+autorizado a `/api/admin/bookings/[id]`: consulta BTCPay y aplica las reglas existentes,
+sin «marcar pagado» arbitrariamente ni crear otra factura. Conserva borradores y
+versiones de edición. Evidencia final aislada: 33/33 integraciones de reservas;
+[resultados y límites](../pagos/README.md).
+
+El cierre no acredita webhook automático, ensayo formal de recuperación ni todas
+las combinaciones de revocación entre instancias. Esas excepciones siguen abiertas;
+no habilita producción, reembolsos ni cobros en mainnet.
+
+## Operaciones mínimas implementadas y aceptadas
+
+- [x] Listar con paginación y filtros de hospedaje, estado y fechas.
+- [x] Ver detalle: estancia, contacto del huésped, notas, desglose acordado, estado y
    resumen del hospedaje, incluso si está archivado.
-- [ ] Corregir nombre, correo y teléfono con validación; las notas internas permanecen
+- [x] Corregir nombre, correo y teléfono con validación; las notas internas permanecen
    separadas de las notas del huésped y nunca salen por rutas públicas.
-- [ ] Añadir/editar notas operativas.
-- [ ] Cancelar con motivo y confirmación, registrando actor y fecha; operación idempotente.
-- [ ] Ver claramente si un pago/cancelación requiere revisión o devolución manual.
+- [x] Añadir/editar notas operativas.
+- [x] Cancelar con motivo y confirmación, registrando actor y fecha; operación idempotente.
+- [x] Ver claramente si un pago/cancelación requiere revisión o devolución manual.
 
 «Gestionar» no concede acceso a cambiar cualquier columna. No hay selección libre
 de estado, borrado de reservas, modificación de importes acordados, eliminación de
@@ -25,7 +42,7 @@ referencias de pago ni botón «marcar pagado». ADMIN usa las mismas reglas fin
 Reprogramar fechas, cambiar hospedaje/capacidad, crear reservas manuales, descuentos
 manuales, confirmar sin pago y reembolsar necesitan reglas adicionales. Quedan
 decisiones pendientes, no permisos implícitos ni requisitos obligatorios iniciales.
-Confirmar este límite funcional antes de implementar la fase.
+La aceptación local conserva este límite funcional.
 
 ## Rutas y archivos propuestos
 
@@ -34,7 +51,7 @@ Confirmar este límite funcional antes de implementar la fase.
 | `app/admin/bookings/page.tsx` | Listado autorizado |
 | `app/admin/bookings/[id]/page.tsx` | Detalle autorizado |
 | `app/api/admin/bookings/route.ts` | GET paginado, filtros validados |
-| `app/api/admin/bookings/[id]/route.ts` | GET limitado al trabajo operativo |
+| `app/api/admin/bookings/[id]/route.ts` | GET limitado al trabajo operativo; POST de refresco de pago autorizado |
 | `app/api/admin/bookings/[id]/contact/route.ts` | PATCH de campos de contacto |
 | `app/api/admin/bookings/[id]/notes/route.ts` | PATCH de nota interna |
 | `app/api/admin/bookings/[id]/cancel/route.ts` | POST con versión, motivo y confirmación |
@@ -96,11 +113,12 @@ status público y disponibilidad sin exposición de contacto/notas.
 
 ## Cierre
 
-- [ ] ADMIN y BOOKING_MANAGER gestionan las operaciones acordadas sobre la misma BD.
-- [ ] No hay datos personales accesibles a EDITOR/anónimo ni cambios financieros arbitrarios.
-- [ ] Cancelación preserva historial, importes y referencias; no promete devolución automática.
+- [x] ADMIN y BOOKING_MANAGER gestionan las operaciones acordadas sobre la misma BD; recorrido aislado y aceptación funcional local registrados.
+- [x] Permisos EDITOR/anónimo y rechazo de cambios financieros arbitrarios verificados en el recorrido técnico registrado.
+- [x] Cancelación preserva historial, importes y referencias; no promete devolución automática.
 - [ ] Revocación y conflictos funcionan con dos sesiones/instancias, no solo en una pestaña.
-- [ ] Verificación común aplicable y corte C1 registrados según las [guías transversales](../README.md).
+- [x] Registrar evidencia técnica y aceptación funcional local C1 según el [seguimiento vigente](../README.md), con excepciones explícitas.
+- [ ] Ensayar recuperación formal C1 según las guías transversales; no se da por realizada.
 
 ## Implementación y evidencia técnica — 2026-11-05
 
@@ -108,7 +126,8 @@ Implementada y revisada con subagentes **GPT-6 Luna** en el worktree aislado
 `btcpay-testnet-reservas`. Revisión de especificación y calidad aprobada tras
 corregir el listado sin fechas, límites de filtros, revisión financiera y
 preservación de borradores. No hay dependencias ni migraciones nuevas para C1.
-**No se ha habilitado el panel sobre la aplicación operativa ni aceptado el corte C1.**
+En esa entrega aún no se había habilitado el panel operativo ni aceptado C1;
+el cierre local posterior del 2026-11-07 se registra al inicio de este documento.
 
 ```bash
 NODE_ENV=development PRISMA_TEST_DATABASE=1 npx vitest run modules/bookings/_test_/booking-db.test.ts
@@ -136,5 +155,6 @@ Recorrido independiente en Chrome con cookies separadas para manager/admin/edito
 
 La reserva sintética conservó **25600 centavos y `btc_mock_1`** tras cancelar.
 Fue confirmada **solo por el mock estudiantil**: no demuestra un pago BTCPay,
-reembolso ni cobro del precio real. La aceptación/corte y los pendientes del
-[recorrido T/P](../pagos/README.md) permanecen separados de esta evidencia.
+reembolso ni cobro del precio real. La aceptación posterior y el pago de testnet del
+[recorrido T/P](../pagos/README.md#cierre-local-aceptado--2026-11-07) son evidencia
+separada; no convierten aquel pago sintético en una liquidación de BTCPay.
