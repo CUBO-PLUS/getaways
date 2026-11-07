@@ -59,28 +59,34 @@ Database tests generate unique temporary codes, clean up their own rows and do *
 
 ## Flow and boundaries
 
-1. `ReferralTracker` reads `?ref=CODE` and stores a normalized format-valid code in `sessionStorage` for the same browser tab.
+1. `ReferralTracker` reads `?ref=CODE`, normalizes its format and stores it in `sessionStorage` for the current browser tab.
 2. `BookingWidget` includes `referral_code` when submitting to `/api/bookings`.
-3. `/api/bookings` creates the existing JSON-backed pending booking, then calls `recordReferralForBooking()` best-effort. The active code is checked against PostgreSQL; at most one attribution is stored per booking ID.
-4. **Only after** the mock Bitcoin route calls `markPaid()`, `syncReferralStatusForBooking` copies its `confirmed` or `cancelled` status to the existing PostgreSQL attribution. GET polling also repairs previously missed status synchronization; both paths catch referral errors without changing payment behavior.
-5. `node scripts/referrals-cli.mjs report` returns total/pending/confirmed/cancelled counts by code.
+3. An authenticated guest account is required. The API creates the pending booking in PostgreSQL and attempts to record the referral.
+4. The server validates the active code and prevents multiple attributions for the same booking. Referral recording failures do not cancel the booking.
+5. Authoritative booking/payment transitions synchronize the referral status. GET requests do not confirm or reconcile payments.
+6. `node scripts/referrals-cli.mjs report` displays total, pending, confirmed and cancelled counts by code.
 
-No changes were made to the booking JSON store, pricing, Bitcoin provider or Prisma schema. The only modification to a shared payment-owned file is a small best-effort hook in `app/api/checkout/btc/route.ts`. Mauricio should review that hook before merge.
+Bookings and referral attribution persist in PostgreSQL. The current payment flow uses BTCPay Testnet; simulated-payment walkthroughs are obsolete.
 
 ## Demo acceptance check
 
-- Seed `GETAWAYSDEMO`; `list` confirms `active: true`.
-- Reserve via `?ref=GETAWAYSDEMO`; `report` shows an extra pending referral.
-- If available, complete a **development-only** mock BTC payment; `report` should show its status as `confirmed` (or `cancelled` if booking logic rejects it).
-- Disable `GETAWAYSDEMO`, create another booking with it: booking should still proceed, but no new attribution should be created. Re-enable for the demo.
-- Open an incognito window without a code; create a booking and confirm no referral is added.
-- Test all commands on a clean local DB before asking Mauricio to deploy.
+These are verification steps, not a claim that a new demonstration has been executed.
+
+- Prepare the local services and catalogue using the technical documentation.
+- Seed `GETAWAYSDEMO` and confirm that the code is active.
+- Open `http://localhost:3000/?ref=GETAWAYSDEMO`, sign in to a guest account and create a valid booking.
+- Check that the report contains the pending attribution.
+- If completing the authorized payment demonstration, use Bitcoin Testnet 4 and the documented BTCPay verification/reconciliation flow. The USD 1.00 test charge is separate from the stay quote.
+- Confirm the resulting booking and referral status.
+- Disable the code and check that a new booking does not receive an attribution for that inactive code.
+- Repeat without a referral code and check that no attribution is created.
 
 ## Known limitations / future work
 
-- **Important:** bookings persist in `.data/bookings.json`; referrals persist in PostgreSQL. `bookingId` is not a foreign key. Resetting JSON bookings while keeping Postgres can reuse IDs and attach stale attributions. Reset both deliberately only in a disposable test environment; production needs durable booking IDs or one database with a proper relation/transaction design.
-- Setup may need manual intervention if the combined Prisma migration graph or a preexisting local DB has drift; do not reset the DB to force success. The repository's `migrations/app/refs/db.json` currently points to the earlier referral contract even though newer blog migrations exist. The setup previews/applies migrations and verifies the live schema, but does **not** edit migration history or refs.
-- Only the existing mock BTC route synchronizes payment states; future real providers must call the same function from their authoritative confirmation flow.
-- `sessionStorage` is scoped to one tab and can be blocked; no cross-device attribution or attribution expiration.
-- The code model does not identify the promoter or implement a loyalty program. Define business rules with Gateways before extending the schema.
-- This is an attribution **prototype** and not a production-ready referral/affiliate platform.
+- This is an attribution prototype.
+- `sessionStorage` is limited to one browser tab and may be unavailable.
+- Cross-device attribution and an attribution-expiration policy are not implemented.
+- Referral codes do not implement promoter identity, rewards or a loyalty program.
+- Incentives, eligibility, limits and cancellation rules require business approval.
+- Payment webhook automation and other operational exceptions remain subject to the payment documentation.
+- Database migration differences must be reviewed against the actual environment before applying changes.
