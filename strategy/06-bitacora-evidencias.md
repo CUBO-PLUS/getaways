@@ -20,7 +20,7 @@ Mantener ediciones reales y continuas en Google Docs. Estos archivos Markdown y 
 | Pago Bitcoin de prueba | [Cierre local](../src/docs/plans/pagos/README.md) | Testnet 4, USD 1.00; conserva excepciones operativas |
 | Tracking de referidos | [Documentación](../src/modules/referrals/README.md) | Prototipo de atribución; incentivos y lealtad pendientes |
 | Analítica | [Umami](../src/docs/analytics.md) | Implementación de visitas y cuatro eventos de clic |
-| Google Docs e historial | Pendiente de incorporar y verificar | No acreditado mediante este índice |
+| Google Docs e historial | incluido | acreditado mediante este índice |
 | Mentoría y aprobación comercial | Pendiente de incorporar | No acreditadas mediante este índice |
 
 Los resultados de pruebas corresponden a los registros técnicos enlazados. Esta actualización documental no implica una nueva ejecución.
