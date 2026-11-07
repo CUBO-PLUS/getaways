@@ -5,14 +5,14 @@ import { BUSINESS, formattedAddress, telHref } from "@/modules/site/business";
 export default function ContactDetails() {
   const tel = telHref();
   const methods = [
-    ...(tel ? [{ label: "Call us", value: BUSINESS.telephone, href: tel, Icon: Phone }] : []),
-    { label: "Email us", value: BUSINESS.email, href: `mailto:${BUSINESS.email}`, Icon: Mail },
+    ...(tel ? [{ label: "Call us", value: BUSINESS.telephone, href: tel, Icon: Phone, channel: "phone" }] : []),
+    { label: "Email us", value: BUSINESS.email, href: `mailto:${BUSINESS.email}`, Icon: Mail, channel: "email" },
   ];
 
   return (
     <address className="mt-5 not-italic" aria-label="Contact details">
-      {methods.map(({ label, value, href, Icon }) => (
-        <a key={label} className="group flex min-w-0 items-center gap-4 border-b border-[rgba(7,36,86,.075)] py-5 text-body-text leading-[1.65] hover:text-button-bg focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-[#648d79]" href={href}>
+      {methods.map(({ label, value, href, Icon, channel }) => (
+        <a key={label} data-umami-event="contact_click" data-umami-event-source="contact" data-umami-event-channel={channel} className="group flex min-w-0 items-center gap-4 border-b border-[rgba(7,36,86,.075)] py-5 text-body-text leading-[1.65] hover:text-button-bg focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-[#648d79]" href={href}>
           <span className="grid size-12 shrink-0 place-items-center rounded-[10px] bg-button-bg/5"><Icon size={20} strokeWidth={1.5} aria-hidden="true" /></span>
           <span className="min-w-0">
             <span className="block text-[10px] font-semibold tracking-[1.5px] text-muted-text uppercase">{label}</span>

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Header from "@/components/organisms/Header";
 import Footer from "@/components/organisms/Footer";
 import ReferralTracker from "@/modules/referrals/ReferralTracker";
+import Umami from "@/components/organisms/UmamiAnalytics";
 
 export default function SiteLayout({
   children,
@@ -10,6 +11,7 @@ export default function SiteLayout({
 }) {
   return (
     <>
+      <Umami />
       <Suspense fallback={null}>
         <ReferralTracker />
       </Suspense>

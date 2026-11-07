@@ -354,7 +354,7 @@ export default function PropertyArchive({
               ))}
             </fieldset>
 
-            <button type="submit" className="inline-flex items-center justify-center self-stretch bg-button-bg text-button-text [font-family:inherit] text-[length:inherit]
+            <button type="submit" data-umami-event="search_click" data-umami-event-source="archive" className="inline-flex items-center justify-center self-stretch bg-button-bg text-button-text [font-family:inherit] text-[length:inherit]
               font-semibold leading-[inherit] cursor-pointer
               shadow-[0_14px_26px_rgba(7,_36,_86,_0.18)] px-6 py-3.75 rounded-full border-0">
               Filter

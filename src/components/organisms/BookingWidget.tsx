@@ -348,6 +348,9 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
 
           <Button
             type="submit"
+            data-umami-event="booking_click"
+            data-umami-event-source="listing"
+            data-umami-event-mode={checkoutMode}
             className="group/payment w-full min-h-12 bg-button-bg text-button-text cursor-pointer [font-family:inherit] text-[15px] font-bold
               [font-style:inherit] leading-[inherit] [font-variant:inherit] [transition:background_0.16s,_box-shadow_0.16s,_opacity_0.16s,_transform_0.16s]
               gap-1.75 rounded-full border-0 enabled:hover:bg-[rgb(28,_36,_35)] enabled:hover:[transform:translateY(-1px)]

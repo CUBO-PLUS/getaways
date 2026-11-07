@@ -81,11 +81,11 @@ export default async function Footer() {
                 {[BUSINESS.addressLocality, BUSINESS.addressRegion, "El Salvador"].filter(Boolean).join(", ")}
               </span>
               {phone ? (
-                <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="text-inherit no-underline hover:underline">
+                <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} data-umami-event="contact_click" data-umami-event-source="footer" data-umami-event-channel="phone" className="text-inherit no-underline hover:underline">
                   <span>{phone}</span>
                 </a>
               ) : null}
-              <a href={`mailto:${email}`} className="text-inherit no-underline hover:underline">
+              <a href={`mailto:${email}`} data-umami-event="contact_click" data-umami-event-source="footer" data-umami-event-channel="email" className="text-inherit no-underline hover:underline">
                 <span>{email}</span>
               </a>
             </address>

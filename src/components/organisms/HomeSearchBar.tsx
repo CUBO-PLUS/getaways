@@ -198,7 +198,7 @@ export default function HomeSearchBar({ destinations, maxGuests }: HomeSearchBar
         </Select>
       </div>
 
-      <button type="submit" className="bg-button-bg text-button-text font-heading text-[13px] font-bold tracking-[1.5px] uppercase cursor-pointer
+      <button type="submit" data-umami-event="search_click" data-umami-event-source="home" className="bg-button-bg text-button-text font-heading text-[13px] font-bold tracking-[1.5px] uppercase cursor-pointer
         [transition:background-color_200ms_ease] px-[clamp(28px,_4vw,_52px)] py-0 border-0 hover:bg-[#2b3433]
         focus-visible:[outline:2px_solid_var(--color-link)] focus-visible:outline-offset-[-4px] max-[900.001px]:hidden
         max-[900.001px]:min-h-13 max-[900.001px]:px-6 max-[900.001px]:py-4 group-data-[expanded=true]/search:max-[900.001px]:block">
