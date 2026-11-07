@@ -1,6 +1,7 @@
 import { execFileSync, fork, spawnSync, type ChildProcess } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { createHmac, randomUUID } from "node:crypto";
+import { createServer, type Server } from "node:http";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
@@ -8,6 +9,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { Booking, MarkPaidResult, QuoteUpdate } from "../server/booking-store";
 import type { CheckoutData } from "../../checkout/server/checkout";
 import type { BookingConfirmationData } from "../server/bookings";
+import { signBtcpayDeploymentProof, type BtcpayDeploymentProof } from "../../payments/deployment-proof";
 
 type Api = { status: number; headers: Record<string, string>; body: { ok: boolean; data: Record<string, unknown> } };
 type Worker = Awaited<ReturnType<typeof startWorker>>;
@@ -15,10 +17,21 @@ const root = fileURLToPath(new URL("../../../", import.meta.url));
 const children: ChildProcess[] = [];
 let temporary: string;
 let env: NodeJS.ProcessEnv;
+let btcpayServer: Server;
+let btcpayUrl: string;
+let invoices = new Map<string, Record<string, unknown>>();
+let invoicePosts = 0;
+let postedInvoiceAmounts: string[] = [];
+let failNextPost = false;
+let btcpayPaths: string[] = [];
+let btcpayDestination = "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn";
+let invoicePostBarrier: { entered: Promise<void>; release: () => void; signal: () => void; proceed: Promise<void> } | undefined;
+const deploymentProofKey = "ab".repeat(32);
+let deploymentProofPath: string;
 
-async function startWorker() {
+async function startWorker(overrides: Partial<NodeJS.ProcessEnv> = {}) {
   const child = fork(path.join(root, "infrastructure/prisma/_test_/support/booking-worker.mts"), [], {
-    cwd: temporary, env, execArgv: ["--experimental-strip-types", "--experimental-loader", path.join(root, "infrastructure/prisma/_test_/support/booking-loader.mjs")], stdio: ["ignore", "pipe", "pipe", "ipc"],
+    cwd: temporary, env: { ...env, ...overrides }, execArgv: ["--experimental-strip-types", "--experimental-loader", path.join(root, "infrastructure/prisma/_test_/support/booking-loader.mjs")], stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
   children.push(child);
   let stderr = "";
@@ -92,6 +105,32 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect(response.headers["cache-control"]).toContain("no-store");
     expect(response.headers["referrer-policy"]).toBe("no-referrer");
   }
+  function holdNextInvoicePost() {
+    let signal!: () => void;
+    let release!: () => void;
+    const entered = new Promise<void>((resolve) => { signal = resolve; });
+    const proceed = new Promise<void>((resolve) => { release = resolve; });
+    invoicePostBarrier = { entered, proceed, signal, release };
+    return { entered, release };
+  }
+
+  function btcpayWorkerConfig() {
+    return { PAYMENT_PROVIDER: "btcpay-testnet", BTCPAY_NETWORK: "testnet", BTCPAY_API_URL: btcpayUrl,
+      BTCPAY_STORE_ID: "synthetic-store", BTCPAY_API_KEY: "synthetic-api-key", BTCPAY_WEBHOOK_SECRET: "synthetic-webhook-secret",
+      BTCPAY_DEPLOYMENT_PROOF_PATH: deploymentProofPath, BTCPAY_DEPLOYMENT_PROOF_KEY: deploymentProofKey };
+  }
+  async function testnetWorker(network: "testnet" | "mainnet" = "testnet") {
+    const worker = await startWorker({ ...btcpayWorkerConfig(), BTCPAY_NETWORK: network });
+    const login = await worker.run<{ status: number }>({ action: "guestLogin", email: "shared-worker@example.test", password: "synthetic-password-123" });
+    expect(login.status).toBe(200);
+    return worker;
+  }
+  function markStubInvoiceSettled(invoice: Record<string, unknown>) {
+    const method = (invoice.paymentMethods as Array<Record<string, unknown>>)[0]!;
+    method.due = "0"; method.paymentMethodPaid = method.amount;
+    method.payments = [{ status: "Settled", destination: method.destination, value: method.amount }];
+    invoice.status = "Settled"; invoice.paidAmount = invoice.amount;
+  }
 
   beforeAll(async () => {
     temporary = mkdtempSync("/tmp/opencode/booking-postgres-");
@@ -115,14 +154,63 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     execFileSync(process.execPath, [path.join(root, "node_modules/prisma/dist/prisma.js"), "db", "migrate", "--config", path.join(temporary, "prisma.config.ts"), "--db", env.DATABASE_URL], {
       cwd: temporary, env, encoding: "utf8", timeout: 60_000, stdio: "pipe",
     });
+    btcpayServer = createServer(async (request, response) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of request) chunks.push(Buffer.from(chunk));
+      const body = Buffer.concat(chunks).toString("utf8");
+      const url = new URL(request.url!, "http://127.0.0.1");
+      btcpayPaths.push(`${request.method} ${url.pathname}${url.search}`);
+      const send = (status: number, value: unknown) => { response.writeHead(status, { "content-type": "application/json" }); response.end(JSON.stringify(value)); };
+      if (url.pathname === "/api/v1/server/info") return send(200, { version: "2.4.7", fullySynched: true, supportedPaymentMethods: ["BTC-CHAIN"], syncStatus: [{ paymentMethodId: "BTC-CHAIN", available: true }] });
+      if (url.pathname === "/api/v1/stores/synthetic-store/payment-methods") return send(200, [{ paymentMethodId: "BTC-CHAIN", enabled: true }]);
+      if (url.pathname === "/api/v1/stores/synthetic-store/invoices" && request.method === "POST") {
+        invoicePosts++;
+        const input = JSON.parse(body) as { amount: string; metadata: { orderId: string } };
+        postedInvoiceAmounts.push(input.amount);
+        const id = `invoice-${invoicePosts}`;
+        const invoice = { id, storeId: "synthetic-store", amount: input.amount, currency: "USD", paidAmount: "0.00", status: "New", additionalStatus: "None",
+          checkoutLink: `http://btcpay.test/i/${id}`, metadata: input.metadata,
+          paymentMethods: [{ paymentMethodId: "BTC-CHAIN", currency: "BTC", destination: btcpayDestination, amount: "0.00001000", due: "0.00001000", paymentMethodPaid: "0", payments: [] }] };
+        invoices.set(id, invoice);
+        const barrier = invoicePostBarrier;
+        if (barrier) {
+          invoicePostBarrier = undefined;
+          barrier.signal();
+          await barrier.proceed;
+        }
+        if (failNextPost) { failNextPost = false; return send(503, { error: "response lost after invoice creation" }); }
+        return send(200, { id, storeId: "synthetic-store", checkoutLink: invoice.checkoutLink, metadata: input.metadata });
+      }
+      if (url.pathname === "/api/v1/stores/synthetic-store/invoices" && request.method === "GET") {
+        const orderId = url.searchParams.get("orderId");
+        return send(200, [...invoices.values()].filter((invoice) => (invoice.metadata as { orderId: string }).orderId === orderId));
+      }
+      const match = /^\/api\/v1\/(?:stores\/synthetic-store\/)?invoices\/([^/]+)$/.exec(url.pathname);
+      if (match && request.method === "GET") return invoices.has(match[1]!) ? send(200, invoices.get(match[1]!)) : send(404, {});
+      return send(404, { path: url.pathname });
+    });
+    await new Promise<void>((resolve) => btcpayServer.listen(0, "127.0.0.1", resolve));
+    const address = btcpayServer.address();
+    if (!address || typeof address === "string") throw new Error("Native BTCPay HTTP stub did not bind TCP");
+    btcpayUrl = `http://127.0.0.1:${address.port}`;
+    deploymentProofPath = path.join(temporary, "synthetic-operator-deployment-proof.json");
+    const checkedAt = Date.now() - 1_000;
+    const proof = { version: 1 as const, apiUrl: btcpayUrl, storeId: "synthetic-store", network: "testnet" as const,
+      composeProject: "synthetic-operator-attestation", btcpayContainerId: "synthetic-btcpay-container",
+      btcpayImage: "btcpayserver/btcpayserver:2.4.7" as const, btcpayVersion: "2.4.7" as const, btcpayFullySynched: true as const,
+      coreContainerId: "synthetic-core-container", coreImage: "btcpayserver/bitcoin:32.1" as const, coreChain: "test" as const,
+      coreInitialBlockDownload: false as const, checkedAt, expiresAt: checkedAt + 9 * 60_000 };
+    writeFileSync(deploymentProofPath, JSON.stringify({ ...proof, signature: signBtcpayDeploymentProof(proof, deploymentProofKey) }), { mode: 0o600 });
   }, 120_000);
 
   beforeEach(async () => {
-    sql(`TRUNCATE "ReferralAttribution", "ReferralCode", "Booking", "GuestAccount", "AdminUser", "AdminLoginThrottle", "Listing", "ListingTermAssignment", "ListingMedia" RESTART IDENTITY;
+    invoices = new Map(); invoicePosts = 0; postedInvoiceAmounts = []; failNextPost = false; btcpayPaths = []; btcpayDestination = "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn"; invoicePostBarrier = undefined;
+    sql(`TRUNCATE "ReferralAttribution", "ReferralCode", "PaymentAttempt", "Booking", "GuestAccount", "AdminUser", "AdminLoginThrottle", "Listing", "ListingTermAssignment", "ListingMedia" RESTART IDENTITY;
       INSERT INTO "Listing" (slug, title, "contentHtml", attributes, active, "updatedAt", "pricePerNightCents", "cleaningFeeCents", "extraGuestFeeCents", "petFeeCents", "ivaBasisPoints", "tourismBasisPoints", "maxGuests", "baseGuests", "petsAllowed")
         VALUES ('synthetic-stay', 'Agreed historical title', '', '{}', true, now(), 10000, 2000, 1500, 3000, 1300, 500, 4, 2, true);
+      INSERT INTO "AdminUser" (email, name, "passwordHash", role, "authVersion", "updatedAt") VALUES ('synthetic-operator@example.test', 'Synthetic Operator', 'unused-test-hash', 'ADMIN', 1, now());
       INSERT INTO "ReferralCode" (code, active) VALUES ('SYNTHETIC-A', true), ('SYNTHETIC-B', true), ('SYNTHETIC-OFF', false);`);
-    [a, b] = await Promise.all([startWorker(), startWorker()]);
+    [a, b] = await Promise.all([startWorker(btcpayWorkerConfig()), startWorker(btcpayWorkerConfig())]);
     await a.run({ action: "guest", email: "shared-worker@example.test" });
     await b.run({ action: "guestLogin", email: "shared-worker@example.test", password: "synthetic-password-123" });
   }, 30_000);
@@ -136,7 +224,7 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
 
   afterAll(() => {
     try { if (created) execFileSync("docker", ["rm", "--force", container], { timeout: 30_000, stdio: "pipe" }); }
-    finally { if (temporary) rmSync(temporary, { recursive: true, force: true }); }
+    finally { if (temporary) rmSync(temporary, { recursive: true, force: true }); btcpayServer?.close(); }
   });
 
   it("keeps all agreed prices, policies and receipt title after catalogue edits, without exposing private booking fields", async () => {
@@ -158,11 +246,470 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
       pricing_snapshot: booking.pricing_snapshot, agreed_listing_title: "Agreed historical title" });
     const dto = await b.run<{ checkout: CheckoutData; receipt: BookingConfirmationData }>({ action: "dto", sessionId: booking.checkout_session_id });
     expect(Object.keys(dto.checkout.booking).sort()).toEqual(["id", "version", "status", "check_in", "check_out", "nights", "guest_name", "guest_email", "guests", "total_amount_cents", "payment_open", "pricing_available"].sort());
-    expect(Object.keys(dto.receipt.booking!).sort()).toEqual(["status", "guest_name", "check_in", "check_out", "nights", "total_amount_cents"].sort());
+    expect(Object.keys(dto.receipt.booking!).sort()).toEqual(["status", "guest_name", "check_in", "check_out", "nights", "total_amount_cents", "testPayment"].sort());
+    expect(dto.receipt.booking!.testPayment).toBeNull();
     expect(dto.checkout.listing.title).toBe("Agreed historical title");
     expect(dto.receipt.listing?.title).toBe("Agreed historical title");
     expect((await create()).pricing_snapshot).toMatchObject({ pricePerNightCents: 99000, maxGuests: 1, petsAllowed: false });
   });
+
+  it("protects staff booking operations, versions edits, and records an idempotent cancellation without changing payment data", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const token = await a.run<string>({ action: "adminToken", id: 1, authVersion: 1 });
+    const call = (route: "list" | "detail" | "contact" | "notes" | "cancel", method: "GET" | "PATCH" | "POST", body?: Record<string, unknown>, useToken = token) =>
+      a.run<{ status: number; headers: Record<string, string>; body: Record<string, unknown> }>({ action: "adminRequest", route, method, id: booking.id, token: useToken, body });
+    const list = await call("list", "GET");
+    expect(list.status).toBe(200);
+    expect(list.headers["cache-control"]).toContain("no-store");
+    expect(JSON.stringify(list.body)).not.toContain(booking.checkout_session_id);
+    expect((await a.run<{ status: number }>({ action: "adminRequest", route: "list", method: "GET", token, query: `?listingId=2147483648` })).status).toBe(400);
+    expect((await a.run<{ status: number }>({ action: "adminRequest", route: "list", method: "GET", token, query: `?from=2099-02-30` })).status).toBe(400);
+    expect((await a.run<{ status: number }>({ action: "adminRequest", route: "list", method: "GET", token, query: `?from=2099-06-20&to=2099-06-10` })).status).toBe(400);
+    const current = await a.run<Booking>({ action: "get", id: booking.id });
+    expect((await call("detail", "GET", undefined, "")).status).toBe(401);
+    expect((await a.run<{ status: number }>({ action: "adminRequest", route: "contact", method: "PATCH", id: booking.id, token, origin: "https://attacker.example", body: { version: current.version, name: "Hostile", email: "hostile@example.test", phone: null } })).status).toBe(403);
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toEqual(current);
+    const contact = await call("contact", "PATCH", { version: current.version, name: "Updated Guest", email: "UPDATED@example.test", phone: null });
+    expect(contact).toMatchObject({ status: 200, body: { version: current.version + 1 } });
+    const notes = await call("notes", "PATCH", { version: current.version + 1, notes: "Staff-only" });
+    expect(notes).toMatchObject({ status: 200, body: { version: current.version + 2 } });
+    const stale = await call("contact", "PATCH", { version: current.version, name: "Overwrite", email: "overwrite@example.test", phone: null });
+    expect(stale.status).toBe(409);
+    expect((await call("contact", "PATCH", { version: current.version + 2, name: "Overwrite", email: "overwrite@example.test", phone: null, status: "confirmed" })).status).toBe(400);
+    const beforeCancel = await a.run<Booking>({ action: "get", id: booking.id });
+    const cancelled = await call("cancel", "POST", { version: beforeCancel.version, confirmed: true, reason: "Guest request" });
+    expect(cancelled).toMatchObject({ status: 200, body: { status: "cancelled", version: beforeCancel.version + 1 } });
+    expect(await call("cancel", "POST", { version: beforeCancel.version + 1, confirmed: true, reason: "Retry" })).toMatchObject({ status: 200, body: { status: "cancelled" } });
+    const saved = await a.run<Booking>({ action: "get", id: booking.id });
+    expect(saved).toMatchObject({ status: "cancelled", guest_name: "Updated Guest", guest_email: "updated@example.test", admin_notes: "Staff-only",
+      total_amount_cents: beforeCancel.total_amount_cents, pricing_snapshot: beforeCancel.pricing_snapshot, payment_reference: beforeCancel.payment_reference,
+      cancelled_by: "1", cancellation_reason: "Guest request" });
+    expect(saved.cancelled_at).not.toBeNull();
+    expect(JSON.stringify(await a.run({ action: "history" }))).not.toContain("Staff-only");
+    sql(`UPDATE "AdminUser" SET role = 'BOOKING_MANAGER' WHERE id = 1;`);
+    expect((await call("list", "GET")).status).toBe(200);
+    sql(`UPDATE "AdminUser" SET role = 'EDITOR' WHERE id = 1;`);
+    expect((await call("list", "GET")).status).toBe(403);
+    sql(`UPDATE "AdminUser" SET role = 'ADMIN' WHERE id = 1;`);
+    sql(`UPDATE "AdminUser" SET "authVersion" = 2 WHERE id = 1;`);
+    expect((await call("list", "GET")).status).toBe(401);
+    const currentToken = await a.run<string>({ action: "adminToken", id: 1, authVersion: 2 });
+    expect((await a.run<{ status: number }>({ action: "adminRequest", route: "list", method: "GET", token: currentToken })).status).toBe(200);
+    sql(`UPDATE "AdminUser" SET active = false WHERE id = 1;`);
+    expect((await a.run<{ status: number }>({ action: "adminRequest", route: "detail", method: "GET", id: booking.id, token: currentToken })).status).toBe(401);
+  });
+
+  it("restricts staff payment refresh and idempotently confirms the existing invoice from settled evidence", async () => {
+    const worker = await testnetWorker();
+    const booking = await payable(worker);
+    const token = await worker.run<string>({ action: "adminToken", id: 1, authVersion: 1 });
+    const refresh = (useToken = token, origin?: string) => worker.run<{ status: number; headers: Record<string, string>; body: Record<string, unknown> }>({
+      action: "adminRequest", route: "detail", method: "POST", id: booking.id, token: useToken, origin,
+    });
+    const beforeRequests = btcpayPaths.length;
+    expect((await refresh("")).status).toBe(401);
+    const guest = await worker.run<{ cookie: string }>({ action: "guestLogin", email: "shared-worker@example.test", password: "synthetic-password-123" });
+    expect((await refresh(guest.cookie.split(";", 1)[0]!.split("=")[1]!)).status).toBe(401);
+    for (const origin of ["", "https://attacker.example"]) expect((await refresh(token, origin)).status).toBe(403);
+    sql(`UPDATE "AdminUser" SET role = 'EDITOR' WHERE id = 1;`);
+    expect((await refresh()).status).toBe(403);
+    sql(`UPDATE "AdminUser" SET role = 'ADMIN', "authVersion" = 2 WHERE id = 1;`);
+    expect((await refresh()).status).toBe(401);
+    sql(`UPDATE "AdminUser" SET "authVersion" = 1, active = false WHERE id = 1;`);
+    expect((await refresh()).status).toBe(401);
+    sql(`UPDATE "AdminUser" SET active = true WHERE id = 1;`);
+    expect(btcpayPaths).toHaveLength(beforeRequests);
+    expect(await a.run({ action: "get", id: booking.id })).toEqual(booking);
+
+    const pending = await refresh();
+    expect(pending).toMatchObject({ status: 200, body: { version: booking.version, status: "pending_payment", paymentReviewRequired: false, testPayment: { amountCents: 100, status: "pending" } } });
+    expect(pending.headers["cache-control"]).toContain("no-store");
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("pending");
+    markStubInvoiceSettled(invoices.get("invoice-1")!);
+    sql(`UPDATE "AdminUser" SET role = 'BOOKING_MANAGER' WHERE id = 1;`);
+    const settled = await refresh();
+    expect(settled).toMatchObject({ status: 200, body: { version: booking.version + 1, status: "confirmed", paymentReviewRequired: false, testPayment: { amountCents: 100, status: "paid" } } });
+    const confirmed = await a.run<Booking>({ action: "get", id: booking.id });
+    expect(confirmed).toMatchObject({ status: "confirmed", payment_reference: booking.payment_reference, total_amount_cents: 25600 });
+    const paidAttempt = sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`);
+    expect(JSON.parse(paidAttempt)).toMatchObject({ status: "paid", invoiceId: "invoice-1", realTotalCents: 25600, testAmountCents: 100 });
+    expect((await refresh()).body).toEqual(settled.body);
+    expect(await a.run({ action: "get", id: booking.id })).toEqual(confirmed);
+    expect(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)).toBe(paidAttempt);
+    expect(invoicePosts).toBe(1);
+  }, 30_000);
+
+  it("never opens an invoice on staff refresh or renews expired deployment proof", async () => {
+    const worker = await testnetWorker();
+    const booking = await create();
+    const token = await worker.run<string>({ action: "adminToken", id: 1, authVersion: 1 });
+    const message = { action: "adminRequest", route: "detail", method: "POST", id: booking.id, token };
+    expect((await worker.run<{ status: number }>(message)).status).toBe(409);
+    expect(invoicePosts).toBe(0);
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    expect((await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } })).status).toBe(200);
+    markStubInvoiceSettled(invoices.get("invoice-1")!);
+    const proof = JSON.parse(readFileSync(deploymentProofPath, "utf8")) as BtcpayDeploymentProof;
+    const checkedAt = Date.now() - 11 * 60_000;
+    const expired = { ...proof, checkedAt, expiresAt: checkedAt + 10 * 60_000 };
+    const expiredPath = path.join(temporary, "expired-deployment-proof.json");
+    const signed = JSON.stringify({ ...expired, signature: signBtcpayDeploymentProof(expired, deploymentProofKey) });
+    writeFileSync(expiredPath, signed, { mode: 0o600 });
+    const disabled = await startWorker({ ...btcpayWorkerConfig(), BTCPAY_DEPLOYMENT_PROOF_PATH: expiredPath });
+    const before = await a.run<Booking>({ action: "get", id: booking.id });
+    const beforeRequests = btcpayPaths.length;
+    const response = await disabled.run<{ status: number; body: { error: string } }>(message);
+    expect(response.status).toBe(503);
+    expect(response.body.error).toMatch(/verificación.*caducó/i);
+    expect(btcpayPaths).toHaveLength(beforeRequests);
+    expect(readFileSync(expiredPath, "utf8")).toBe(signed);
+    expect(await a.run({ action: "get", id: booking.id })).toEqual(before);
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("pending");
+    expect(invoicePosts).toBe(1);
+  }, 30_000);
+
+  it("reserves one frozen testnet invoice across processes and blocks repricing while the provider is called", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const x = await testnetWorker();
+    const y = await testnetWorker();
+    const [left, right] = await Promise.all([x.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } }),
+      y.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } })]);
+    expect([left.status, right.status], JSON.stringify({ bodies: [left.body, right.body], btcpayPaths })).toContain(200);
+    expect([left.status, right.status].every((status) => status === 200 || status === 409)).toBe(true);
+    expect(invoicePosts).toBe(1);
+    const stored = await a.run<Booking>({ action: "get", id: booking.id });
+    const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as Record<string, unknown>;
+    expect(attempt).toMatchObject({ status: "pending", realTotalCents: 25600, testAmountCents: 100, network: "testnet", invoiceId: "invoice-1" });
+    expect(postedInvoiceAmounts).toEqual(["1.00"]);
+    expect(stored.payment_reference).toBe(attempt.id);
+    expect(await b.run({ action: "quote", id: booking.id, version: stored.version, quote: { ...quote, total_amount_cents: 1 } })).toBeNull();
+    const resumed = await testnetWorker();
+    expect((await resumed.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } })).status).toBe(200);
+    expect(invoicePosts).toBe(1);
+  }, 30_000);
+
+  it("reconciles a persisted one-cent legacy attempt without rewriting it and rejects that amount for a new dollar attempt", async () => {
+    const legacyBooking = await create();
+    await a.run({ action: "quote", id: legacyBooking.id, version: legacyBooking.version, quote });
+    const worker = await testnetWorker();
+    const legacyId = "11111111-1111-4111-8111-111111111111";
+    sql(`INSERT INTO "PaymentAttempt" (id, "bookingId", provider, "storeId", network, "realTotalCents", "testAmountCents", "invoiceId", "checkoutLink", "btcDestination", "btcAmount", status, "updatedAt")
+      VALUES ('${legacyId}', ${legacyBooking.id}, 'btcpay-testnet', 'synthetic-store', 'testnet', 25600, 1, 'legacy-invoice', 'http://btcpay.test/i/legacy', 'mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn', '0.00001000', 'pending', now());
+      UPDATE "Booking" SET "paymentReference" = '${legacyId}' WHERE id = ${legacyBooking.id};`);
+    const legacyInvoice = { id: "legacy-invoice", storeId: "synthetic-store", amount: "0.01", currency: "USD", paidAmount: "0.01", status: "Settled", additionalStatus: "None",
+      checkoutLink: "http://btcpay.test/i/legacy", metadata: { orderId: legacyId },
+      paymentMethods: [{ paymentMethodId: "BTC-CHAIN", currency: "BTC", destination: "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn", amount: "0.00001000", due: "0", paymentMethodPaid: "0.00001000",
+        payments: [{ status: "Settled", destination: "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn", value: "0.00001000" }] }] };
+    invoices.set("legacy-invoice", legacyInvoice);
+    const legacyDto = await worker.run<{ checkout: CheckoutData }>({ action: "dto", sessionId: legacyBooking.checkout_session_id });
+    expect(legacyDto.checkout).toMatchObject({ testChargeUsd: "0.01", methods: [{ name: "Bitcoin testnet — USD 0.01 test charge", available: true }] });
+    const legacyResult = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: legacyBooking.checkout_session_id, action: "reconcile" } });
+    expect(legacyResult.body).toEqual({ ok: true, data: { status: "confirmed", paymentStatus: "paid" } });
+    expect(sql(`SELECT "testAmountCents" FROM "PaymentAttempt" WHERE id = '${legacyId}';`)).toBe("1");
+    expect(await a.run<Booking>({ action: "get", id: legacyBooking.id })).toMatchObject({ status: "confirmed", payment_reference: legacyId, total_amount_cents: 25600 });
+
+    const currentBooking = await create(a, undefined, ["2099-06-18", "2099-06-20"]);
+    await a.run({ action: "quote", id: currentBooking.id, version: currentBooking.version, quote });
+    const opened = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: currentBooking.checkout_session_id } });
+    expect(opened.status).toBe(200);
+    const currentDto = await worker.run<{ checkout: CheckoutData }>({ action: "dto", sessionId: currentBooking.checkout_session_id });
+    expect(currentDto.checkout).toMatchObject({ testChargeUsd: "1.00", methods: [{ name: "Bitcoin testnet — USD 1.00 test charge", available: true }] });
+    expect(postedInvoiceAmounts).toEqual(["1.00"]);
+    const attemptId = String((opened.body.data.payment as Record<string, unknown>).id);
+    expect(sql(`SELECT "realTotalCents" || ':' || "testAmountCents" FROM "PaymentAttempt" WHERE id = '${attemptId}';`)).toBe("25600:100");
+    invoices.get("invoice-1")!.amount = "0.01";
+    const mismatched = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: currentBooking.checkout_session_id, action: "reconcile" } });
+    expect(mismatched.status).toBe(409);
+    expect(await a.run<Booking>({ action: "get", id: currentBooking.id })).toMatchObject({ status: "pending_payment", payment_reference: attemptId, total_amount_cents: 25600 });
+    expect(sql(`SELECT status || ':' || "testAmountCents" FROM "PaymentAttempt" WHERE id = '${attemptId}';`)).toBe("review:100");
+
+    const invalidBooking = await create(a, undefined, ["2099-06-26", "2099-06-28"]);
+    expect(sql(`DO $$ BEGIN
+      INSERT INTO "PaymentAttempt" (id, "bookingId", provider, "storeId", network, "realTotalCents", "testAmountCents", status, "updatedAt")
+        VALUES ('22222222-2222-4222-8222-222222222222', ${invalidBooking.id}, 'btcpay-testnet', 'synthetic-store', 'testnet', 25600, 2, 'creating', now());
+      RAISE EXCEPTION 'unsupported test charge was accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END $$;
+    SELECT 'unsupported charge rejected';`)).toBe("unsupported charge rejected");
+  }, 30_000);
+
+  it("does not return BTCPay instructions when cancellation wins during invoice creation", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const worker = await testnetWorker();
+    const held = holdNextInvoicePost();
+    const opening = worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    let attemptId = "";
+    try {
+      await held.entered;
+      const reserved = await a.run<Booking>({ action: "get", id: booking.id });
+      const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as Record<string, unknown>;
+      attemptId = String(attempt.id);
+      expect(reserved.payment_reference).toBe(attempt.id);
+      expect(attempt).toMatchObject({ realTotalCents: 25600, testAmountCents: 100, status: "creating" });
+      expect(await a.run<Booking>({ action: "cancel", id: booking.id, version: reserved.version })).toMatchObject({ status: "cancelled" });
+    } finally {
+      held.release();
+    }
+    const opened = await opening;
+    expect(opened.status).not.toBe(200);
+    expect(opened.body.ok).toBe(false);
+    expect(opened.body.data?.payment).toBeUndefined();
+    expect(invoicePosts).toBe(1);
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({
+      status: "cancelled", payment_reference: attemptId, total_amount_cents: 25600,
+    });
+    expect(sql(`SELECT "realTotalCents" || ':' || "testAmountCents" FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("25600:100");
+  }, 30_000);
+
+  it("recovers an uncertain invoice POST by the stable orderId without posting again", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const worker = await testnetWorker();
+    failNextPost = true;
+    const first = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    expect(first.status).toBe(409);
+    worker.close();
+    const resumed = await testnetWorker();
+    const retry = await resumed.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    expect(retry.status).toBe(200);
+    expect(invoicePosts).toBe(1);
+    expect(retry.body.data).toMatchObject({ payment: { id: (await a.run<Booking>({ action: "get", id: booking.id })).payment_reference, status: "pending", network: "testnet", testAmountCents: 100 } });
+    const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as { invoiceId: string };
+    const invoice = invoices.get(attempt.invoiceId)!;
+    markStubInvoiceSettled(invoice);
+    const reconciled = await resumed.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id, action: "reconcile" } });
+    expect(reconciled.body).toEqual({ ok: true, data: { status: "confirmed", paymentStatus: "paid" } });
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "confirmed" });
+  }, 30_000);
+
+  it("accepts official BIP173/350 testnet vectors for P2WPKH, P2WSH, and P2TR", async () => {
+    const vectors = [
+      ["v0 P2WPKH, 42 chars", "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx"],
+      ["v0 P2WSH, 62 chars", "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"],
+      ["v1 P2TR, 62 chars", "tb1pqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesf3hn0c"],
+    ] as const;
+    const worker = await testnetWorker();
+    for (const [index, [outputType, address]] of vectors.entries()) {
+      const booking = await create(a, undefined, [`2099-06-${10 + index * 2}`, `2099-06-${12 + index * 2}`]);
+      await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+      btcpayDestination = address;
+      const opened = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+      expect.soft(opened.status, `${outputType}: ${JSON.stringify({ opened, reason: sql(`SELECT "reviewReason" FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`) })}`).toBe(200);
+      if (opened.status === 200) expect.soft(opened.body.data).toMatchObject({ payment: { status: "pending", btc: { address } } });
+    }
+  }, 45_000);
+
+  it("allows a full Processing invoice to settle later when authoritative payment evidence becomes final", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const worker = await testnetWorker();
+    expect((await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } })).status).toBe(200);
+    const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as { id: string; invoiceId: string };
+    const invoice = invoices.get(attempt.invoiceId)!;
+    const method = (invoice.paymentMethods as Array<Record<string, unknown>>)[0]!;
+    invoice.status = "Processing"; invoice.paidAmount = invoice.amount; method.due = "0"; method.paymentMethodPaid = method.amount;
+    method.payments = [{ status: "Processing", destination: method.destination, value: method.amount }];
+    const reconcile = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id, action: "reconcile" } });
+    expect(reconcile.status).toBe(200);
+    expect(reconcile.body).toEqual({ ok: true, data: { status: "pending_payment", paymentStatus: "pending" } });
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "pending_payment", payment_review_required: false });
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("pending");
+    markStubInvoiceSettled(invoice);
+    const rawBody = JSON.stringify({ storeId: "synthetic-store", invoiceId: attempt.invoiceId, type: "InvoiceSettled" });
+    const signature = `sha256=${createHmac("sha256", "synthetic-webhook-secret").update(rawBody).digest("hex")}`;
+    expect((await worker.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature })).status).toBe(200);
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "confirmed", payment_reference: attempt.id });
+  }, 30_000);
+
+  it.each(["webhook", "staff refresh"] as const)("keeps a partial-payment review terminal even if the invoice later reports settled (%s)", async (entrypoint) => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const worker = await testnetWorker();
+    expect((await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } })).status).toBe(200);
+    const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as { id: string; invoiceId: string };
+    const invoice = invoices.get(attempt.invoiceId)!;
+    const method = (invoice.paymentMethods as Array<Record<string, unknown>>)[0]!;
+    invoice.status = "Processing"; invoice.paidAmount = "0.00"; method.due = "0.00000500"; method.paymentMethodPaid = "0.00000500";
+    method.payments = [{ status: "Processing", destination: method.destination, value: "0.00000500" }];
+    const body = () => JSON.stringify({ storeId: "synthetic-store", invoiceId: attempt.invoiceId, type: "InvoiceProcessing" });
+    const sign = (raw: string) => `sha256=${createHmac("sha256", "synthetic-webhook-secret").update(raw).digest("hex")}`;
+    let rawBody = body();
+    expect((await worker.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature: sign(rawBody) })).status).toBe(200);
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("review");
+    markStubInvoiceSettled(invoice);
+    if (entrypoint === "staff refresh") {
+      const token = await worker.run<string>({ action: "adminToken", id: 1, authVersion: 1 });
+      expect(await worker.run({ action: "adminRequest", route: "detail", method: "POST", id: booking.id, token })).toMatchObject({
+        status: 200, body: { status: "pending_payment", paymentReviewRequired: true, testPayment: { status: "review" } },
+      });
+    } else {
+      rawBody = JSON.stringify({ storeId: "synthetic-store", invoiceId: attempt.invoiceId, type: "InvoiceSettled" });
+      expect((await worker.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature: sign(rawBody) })).status).toBe(200);
+    }
+    expect(invoicePosts).toBe(1);
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "pending_payment", payment_review_required: true, payment_reference: attempt.id });
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("review");
+  }, 30_000);
+
+  it("accepts only raw-body HMAC and confirms from authoritative settled invoice data, not webhook claims", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const worker = await testnetWorker();
+    expect((await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } })).status).toBe(200);
+    const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as { id: string; invoiceId: string };
+    const rawBody = JSON.stringify({ storeId: "synthetic-store", invoiceId: attempt.invoiceId, type: "InvoiceExpired" });
+    const signature = `sha256=${createHmac("sha256", "synthetic-webhook-secret").update(rawBody).digest("hex")}`;
+    expect((await worker.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature: "sha256=" + "0".repeat(64) })).status).toBe(401);
+    expect((await a.run<Booking>({ action: "get", id: booking.id })).status).toBe("pending_payment");
+    const invoice = invoices.get(attempt.invoiceId)!;
+    markStubInvoiceSettled(invoice);
+    const received = await worker.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature });
+    expect(received.status).toBe(200);
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "confirmed", payment_reference: attempt.id });
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("paid");
+    const repeated = await worker.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature });
+    expect(repeated.status).toBe(200);
+    const outOfOrder = JSON.stringify({ storeId: "synthetic-store", invoiceId: attempt.invoiceId, type: "InvoiceExpired" });
+    const oldSignature = `sha256=${createHmac("sha256", "synthetic-webhook-secret").update(outOfOrder).digest("hex")}`;
+    expect((await worker.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody: outOfOrder, signature: oldSignature })).status).toBe(200);
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "confirmed", payment_reference: attempt.id });
+  }, 30_000);
+
+  it("keeps foreign-owner and simulated-payment requests from mutating a real BTCPay attempt", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const owner = await testnetWorker();
+    const priced = await a.run<Booking>({ action: "get", id: booking.id });
+    for (const action of ["simulate_paid", "unknown_action"]) {
+      expect((await owner.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id, action } })).status).toBe(404);
+    }
+    expect(await a.run({ action: "get", id: booking.id })).toEqual(priced);
+    expect(sql(`SELECT count(*) FROM "PaymentAttempt";`)).toBe("0");
+    expect(invoicePosts).toBe(0);
+    const opened = await owner.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    expect(opened.status, JSON.stringify({ opened, btcpayPaths, attempt: sql(`SELECT "reviewReason" FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`) })).toBe(200);
+    const stored = await a.run<Booking>({ action: "get", id: booking.id });
+    const attempt = sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t;`);
+    const other = await testnetWorker();
+    expect((await other.run<{ status: number }>({ action: "guest", email: "another-owner@example.test" })).status).toBe(200);
+    const denied = await other.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    expect(denied.status).toBe(404);
+    for (const action of ["simulate_paid", "unknown_action"]) {
+      expect((await owner.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id, action } })).status).toBe(404);
+    }
+    expect(await a.run({ action: "get", id: booking.id })).toEqual(stored);
+    expect(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t;`)).toBe(attempt);
+    expect(invoicePosts).toBe(1);
+  }, 30_000);
+
+  it("fails closed for unconfigured and obsolete mock providers without changing persisted attempts or creating invoices", async () => {
+    const booking = await payable();
+    const uncharged = await create(a, undefined, ["2099-06-18", "2099-06-20"]);
+    const priced = await a.run<Booking>({ action: "quote", id: uncharged.id, version: uncharged.version, quote });
+    const attempt = sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t;`);
+    const paths = [...btcpayPaths];
+    for (const overrides of [{}, { PAYMENT_PROVIDER: "btc-mock" }]) {
+      const disabled = await startWorker(overrides);
+      expect((await disabled.run<{ status: number }>({ action: "guestLogin", email: "shared-worker@example.test", password: "synthetic-password-123" })).status).toBe(200);
+      for (const current of [booking, priced]) {
+        const dto = await disabled.run<{ checkout: CheckoutData }>({ action: "dto", sessionId: current.checkout_session_id });
+        expect(dto.checkout.methods).toMatchObject([{ available: false }]);
+        for (const action of [undefined, "reconcile", "simulate_paid"]) {
+          const rejected = await disabled.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: current.checkout_session_id, action } });
+          expect(rejected).toMatchObject({ status: 404, body: { ok: false, code: "payment_unavailable" } });
+          privateResponse(rejected);
+        }
+        expect(await request(disabled, "btc", current.checkout_session_id!)).toMatchObject({ status: 404, body: { ok: false, code: "payment_unavailable" } });
+        expect(await a.run({ action: "get", id: current.id })).toEqual(current);
+      }
+    }
+    expect(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t;`)).toBe(attempt);
+    expect(btcpayPaths).toEqual(paths);
+    expect(invoicePosts).toBe(1);
+  }, 30_000);
+
+  it("fails closed for production creation and mainnet create, reconciliation, and webhook paths", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const production = await testnetWorker();
+    // Historical unowned rows remain capability-accessible in production, so auth cannot mask the provider guard.
+    sql(`UPDATE "Booking" SET "guestAccountId" = NULL WHERE id = ${booking.id};`);
+    const disabled = await production.run<Api>({ action: "request", route: "btc", method: "POST", production: true, body: { session_id: booking.checkout_session_id } });
+    expect(disabled.status).toBe(404);
+    expect(invoicePosts).toBe(0);
+    sql(`UPDATE "Booking" SET "guestAccountId" = ${booking.guest_account_id} WHERE id = ${booking.id};`);
+    const owner = await testnetWorker();
+    expect((await owner.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } })).status).toBe(200);
+    const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as { id: string; invoiceId: string };
+    const before = btcpayPaths.length;
+    sql(`UPDATE "Booking" SET "guestAccountId" = NULL WHERE id = ${booking.id};`);
+    const mainnet = await testnetWorker("mainnet");
+    const creation = await mainnet.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    const reconciliation = await mainnet.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id, action: "reconcile" } });
+    const rawBody = JSON.stringify({ storeId: "synthetic-store", invoiceId: attempt.invoiceId, type: "InvoiceSettled" });
+    const signature = `sha256=${createHmac("sha256", "synthetic-webhook-secret").update(rawBody).digest("hex")}`;
+    const webhook = await mainnet.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature });
+    const productionReconcile = await owner.run<Api>({ action: "request", route: "btc", method: "POST", production: true, body: { session_id: booking.checkout_session_id, action: "reconcile" } });
+    const productionWebhook = await owner.run<Api>({ action: "request", route: "webhook", method: "POST", production: true, rawBody, signature });
+    expect(creation.status).toBe(404);
+    expect(reconciliation.status).toBe(404);
+    expect(webhook.status).toBe(503);
+    expect(productionReconcile.status).toBe(404);
+    expect(productionWebhook.status).toBe(503);
+    expect(btcpayPaths).toHaveLength(before);
+    sql(`UPDATE "Booking" SET "guestAccountId" = ${booking.guest_account_id} WHERE id = ${booking.id};`);
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "pending_payment", payment_reference: attempt.id });
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("pending");
+  }, 30_000);
+
+  it("holds mismatched store, dust and partial-payment evidence for review without confirming", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const worker = await testnetWorker();
+    const opened = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    expect(opened.status, JSON.stringify({ opened, btcpayPaths, attempt: sql(`SELECT "reviewReason" FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`) })).toBe(200);
+    const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as { invoiceId: string };
+    const invoice = invoices.get(attempt.invoiceId)!;
+    for (const alter of [
+      () => { invoice.storeId = "foreign-store"; },
+      () => { invoice.storeId = "synthetic-store"; (invoice.paymentMethods as Array<Record<string, unknown>>)[0]!.amount = "0.00000100"; },
+      () => { const method = (invoice.paymentMethods as Array<Record<string, unknown>>)[0]!; method.amount = "0.00001000"; method.due = "0.00000500"; method.payments = [{ status: "Processing", destination: method.destination, value: "0.00000500" }]; invoice.status = "Processing"; },
+    ]) {
+      alter();
+      const rejected = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id, action: "reconcile" } });
+      expect(rejected.status).toBe(409);
+      expect((await a.run<Booking>({ action: "get", id: booking.id })).status).toBe("pending_payment");
+      expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("review");
+    }
+  }, 30_000);
+
+  it.each(["webhook", "staff refresh"] as const)("does not resurrect a cancelled booking when a valid late settled payment arrives (%s)", async (entrypoint) => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const worker = await testnetWorker();
+    const opened = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    expect(opened.status, JSON.stringify({ opened, btcpayPaths, attempt: sql(`SELECT "reviewReason" FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`) })).toBe(200);
+    const attempt = JSON.parse(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t WHERE "bookingId" = ${booking.id};`)) as { id: string; invoiceId: string };
+    const current = await a.run<Booking>({ action: "get", id: booking.id });
+    await a.run({ action: "cancel", id: booking.id, version: current.version });
+    markStubInvoiceSettled(invoices.get(attempt.invoiceId)!);
+    if (entrypoint === "staff refresh") {
+      const token = await worker.run<string>({ action: "adminToken", id: 1, authVersion: 1 });
+      expect(await worker.run({ action: "adminRequest", route: "detail", method: "POST", id: booking.id, token })).toMatchObject({
+        status: 200, body: { status: "cancelled", paymentReviewRequired: true, testPayment: { status: "paid" } },
+      });
+    } else {
+      const rawBody = JSON.stringify({ storeId: "synthetic-store", invoiceId: attempt.invoiceId, type: "InvoiceSettled" });
+      const signature = `sha256=${createHmac("sha256", "synthetic-webhook-secret").update(rawBody).digest("hex")}`;
+      expect((await worker.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature })).status).toBe(200);
+    }
+    expect(invoicePosts).toBe(1);
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("paid");
+    expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "cancelled", payment_review_required: true, payment_reference: attempt.id });
+  }, 30_000);
 
   it("rejects stale payment association after a concurrent quote and rejects all repricing once a payment owns the amount", async () => {
     const booking = await create();
@@ -249,7 +796,7 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
       const [cancelled, payment] = await Promise.all([cancelling, paying]);
       expect(payment).toMatchObject({ found: true, alreadyConfirmed: false, doubleBooked: false });
       if (cancelFirst) {
-        expect(cancelled).toMatchObject({ status: "cancelled", cancellation_reason: "Guest requested cancellation", cancelled_by: "synthetic-operator" });
+        expect(cancelled).toMatchObject({ status: "cancelled", cancellation_reason: "Guest requested cancellation", cancelled_by: "1" });
         expect(cancelled?.cancelled_at).not.toBeNull();
         expect(payment).toMatchObject({ booking: { status: "cancelled", payment_review_required: true,
           cancelled_at: cancelled!.cancelled_at, cancellation_reason: cancelled!.cancellation_reason, cancelled_by: cancelled!.cancelled_by } });
@@ -368,13 +915,17 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect(reused.body.data).toMatchObject({ payment: { id: booking.payment_reference, amountCents: booking.total_amount_cents } });
     expect(await b.run({ action: "get", id: booking.id })).toEqual(booking);
     const payment = { id: booking.payment_reference, bookingId: booking.id, amountCents: booking.total_amount_cents, currency: "USD", status: "paid" };
-    await a.run({ action: "evidence", payment });
+    markStubInvoiceSettled(invoices.get("invoice-1")!);
     const before = sql(`SELECT row_to_json(t) FROM "ReferralAttribution" t;`);
+    const attempt = sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t;`);
+    const paths = [...btcpayPaths];
     const read = await request(a, "btc", booking.checkout_session_id!);
-    expect(read.body.data).toMatchObject({ status: "pending_payment", payment: { status: "paid" } });
+    expect(read.body.data).toMatchObject({ status: "pending_payment", payment: { id: booking.payment_reference, status: "pending", testAmountCents: 100, network: "testnet" } });
     privateResponse(read);
     expect(await b.run({ action: "get", id: booking.id })).toEqual(booking);
     expect(sql(`SELECT row_to_json(t) FROM "ReferralAttribution" t;`)).toBe(before);
+    expect(sql(`SELECT row_to_json(t) FROM "PaymentAttempt" t;`)).toBe(attempt);
+    expect(btcpayPaths).toEqual(paths);
     for (const patch of [null, { id: "wrong" }, { bookingId: booking.id + 1 }, { amountCents: 1 }, { currency: "EUR" }]) {
       await a.run({ action: "evidence", payment: patch === null ? null : { ...payment, ...patch } });
       const rejected = await request(a, "btc", booking.checkout_session_id!, "reconcile");
@@ -383,14 +934,14 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
       expect(await b.run({ action: "get", id: booking.id })).toEqual(booking);
     }
     await a.run({ action: "evidence", payment });
-    expect((await request(a, "btc", booking.checkout_session_id!, "reconcile")).body).toEqual({ ok: true, data: { status: "confirmed" } });
+    expect((await request(a, "btc", booking.checkout_session_id!, "reconcile")).body).toEqual({ ok: true, data: { status: "confirmed", paymentStatus: "paid" } });
     expect(sql(`SELECT status FROM "ReferralAttribution" WHERE "bookingId" = ${booking.id};`)).toBe("confirmed");
     const confirmed = await b.run({ action: "get", id: booking.id });
     expect((await request(a, "btc", booking.checkout_session_id!, "reconcile")).status).toBe(200);
     expect(await b.run({ action: "get", id: booking.id })).toEqual(confirmed);
   });
 
-  it("does not expose simulate_paid or open the mock provider in production", async () => {
+  it("does not expose simulate_paid or open a testnet payment in production", async () => {
     const booking = await payable();
     const uncharged = await create();
     const priced = await a.run<Booking>({ action: "quote", id: uncharged.id, version: uncharged.version, quote });
@@ -428,19 +979,22 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
 
   it("commits payment despite a real referral write failure and repairs attribution on a later POST reconciliation", async () => {
     const booking = await payable(a, "SYNTHETIC-A");
-    await a.run({ action: "evidence", payment: { id: booking.payment_reference, bookingId: booking.id,
-      amountCents: booking.total_amount_cents, currency: "USD", status: "paid" } });
+    markStubInvoiceSettled(invoices.get("invoice-1")!);
     sql(`CREATE FUNCTION reject_test_referral() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic referral outage'; END $$;
       CREATE TRIGGER reject_test_referral BEFORE UPDATE ON "ReferralAttribution" FOR EACH ROW EXECUTE FUNCTION reject_test_referral();`);
     try {
-      expect((await request(a, "btc", booking.checkout_session_id!, "reconcile")).body).toEqual({ ok: true, data: { status: "confirmed" } });
+      expect((await request(a, "btc", booking.checkout_session_id!, "reconcile")).body).toEqual({ ok: true, data: { status: "confirmed", paymentStatus: "paid" } });
       expect(await b.run({ action: "get", id: booking.id })).toMatchObject({ status: "confirmed" });
       expect(sql(`SELECT status FROM "ReferralAttribution" WHERE "bookingId" = ${booking.id};`)).toBe("pending");
     } finally { sql(`DROP TRIGGER reject_test_referral ON "ReferralAttribution"; DROP FUNCTION reject_test_referral();`); }
-    // New process has no process-local provider evidence. Terminal bookings must still recover referrals.
-    expect((await request(b, "btc", booking.checkout_session_id!, "reconcile")).status).toBe(409);
+    // Independent processes recover referral writes from the persisted settled attempt.
+    const confirmed = await b.run<Booking>({ action: "get", id: booking.id });
+    expect((await request(b, "btc", booking.checkout_session_id!, "reconcile")).body).toEqual({ ok: true, data: { status: "confirmed", paymentStatus: "paid" } });
     expect(sql(`SELECT status || ':' || count(*) FROM "ReferralAttribution" WHERE "bookingId" = ${booking.id} GROUP BY status;`)).toBe("confirmed:1");
-    expect((await request(b, "btc", booking.checkout_session_id!, "reconcile")).status).toBe(409);
+    expect((await request(b, "btc", booking.checkout_session_id!, "reconcile")).status).toBe(200);
+    expect(await b.run({ action: "get", id: booking.id })).toEqual(confirmed);
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("paid");
+    expect(invoicePosts).toBe(1);
     expect(sql(`SELECT count(*) FROM "ReferralAttribution" WHERE "bookingId" = ${booking.id};`)).toBe("1");
   });
 

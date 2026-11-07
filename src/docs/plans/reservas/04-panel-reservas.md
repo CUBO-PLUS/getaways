@@ -101,3 +101,40 @@ status público y disponibilidad sin exposición de contacto/notas.
 - [ ] Cancelación preserva historial, importes y referencias; no promete devolución automática.
 - [ ] Revocación y conflictos funcionan con dos sesiones/instancias, no solo en una pestaña.
 - [ ] Verificación común aplicable y corte C1 registrados según las [guías transversales](../README.md).
+
+## Implementación y evidencia técnica — 2026-11-05
+
+Implementada y revisada con subagentes **GPT-6 Luna** en el worktree aislado
+`btcpay-testnet-reservas`. Revisión de especificación y calidad aprobada tras
+corregir el listado sin fechas, límites de filtros, revisión financiera y
+preservación de borradores. No hay dependencias ni migraciones nuevas para C1.
+**No se ha habilitado el panel sobre la aplicación operativa ni aceptado el corte C1.**
+
+```bash
+NODE_ENV=development PRISMA_TEST_DATABASE=1 npx vitest run modules/bookings/_test_/booking-db.test.ts
+# 27 passed: conserva B2/H/P y añade el recorrido C1 sobre PostgreSQL desechable.
+npx tsc --noEmit --incremental false
+# exit 0, incluyendo tests.
+```
+
+La prueba C1 verifica roles, revocación de sesión, origen hostil sin escritura,
+filtros, versiones, contacto/notas, cancelación auditada e idempotente, preservación
+financiera y ausencia de notas internas en el historial del huésped.
+
+Recorrido independiente en Chrome con cookies separadas para manager/admin/editor/huésped:
+
+- Listado sin filtros 200, contacto y nota guardados consecutivamente; el segundo
+  formulario conserva su borrador y usa la versión actualizada.
+- Otro administrador modifica la reserva: el manager recibe 409, conserva su nota
+  local y decide explícitamente recargar la versión actual.
+- Confirmación nativa de cancelación con hospedaje, fechas y advertencia sin
+  reembolso. Rechazar no muta; aceptar registra actor, fecha y motivo, mantiene
+  precio y referencia y señala revisión manual.
+- La disponibilidad pública libera las dos noches; status del propietario informa
+  cancelada sin ampliar el DTO. EDITOR recibe 403 en API y 404 en detalle; sin
+  identidad de personal se redirige a login. No se filtran contacto ni notas internas.
+
+La reserva sintética conservó **25600 centavos y `btc_mock_1`** tras cancelar.
+Fue confirmada **solo por el mock estudiantil**: no demuestra un pago BTCPay,
+reembolso ni cobro del precio real. La aceptación/corte y los pendientes del
+[recorrido T/P](../pagos/README.md) permanecen separados de esta evidencia.

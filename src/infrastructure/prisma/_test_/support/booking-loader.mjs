@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
@@ -9,6 +9,7 @@ export async function resolve(specifier, context, nextResolve) {
   if (specifier.startsWith("@/")) specifier = pathToFileURL(root + specifier.slice(2)).href;
   if (specifier.startsWith(".") || specifier.startsWith("file:")) {
     const url = new URL(specifier, context.parentURL);
+    if (existsSync(fileURLToPath(url)) && statSync(fileURLToPath(url)).isFile()) return nextResolve(url.href, context);
     if (existsSync(fileURLToPath(url) + ".ts")) return nextResolve(url.href + ".ts", context);
     if (existsSync(fileURLToPath(url) + "/index.ts")) return nextResolve(url.href + "/index.ts", context);
   }

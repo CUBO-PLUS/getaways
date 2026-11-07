@@ -13,9 +13,9 @@ export default async function AdminPage() {
     <nav aria-label="Secciones del panel" className="mt-6 flex flex-col items-start gap-4">
       {(session.role === "ADMIN" || session.role === "EDITOR") && <Link href="/admin/blog">Blog</Link>}
       {session.role === "ADMIN" && <Link href="/admin/users">Usuarios</Link>}
+      {(session.role === "ADMIN" || session.role === "BOOKING_MANAGER") && <Link href="/admin/bookings">Reservas</Link>}
       <Link href="/admin/account/password">Cambiar contraseña</Link>
     </nav>
-    {session.role === "BOOKING_MANAGER" && <p className="mt-6">La gestión de reservas aún no está disponible.</p>}
     <Logout />
   </main>;
 }

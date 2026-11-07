@@ -338,7 +338,6 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
               ))}
           </div>
 
-          {/* No demo notice here. The checkout page carries the student-mock banner. */}
           {checkoutMode === "contact" && (
             <p className="flex items-start text-[13px] leading-[20px] bg-[color-mix(in_oklch,_var(--color-accent)_10%,_var(--color-background))] text-heading
               m-0 px-3 py-2.5 gap-2 rounded-[8px] border border-solid border-[color-mix(in_oklch,_var(--color-accent)_34%,_transparent)]

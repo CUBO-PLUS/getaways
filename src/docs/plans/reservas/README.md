@@ -34,7 +34,12 @@ La persona solicitante confirmó además que no hay reservas pendientes.
 solicitante pidió «cierra en @src/docs/plans/». Quedan cerradas **3.1, 3.2, 3.3 y B2**,
 con el ensayo de restauración del respaldo fresco como excepción operativa pendiente.
 No se da por ejecutado ese ensayo ni se certifican producción o pagos reales.
-3.4/C1, H/T/P y el plan 4 siguen pendientes según el índice raíz.
+Las aceptaciones de 3.4/C1 y T/P y el plan 4 siguen pendientes según el índice raíz.
+**Actualización técnica 2026-11-05:** 3.4 implementada y revisada con Luna en un
+worktree aislado; 27 integraciones PostgreSQL y recorrido de navegador aprobados.
+[Evidencia y límites](04-panel-reservas.md#implementación-y-evidencia-técnica--2026-11-05).
+T/P también tienen [implementación y verificación técnica](../pagos/README.md),
+sin pago con fondos de testnet ni corte operativo acreditados.
 
 No implementa proveedor de pagos real, reembolsos automáticos, reprogramaciones,
 reservas manuales ni cambios arbitrarios de importes/estados.

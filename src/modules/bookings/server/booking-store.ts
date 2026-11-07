@@ -225,22 +225,58 @@ export async function markPaid(evidence: { paymentId: string; bookingId: number;
   });
 }
 
-/** Concrete cancellation transition; intentionally not wired to a public/admin route in this phase. */
-export async function cancelBooking(id: number, expectedVersion: number, reason: string, actor: string): Promise<Booking | null> {
+/** Staff cancellation transition; preserves the payment evidence for later reconciliation. */
+export async function cancelBooking(
+  id: number,
+  expectedVersion: number,
+  reason: string,
+  actor: { id: number; authVersion: number },
+): Promise<Booking | null> {
   const cleanReason = reason.trim();
-  const cleanActor = actor.trim();
-  if (!cleanReason || cleanReason.length > 500 || !cleanActor || cleanActor.length > 200) throw new RangeError("Invalid cancellation details.");
+  if (!cleanReason || cleanReason.length > 500 || !isInt4(actor.id) || actor.id < 1 || !isInt4(actor.authVersion) || actor.authVersion < 1) throw new RangeError("Invalid cancellation details.");
   if (!isInt4(id) || id < 1 || !isInt4(expectedVersion) || expectedVersion >= MAX_INT4) return null;
   const before = await db.orm.public.Booking.where({ id }).select("listingId").first();
   if (!before) return null;
   return db.transaction(async (tx) => {
+    const staff = await tx.orm.public.AdminUser.where({ id: actor.id, active: true, authVersion: actor.authVersion }).forUpdate().first();
+    if (!staff || (staff.role !== "ADMIN" && staff.role !== "BOOKING_MANAGER")) return null;
     if (!await lockListing(tx, before.listingId)) return null;
     const row = await lockedBooking(tx, id);
-    if (!row || row.listingId !== before.listingId || row.version !== expectedVersion || row.status === "cancelled") return null;
+    if (!row || row.listingId !== before.listingId) return null;
+    if (row.status === "cancelled") return mapBooking(row);
+    if (row.version !== expectedVersion) return null;
+    const needsFinancialReview = row.status === "confirmed";
+    const reviewNote = "Confirmed stay cancelled by staff; manual financial review required. No automatic refund is issued.";
+    const notes = row.adminNotes?.split("\n") ?? [];
+    if (needsFinancialReview && !notes.includes(reviewNote)) notes.push(reviewNote);
     const saved = await tx.orm.public.Booking.where({ id, version: expectedVersion, status: row.status }).update({
       status: "cancelled", cancelledAt: Temporal.Now.instant(), cancellationReason: cleanReason,
-      cancelledBy: cleanActor, version: expectedVersion + 1,
+      cancelledBy: String(actor.id), version: expectedVersion + 1,
+      paymentReviewRequired: row.paymentReviewRequired || needsFinancialReview,
+      ...(needsFinancialReview ? { adminNotes: notes.filter(Boolean).join("\n") } : {}),
     });
     return saved ? mapBooking(saved) : null;
+  });
+}
+
+export async function updateBookingContact(id: number, version: number, contact: { name: string; email: string; phone: string | null }, actor: { id: number; authVersion: number }): Promise<Booking | null> {
+  if (!isInt4(id) || id < 1 || !isInt4(version) || version >= MAX_INT4) return null;
+  return db.transaction(async (tx) => {
+    const staff = await tx.orm.public.AdminUser.where({ id: actor.id, authVersion: actor.authVersion, active: true }).forUpdate().first();
+    if (!staff || (staff.role !== "ADMIN" && staff.role !== "BOOKING_MANAGER")) return null;
+    const row = await tx.orm.public.Booking.where({ id, version }).update({
+      guestName: contact.name, guestEmail: contact.email, guestPhone: contact.phone, version: version + 1,
+    });
+    return row ? mapBooking(row) : null;
+  });
+}
+
+export async function updateBookingNotes(id: number, version: number, notes: string | null, actor: { id: number; authVersion: number }): Promise<Booking | null> {
+  if (!isInt4(id) || id < 1 || !isInt4(version) || version >= MAX_INT4) return null;
+  return db.transaction(async (tx) => {
+    const staff = await tx.orm.public.AdminUser.where({ id: actor.id, authVersion: actor.authVersion, active: true }).forUpdate().first();
+    if (!staff || (staff.role !== "ADMIN" && staff.role !== "BOOKING_MANAGER")) return null;
+    const row = await tx.orm.public.Booking.where({ id, version }).update({ adminNotes: notes, version: version + 1 });
+    return row ? mapBooking(row) : null;
   });
 }

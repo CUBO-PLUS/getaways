@@ -22,7 +22,9 @@ export default async function AccountPage() {
         <h2 className="m-0 font-heading text-xl text-heading">{r.listingTitle}</h2>
         <p className="mt-2 text-sm text-body-text">{r.checkIn} – {r.checkOut} · {r.nights} nights · {r.status.replaceAll("_", " ")}</p>
         <p className="text-sm text-body-text">Total: {(r.totalAmountCents / 100).toLocaleString("en-US", { style: "currency", currency: r.currency })}</p>
-        {r.payment && <p className="text-sm text-body-text">Payment: {r.payment.status} · {(r.payment.amountCents / 100).toLocaleString("en-US", { style: "currency", currency: r.currency })}</p>}
+        {r.payment && <p className="text-sm text-body-text">{r.payment.network === "testnet"
+          ? `Testnet test charge: ${(r.payment.testAmountCents! / 100).toLocaleString("en-US", { style: "currency", currency: r.currency })} · ${r.payment.status}. Stay quote ${(r.payment.amountCents / 100).toLocaleString("en-US", { style: "currency", currency: r.currency })} is not charged.`
+          : `Payment: ${r.payment.status} · ${(r.payment.amountCents / 100).toLocaleString("en-US", { style: "currency", currency: r.currency })}`}</p>}
         {r.checkoutUrl && <Link href={r.checkoutUrl}>{r.status === "pending_payment" ? "Continue checkout" : "View reservation"}</Link>}
       </li>)}
     </ul>}
