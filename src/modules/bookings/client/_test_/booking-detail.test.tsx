@@ -28,8 +28,9 @@ it("refreshes payment without losing edits and does not claim payment when verif
 
   await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refrescar estado del pago" })); });
   expect(screen.getByRole("status").textContent).toContain("La verificación caducó");
-  expect(screen.getByText("2 noches · pending_payment")).toBeTruthy();
-  expect(screen.getByText("Pago testnet separado: USD 1.00 · pending")).toBeTruthy();
+  expect(screen.getByText("Pendiente de pago")).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Pago testnet" })).toBeTruthy();
+  expect(screen.getByText("$1.00 · Pendiente")).toBeTruthy();
   expect(screen.queryByText("Pago confirmado por BTCPay.")).toBeNull();
 
   fireEvent.click(screen.getByRole("button", { name: "Refrescar estado del pago" }));
@@ -39,8 +40,8 @@ it("refreshes payment without losing edits and does not claim payment when verif
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(fetch).toHaveBeenLastCalledWith("/api/admin/bookings/7", { method: "POST", cache: "no-store" });
   await act(async () => { respond(new Response(JSON.stringify({ version: 4, status: "confirmed", paymentReviewRequired: false, testPayment: { amountCents: 100, status: "paid" } }))); });
-  expect(screen.getByText("2 noches · confirmed")).toBeTruthy();
-  expect(screen.getByText("Pago testnet separado: USD 1.00 · paid")).toBeTruthy();
+  expect(screen.getByText("Confirmada")).toBeTruthy();
+  expect(screen.getByText("$1.00 · Pagado")).toBeTruthy();
   expect(screen.getByRole("status").textContent).toBe("Pago confirmado por BTCPay.");
   expect(name.value).toBe("Unsaved guest");
   expect(notes.value).toBe("Unsaved staff note");

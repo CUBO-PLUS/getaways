@@ -17,8 +17,8 @@ export default async function BookingPage({ params }: PageProps<"/admin/bookings
   if (!booking) notFound();
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10 text-[#394342]">
-      <Link href="/admin/bookings">← Reservas</Link>
+    <main lang="es" className="mx-auto max-w-6xl px-4 py-8 font-body text-[14px] text-[#394342] sm:px-6 lg:px-10 lg:py-10">
+      <Link className="inline-flex min-h-11 items-center font-body text-sm font-medium text-[#394342] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0277bd]" href="/admin/bookings">← Volver a reservas</Link>
       <BookingDetail booking={booking} />
     </main>
   );
