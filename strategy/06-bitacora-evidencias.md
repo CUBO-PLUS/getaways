@@ -2,7 +2,7 @@
 
 ## Google Docs obligatorio
 
-**Enlace directo al Google Doc de trabajo: PENDIENTE DE CREAR Y PEGAR AQUÍ.**
+**Enlace directo al Google Doc de trabajo: https://docs.google.com/document/d/1GxsQxqLsFNvWXQH3GEQFlXbF0EHKtTbezNjMW0XJB4I/edit?usp=sharing**
 
 Responsable propuesto: Luis; Roger debe registrar también su investigación y ejecución. Compartir con acceso Viewer o Editor según indique el programa y verificar con el revisor que pueda auditar el historial. Un enlace accesible no demuestra por sí solo que el historial sea visible con esos permisos.
 
