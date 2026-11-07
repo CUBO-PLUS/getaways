@@ -8,12 +8,6 @@ Responsable propuesto: Luis; Roger debe registrar también su investigación y e
 
 Mantener ediciones reales y continuas en Google Docs. Estos archivos Markdown y el [registro diario](checklist/diario.md) complementan la evidencia, pero **no sustituyen** el historial de Google Docs. No reconstruir ni fechar retroactivamente trabajo no realizado.
 
-## Registro de decisiones
-
-| Fecha real | Decisión | Evidencia / opciones | Participantes | Próximo paso |
-| --- | --- | --- | --- | --- |
-| Pendiente | Sin decisiones validadas todavía | Pendiente de auditoría e investigación | Pendiente | Obtener accesos y validar el plan |
-
 ## Índice de evidencias
 
 | Evidencia | Ubicación | Alcance |
