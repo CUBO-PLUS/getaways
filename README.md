@@ -1,3 +1,13 @@
+# Gateways El Salvador — CUBO+ Build Sprint 2026
+
+Nueva plataforma de reservas directas desarrollada como MVP, conservando la identidad visual de Getaways El Salvador.
+
+Incluye catálogo, fichas de propiedades, reservas, cotización, checkout, administración, tracking de referidos y analítica básica. El pago documentado utiliza Bitcoin Testnet 4. El asistente conversacional y los itinerarios con IA continúan en implementación.
+
+- [Informe estratégico](strategy/Gateways_Informe_Estrategico.pdf)
+- [Estado y documentación estratégica](strategy/README.md)
+- [Instalación y documentación técnica](src/README.md)
+
 # Integrantes del equipo
 
 | Nombre | Rol | Usuario de Discord | Usuario de GitHub |
