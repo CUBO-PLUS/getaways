@@ -1,6 +1,10 @@
 # 02 — Auditoría y decisión de arquitectura
 
-**Estado:** pendiente. No se recibió la URL ni acceso al WordPress. No hay hallazgos medidos ni recomendación definitiva.
+**Estado:** revisión exploratoria disponible y auditoría técnica integral pendiente.
+
+El sitio de referencia es https://getawayselsalvador.com/. El [informe estratégico](Gateways_Informe_Estrategico.pdf) incluye observaciones de UX, comparación de tres referencias locales y una recomendación provisional de continuar validando el rebuild mediante un piloto controlado.
+
+Las tablas siguientes describen verificaciones y criterios de cierre; no deben interpretarse como comprobaciones íntegramente ejecutadas.
 
 ## Auditoría conjunta
 
@@ -28,12 +32,12 @@ Cada hallazgo debe incluir **observación, evidencia, impacto, prioridad, recome
 
 Comparar plazo del sprint, costo inicial/recurrente, continuidad de reservas, operación por el negocio, seguridad e integraciones. Preferir reutilizar lo que funcione. La existencia de código nuevo en `/src` no demuestra que WordPress deba reemplazarse.
 
-## Acta de decisión — por completar
+## Recomendación provisional y aprobación pendiente
 
-- Fecha y participantes: **pendiente**.
-- Alternativa seleccionada: **pendiente de auditoría**.
-- Evidencias a favor y bloqueos de las otras alternativas: **pendiente**.
-- Arquitectura recomendada y diagrama definitivo: **pendiente**.
-- Costos, dependencias, plan de cambios/reversión y aprobación del negocio: **pendiente**.
+- Referencia: informe estratégico del 7 de noviembre de 2026.
+- Recomendación provisional: continuar la validación del rebuild mediante un piloto controlado.
+- Sustento disponible: MVP desarrollado, revisión exploratoria de UX y comparación de alternativas en el informe.
+- Pendiente: auditoría técnica integral de WordPress, costos, mantenimiento, integraciones y riesgos de migración.
+- Aprobación del negocio, participantes y acta de decisión: pendientes de documentar.
 
-Si se reconstruye, inventariar las URLs existentes, preservar contenido válido y planificar redirecciones antes de cualquier cambio de producción. Durante el sprint trabajar en staging.
+Antes de sustituir el sitio en producción, inventariar URLs, preservar contenido válido, planificar redirecciones, definir recuperación y acordar responsables operativos.
