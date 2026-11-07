@@ -1,5 +1,7 @@
 # 03 — Especificaciones y prototipo
 
+> Documento de planificación inicial. Sus requisitos, eventos y propuestas no constituyen evidencia de implementación o validación. Consultar el [estado actualizado](README.md#estado-actual) y el [informe estratégico](Gateways_Informe_Estrategico.pdf) para conocer los avances y límites documentados.
+
 **Estado:** propuesta funcional, no implementación verificada. Los responsables de cada área están en el [plan del equipo](README.md#responsabilidad-compartida).
 
 ## Requisitos y aceptación
