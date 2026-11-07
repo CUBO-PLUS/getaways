@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { sanitizeContentHtml, sanitizeInlineHtml } from "@/shared/security/server/sanitize-html";
 import { ALL_SLOTS } from "@/modules/content/site-content";
 import pages from "@/data/pages.json";
-import posts from "@/data/posts.json";
-import listings from "@/data/listings.json";
 
 describe("sanitizeInlineHtml", () => {
   it("keeps paragraphs, bold, italic and safe links", () => {
@@ -41,8 +39,8 @@ describe("sanitizeInlineHtml", () => {
 });
 
 describe("sanitizeContentHtml", () => {
-  it("keeps every seeded page, post and listing free of embedded CSS", () => {
-    for (const item of [...pages, ...posts, ...listings]) {
+  it("keeps every seeded page free of embedded CSS", () => {
+    for (const item of pages) {
       expect(item.content_html, item.slug).not.toMatch(/<style\b|\bstyle\s*=/i);
     }
   });

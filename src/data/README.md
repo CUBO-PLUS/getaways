@@ -1,6 +1,7 @@
 # Fuentes y tipos de datos
 
-Los contratos de los ocho snapshots se organizan por dominio en [`types/`](./types/).
+Los contratos de los tres snapshots estáticos restantes y los tipos históricos
+compartidos se organizan por dominio en [`types/`](./types/).
 [`types.ts`](./types.ts) los reexporta y define `DataTables`, manteniendo compatibles
 las importaciones desde `@/data/types`.
 Representan las filas almacenadas, no los modelos enriquecidos con imágenes,
@@ -18,13 +19,25 @@ categorías o precios calculados que devuelven los módulos.
 | Archivo | Tipo | Registros actuales |
 | --- | --- | ---: |
 | `coupons.json` | `CouponRow` | 1 |
-| `listing_terms.json` | `ListingTermRow` | 20 |
-| `listings.json` | `ListingRow` | 11 |
 | `media.json` | `MediaRow` | 321 |
 | `pages.json` | `PageRow` | 3 |
-| `post_terms.json` | `PostTermRow` | 70 |
-| `posts.json` | `PostRow` | 9 |
-| `terms.json` | `TermRow` | 53 |
+
+## Originales migrados retirados — 2026-11-07
+
+`posts.json`, `post_terms.json`, `listings.json`, `listing_terms.json` y
+`terms.json` se retiraron tras la migración autorizada. Blog, hospedajes y sus
+categorías se leen de PostgreSQL; no hay fallback a estos originales.
+`DataTables` y el cliente local ya no ofrecen esas tablas.
+
+Los tres snapshots de la tabla anterior siguen activos. `media.json` y
+`public/media/` sirven arte editorial de home y otras páginas; se conservan.
+También se conservan los tipos históricos utilizados por adaptadores y código
+compartido, sin mantener una segunda copia de los datos.
+
+Los importadores se mantienen para recuperación con una carpeta fuente explícita
+que contenga `data/` y `public/media/`. Los originales completos se archivaron con
+hashes antes de retirarlos: ver [respaldo de originales](../backups/README.md#originales-previos-a-la-limpieza-selectiva--2026-11-07).
+No extraerlos encima del árbol activo ni reimportarlos sobre cambios editoriales.
 
 ## Definir una propiedad
 
@@ -48,7 +61,7 @@ const attributes: PropertyAttributes = {
 ```
 
 `Property` representa la propiedad completa con estos atributos. `ListingRow`
-y `ListingAttributes` conservan el formato de los JSON; declarar un tipo no
+y `ListingAttributes` conservan el formato histórico de importación; declarar un tipo no
 convierte automáticamente sus textos a números o booleanos.
 
 - Los identificadores son números; las fechas se conservan como texto.
@@ -58,9 +71,9 @@ convierte automáticamente sus textos a números o booleanos.
 - SEO, texto alternativo y referencias opcionales admiten `null`.
   Los campos de cupón y `parent_id` no son de tipo `null` exclusivamente aunque
   el snapshot actual solo contenga valores nulos en ellos.
-- Las páginas usan `publish`/`draft`; los posts usan `published`.
+- Las páginas usan `publish`/`draft`; los posts originales usaban `published`.
   `StoredTaxonomy` incluye las nueve taxonomías migradas, no solo las tres públicas.
-- Los posts no contienen `updated_at`.
+- Los posts originales no contenían `updated_at`.
 
 ## Otras fuentes revisadas
 

@@ -1,26 +1,19 @@
 import { expect, expectTypeOf, it } from "vitest";
 import coupons from "@/data/coupons.json";
-import listingTerms from "@/data/listing_terms.json";
-import listings from "@/data/listings.json";
 import media from "@/data/media.json";
 import pages from "@/data/pages.json";
-import postTerms from "@/data/post_terms.json";
-import posts from "@/data/posts.json";
-import terms from "@/data/terms.json";
 import type {
-  DataTables, ListingAttributes, ListingRow, MediaRow, PageStatus,
-  PostStatus, Property, PropertyAttributes, StoredTaxonomy,
+  DataTables, ListingAttributes, MediaRow, PageRow, PageStatus,
+  Property, PropertyAttributes,
 } from "@/data/types";
 import type { CouponKind } from "@/modules/coupons/pricing";
-import { TAXONOMIES } from "@/modules/content/taxonomies";
 import { publicSupabaseClient } from "@/infrastructure/data/local-client";
 
 // Imported JSON widens enum strings. Check the remaining shape statically and
 // every enum value at runtime, including fields currently populated only by null.
 const snapshots = {
-  coupons, listing_terms: listingTerms, listings, media, pages,
-  post_terms: postTerms, posts, terms,
-} satisfies { [K in keyof DataTables]: Omit<DataTables[K], "status" | "taxonomy" | "kind">[] };
+  coupons, media, pages,
+} satisfies { [K in keyof DataTables]: Omit<DataTables[K], "status" | "kind">[] };
 
 it("distinguishes native property attributes from stored strings", () => {
   const attributes = {
@@ -37,26 +30,16 @@ it("distinguishes native property attributes from stored strings", () => {
 
 it("keeps all JSON snapshots compatible with their row contracts", () => {
   const pageStatuses: PageStatus[] = ["publish", "draft"];
-  const postStatuses: PostStatus[] = ["published"];
   const couponKinds: CouponKind[] = ["percent", "amount"];
-  const taxonomies: StoredTaxonomy[] = [
-    ...TAXONOMIES.map((taxonomy) => taxonomy.key),
-    "post_tag", "link_category", "nav_menu", "wp_theme", "hp_vendor_languages", "hp_vendor_services",
-  ];
   expect(snapshots.pages.every((row) => pageStatuses.includes(row.status as PageStatus))).toBe(true);
-  expect(snapshots.posts.every((row) => postStatuses.includes(row.status as PostStatus))).toBe(true);
   expect(snapshots.coupons.every((row) => couponKinds.includes(row.kind as CouponKind))).toBe(true);
-  expect(snapshots.terms.every((row) => taxonomies.includes(row.taxonomy as StoredTaxonomy))).toBe(true);
-  expect(snapshots.listings.every((row) =>
-    Object.values(row.attributes).every((value) => typeof value === "string")
-  )).toBe(true);
 });
 
 it("preserves typed rows, projected columns and nullable single results", async () => {
   const client = publicSupabaseClient();
-  const full = await client.from("listings");
-  expectTypeOf(full.data).toEqualTypeOf<ListingRow[] | null>();
-  expect(full.data).toEqual(listings);
+  const full = await client.from("pages");
+  expectTypeOf(full.data).toEqualTypeOf<PageRow[] | null>();
+  expect(full.data).toEqual(pages);
 
   const selected = await client.from("media").select(" id, storage_path ").order("id").range(0, 1);
   expectTypeOf(selected.data).toEqualTypeOf<Pick<MediaRow, "id" | "storage_path">[] | null>();

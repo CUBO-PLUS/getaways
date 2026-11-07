@@ -386,7 +386,8 @@ export async function convertBlogSources(root: string, selectedWpId?: number) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    const root = args.find((arg) => !arg.startsWith("--")) ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const root = args.find((arg) => !arg.startsWith("--"));
+    if (!root) throw new Error("usage: pnpm blog:convert <source-root> [--post=<wp-id>]");
     const postArgument = args.find((arg) => arg.startsWith("--post="));
     const selectedWpId = postArgument ? Number(postArgument.slice("--post=".length)) : undefined;
     if (selectedWpId !== undefined && (!Number.isSafeInteger(selectedWpId) || selectedWpId <= 0)) throw new Error("--post must be a positive WordPress post id");

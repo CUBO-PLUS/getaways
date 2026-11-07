@@ -10,9 +10,8 @@ import { normalizeLegacyListing } from "../modules/listings/listing-import-norma
 
 type Term = { id: number; wp_id: string | null; taxonomy: string; slug: string; name: string };
 type Media = { id: number; wp_id: string | null; storage_path: string; original_filename: string; alt_text: string | null };
-const root = path.resolve(import.meta.dirname, "..");
 let s3Client: { destroy(): void } | undefined;
-const json = async <T,>(name: string) => (JSON.parse as (text: string, reviver: (this: unknown, key: string, value: unknown, context?: { source?: string }) => unknown) => unknown)(
+const json = async <T,>(root: string, name: string) => (JSON.parse as (text: string, reviver: (this: unknown, key: string, value: unknown, context?: { source?: string }) => unknown) => unknown)(
   await readFile(path.join(root, "data", `${name}.json`), "utf8"),
   function (key, value, context) { return key === "wp_id" && typeof value === "number" ? context?.source ?? value : value; },
 ) as T;
@@ -21,14 +20,14 @@ const assertEqual = (expected: unknown, actual: unknown, label: string) => {
   if (!isDeepStrictEqual(expected, actual)) throw new Error(`destination differs: ${label}`);
 };
 
-async function run(apply: boolean, verify: boolean) {
+async function run(root: string, apply: boolean, verify: boolean) {
   const [{ db }, storage] = await Promise.all([
     import("../infrastructure/prisma/db.ts"), import("../infrastructure/storage/s3.ts"),
   ]);
-  const source = await json<unknown[]>("listings");
-  const terms = await json<Term[]>("terms");
-  const rels = await json<Array<{ listing_id: number; term_id: number }>>("listing_terms");
-  const media = await json<Media[]>("media");
+  const source = await json<unknown[]>(root, "listings");
+  const terms = await json<Term[]>(root, "terms");
+  const rels = await json<Array<{ listing_id: number; term_id: number }>>(root, "listing_terms");
+  const media = await json<Media[]>(root, "media");
   const normalized = source.map((row, sourceOrdinal) => normalizeLegacyListing(row, sourceOrdinal));
   if (normalized.length !== 11) throw new Error(`expected closed source catalogue of 11 listings, got ${normalized.length}`);
   const listingIds = new Set(normalized.map(l => l.id));
@@ -206,12 +205,12 @@ async function run(apply: boolean, verify: boolean) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   let dbClient: { close(): Promise<void> } | undefined;
   try {
+    const [sourceRoot, ...args] = process.argv.slice(2).filter(arg => arg !== "--");
+    if (!sourceRoot || sourceRoot.startsWith("--") || args.some(a => !["--apply", "--verify"].includes(a)) || (args.includes("--apply") && args.includes("--verify"))) throw new Error("usage: pnpm listings:import <source-root> [--apply | --verify]");
     nextEnv.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
     const [{ db }] = await Promise.all([import("../infrastructure/prisma/db.ts")]);
     dbClient = db;
-    const args = process.argv.slice(2).filter(arg => arg !== "--");
-    if (args.some(a => !["--apply", "--verify"].includes(a)) || (args.includes("--apply") && args.includes("--verify"))) throw new Error("usage: pnpm listings:import [--apply | --verify]");
-    process.stdout.write(`${JSON.stringify(await run(args.includes("--apply"), args.includes("--verify")), null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(await run(path.resolve(sourceRoot), args.includes("--apply"), args.includes("--verify")), null, 2)}\n`);
   } catch (error) {
     process.stderr.write(`listings import aborted: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

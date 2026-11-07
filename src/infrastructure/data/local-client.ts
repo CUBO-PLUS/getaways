@@ -1,29 +1,22 @@
 /**
  * Local, read-only stand-in for the public Supabase client.
  *
- * The student copy of this site has no database. Every public read is served
- * from the JSON snapshots in data/*.json, which hold exactly what a visitor
- * already sees on the live site. This module implements only the query-builder
- * surface that modules/content/server/content.ts uses:
+ * Only static pages and site artwork use the remaining JSON snapshots.
+ * Blog and catalogue readers use PostgreSQL, without a JSON fallback.
+ * This module implements the query-builder surface used by those static readers:
  *
  *   from(table) . select(columns) . eq / neq / in / gt / gte / lt / lte / ilike / is
  *               . order(column, { ascending }) . limit(n) . range(from, to)
  *               . single() / maybeSingle() / plain await
  *
- * Writes are not implemented on purpose. Nothing on the public side writes,
- * and the booking flow keeps its own in-memory store (modules/bookings/server/booking-store.ts).
+ * Writes are not implemented; operational data is persisted separately.
  *
  * Errors use the PostgREST shape ({ code, message }) so the callers in
  * modules/content/server/content.ts keep their existing `PGRST116` handling.
  */
 import pages from "@/data/pages.json";
-import posts from "@/data/posts.json";
-import listings from "@/data/listings.json";
 import media from "@/data/media.json";
-import terms from "@/data/terms.json";
-import postTerms from "@/data/post_terms.json";
-import listingTerms from "@/data/listing_terms.json";
-import type { DataTables, PageRow, PostRow, TermRow } from "@/data/types";
+import type { DataTables, PageRow } from "@/data/types";
 
 type Row = Record<string, unknown>;
 type TableName = Exclude<keyof DataTables, "coupons">;
@@ -40,12 +33,7 @@ type Projection<T, S extends string> = Trim<S> extends "*" | "" ? T
 // JSON imports widen literal strings; snapshot tests check these vocabularies.
 const TABLES: { [K in TableName]: DataTables[K][] } = {
   pages: pages as PageRow[],
-  posts: posts as PostRow[],
-  listings,
   media,
-  terms: terms as TermRow[],
-  post_terms: postTerms,
-  listing_terms: listingTerms,
 };
 
 const NO_ROWS_CODE = "PGRST116";

@@ -1,6 +1,6 @@
 import type { SourceData } from "./blog-import-source.mts";
 
-export function analyzeBlogSources(root?: string, sourceData?: SourceData): {
+export function analyzeBlogSources(root: string, sourceData?: SourceData): {
   schemaVersion: number;
   mode: "read-only-dry-run";
   sourceCounts: { publishedPosts: number; categories: number; relationsForPosts: number };

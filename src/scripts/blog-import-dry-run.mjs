@@ -4,9 +4,6 @@ import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 import { publicationInstant } from "../modules/content/publication-instant.mjs";
 
-const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(scriptDir, "..");
-
 function readJson(root, name) {
   return JSON.parse(readFileSync(path.join(root, "data", `${name}.json`), "utf8"));
 }
@@ -92,7 +89,7 @@ function inspectHtml(html, mediaByWpId, mediaByPath, blockers, postWpId) {
   return { internalImages, captions, attributes, blocks, blockAttributes };
 }
 
-export function analyzeBlogSources(root = projectRoot, sourceData) {
+export function analyzeBlogSources(root, sourceData) {
   const posts = (sourceData?.posts ?? readJson(root, "posts")).filter((post) => post.status === "published");
   const terms = sourceData?.terms ?? readJson(root, "terms");
   const relations = sourceData?.post_terms ?? readJson(root, "post_terms");
@@ -178,7 +175,9 @@ export function analyzeBlogSources(root = projectRoot, sourceData) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const report = analyzeBlogSources(process.argv[2] ? path.resolve(process.argv[2]) : projectRoot);
+    const [sourceRoot, ...extra] = process.argv.slice(2);
+    if (!sourceRoot || sourceRoot.startsWith("--") || extra.length) throw new Error("usage: pnpm blog:dry-run <source-root>");
+    const report = analyzeBlogSources(path.resolve(sourceRoot));
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     process.exitCode = report.summary.blockers ? 1 : 0;
   } catch (error) {

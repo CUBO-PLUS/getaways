@@ -1,5 +1,12 @@
 # Cierre local del plan 2 — 2026-11-04
 
+**Nota posterior — 2026-11-07:** tras autorización se retiraron los JSON originales
+del catálogo, términos y relaciones del árbol activo. Los ocho JSON y los medios
+fuente completos quedaron en un [archivo privado verificado](../../../backups/README.md#originales-previos-a-la-limpieza-selectiva--2026-11-07).
+Las lecturas siguen en PostgreSQL; páginas y arte estático local se conservan.
+Los comandos históricos de esta evidencia ahora requieren `<source-root>` antes
+de `--apply`/`--verify`. Esta limpieza no modifica la BD ni los objetos RustFS.
+
 ## Alcance
 
 Implementación con dos subagentes GPT-6 Luna: importador y lectores/consumidores.

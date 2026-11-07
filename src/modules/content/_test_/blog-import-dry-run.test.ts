@@ -67,6 +67,21 @@ it("returns a failing CLI exit code when references are missing", () => {
   expect(JSON.parse(result.stdout).blockers).toContainEqual(expect.objectContaining({ type: "missing-media-file" }));
 }, 15_000);
 
+it.each([
+  ["dry-run", "blog-import-dry-run.mjs"],
+  ["convert", "blog-import-convert.mts"],
+])("requires an explicit source root for blog %s", (command, filename) => {
+  const script = path.resolve(import.meta.dirname, "../../../scripts", filename);
+  const result = spawnSync(process.execPath, ["--conditions=react-server", "--experimental-strip-types", script], {
+    encoding: "utf8",
+    env: { ...process.env, DATABASE_URL: "invalid-test-database-url" },
+    timeout: 10_000,
+  });
+  expect(result.status).toBe(2);
+  expect(result.stderr).toContain(`usage: pnpm blog:${command} <source-root>`);
+  expect(result.stdout).toBe("");
+}, 15_000);
+
 it("converts supported content to the shared schema with a source-only media ID and remains non-importable", async () => {
   const root = fixture();
   const report = await convertBlogSources(root, 901);

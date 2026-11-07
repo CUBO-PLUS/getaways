@@ -16,6 +16,14 @@ no declara implementada ninguna fase anterior sin evidencia de aceptación.
 
 ## Estado comprobado y límites
 
+**Limpieza selectiva autorizada — 2026-11-07:** los JSON originales de blog y
+sus términos/relaciones se retiraron del árbol activo después de archivarlos con
+hashes junto con el catálogo y los medios fuente. El lector público sigue en
+PostgreSQL, sin fallback. Los importadores conservados requieren una carpeta
+fuente explícita. Ver [respaldo de originales](../../../backups/README.md#originales-previos-a-la-limpieza-selectiva--2026-11-07).
+Las referencias a JSON intactos de los registros siguientes describen el estado
+histórico durante la migración, no archivos que sigan en `data/`.
+
 **Actualización 2026-11-02: plan marcado como completado por decisión de la persona
 solicitante, con pendientes técnicos abiertos.** Se actualizaron los alt de los
 nueve artículos existentes en la BD local por encargo explícito. No se reimportó
