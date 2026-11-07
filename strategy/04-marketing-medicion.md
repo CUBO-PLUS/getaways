@@ -1,5 +1,7 @@
 # 04 — Marketing, conversión y medición
 
+> Documento de planificación inicial. Sus requisitos, eventos y propuestas no constituyen evidencia de implementación o validación. Consultar el [estado actualizado](README.md#estado-actual) y el [informe estratégico](Gateways_Informe_Estrategico.pdf) para conocer los avances y límites documentados.
+
 ## Contenido y adquisición
 
 Propuesta inicial a validar: posicionar Gateways como alojamiento boutique y punto de partida para explorar El Zonte. Crear contenido útil para decidir y reservar, no solo atraer visitas.
