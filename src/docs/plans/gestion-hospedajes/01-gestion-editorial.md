@@ -6,12 +6,14 @@ No hacer CRUD sobre JSON fuente ni exponer operaciones de fases aún incompletas
 
 ## Pantallas y endpoints editoriales
 
-- [ ] Implementar `app/admin/listings/page.tsx`: listado con estado, búsqueda y accesos según rol.
-- [ ] Implementar `app/admin/listings/[id]/page.tsx`: preparar secciones descriptivas y comerciales separadas, sin habilitar todavía la segunda.
-- [ ] Implementar GET de `app/api/admin/listings/route.ts` para ADMIN/EDITOR y lectura autorizada en `app/api/admin/listings/[id]/route.ts`.
-- [ ] Implementar `app/api/admin/listings/[id]/content/route.ts`: PATCH de ADMIN/EDITOR.
-- [ ] Reutilizar la carga/selección de medios del plan 2.
-- [ ] Mantener operaciones en `modules/listings/server/listing-admin.ts` y componentes en `modules/listings/client/`. Rutas finas, reglas en servidor.
+- [x] Implementar `app/admin/listings/page.tsx`: listado con estado, búsqueda y accesos según rol.
+- [x] Implementar `app/admin/listings/[id]/page.tsx`: preparar secciones descriptivas y comerciales separadas, sin habilitar todavía la segunda.
+- [x] Implementar GET de `app/api/admin/listings/route.ts` para ADMIN/EDITOR y lectura autorizada en `app/api/admin/listings/[id]/route.ts`.
+- [x] Implementar `app/api/admin/listings/[id]/content/route.ts`: PATCH de ADMIN/EDITOR.
+- [x] Reutilizar la carga/selección de medios del plan 2.
+- [x] Mantener operaciones en `modules/listings/server/listing-admin.ts` y componentes en `modules/listings/client/`. Rutas finas, reglas en servidor.
+
+Implementado el 2026-11-07 junto con 4.2 y 4.3; [evidencia](README.md#implementación-y-evidencia-técnica--2026-11-07).
 
 No ofrecer a BOOKING_MANAGER este formulario ni un GET completo del catálogo
 administrativo: obtiene solo resumen operativo por la sección de reservas.
@@ -56,8 +58,8 @@ También disponibilidad y rutas directas deben respetar estado vigente.
 
 ## Verificación y cierre
 
-- [ ] Probar ADMIN/EDITOR editando descripción, portada y galería sin alterar metadatos compartidos del blog.
-- [ ] Enviar PATCH manipulado con `price`, `active`, `guests`, `petsAllowed` y JSON anidado; comprobar rechazo completo sin escrituras.
-- [ ] Comprobar que BOOKING_MANAGER no modifica catálogo mediante endpoint directo.
-- [ ] Verificar conflictos y revocación sin pérdida de cambios locales; aplicar las [pruebas comunes](../comunes/verificacion-y-aceptacion.md).
-- [ ] Dejar el incremento listo para 4.2, sin declarar entregado C2 ni habilitar operaciones comerciales incompletas.
+- [x] Probar ADMIN/EDITOR editando descripción, portada y galería sin alterar metadatos compartidos del blog. Por API sobre PostgreSQL desechable; falta el recorrido en navegador.
+- [x] Enviar PATCH manipulado con `price`, `active`, `guests`, `petsAllowed` y JSON anidado; comprobar rechazo completo sin escrituras.
+- [x] Comprobar que BOOKING_MANAGER no modifica catálogo mediante endpoint directo.
+- [ ] Verificar conflictos y revocación sin pérdida de cambios locales; aplicar las [pruebas comunes](../comunes/verificacion-y-aceptacion.md). 409 y 401 verificados por API y en el componente (jsdom); faltan dos sesiones reales y las pruebas comunes.
+- [x] Dejar el incremento listo para 4.2, sin declarar entregado C2 ni habilitar operaciones comerciales incompletas.
