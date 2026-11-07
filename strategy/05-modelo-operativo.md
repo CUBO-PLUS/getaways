@@ -1,5 +1,7 @@
 # 05 — Modelo operativo y sostenibilidad
 
+> Documento de planificación inicial. Sus requisitos, eventos y propuestas no constituyen evidencia de implementación o validación. Consultar el [estado actualizado](README.md#estado-actual) y el [informe estratégico](Gateways_Informe_Estrategico.pdf) para conocer los avances y límites documentados.
+
 ## Operación propuesta
 
 El operador de Gateways mantiene propiedades, tarifas, políticas y experiencias aprobadas, y confirma solicitudes cuando no haya integración automática. El equipo construye y documenta el prototipo; la responsabilidad posentrega debe acordarse expresamente.
