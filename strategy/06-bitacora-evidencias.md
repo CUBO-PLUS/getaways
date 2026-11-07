@@ -16,24 +16,32 @@ Mantener ediciones reales y continuas en Google Docs. Estos archivos Markdown y 
 
 ## Índice de evidencias
 
-Agregar enlaces verificables conforme se produzcan; no marcar un entregable por existir una plantilla.
-
-| Evidencia | Ubicación / enlace | Estado |
+| Evidencia | Ubicación | Alcance |
 | --- | --- | --- |
-| Documento original del caso y guía | Texto proporcionado en la conversación; enlaces/archivos originales pendientes | Referencia parcial |
-| Investigación y auditorías | Pendiente | No ejecutado |
-| Google Docs e historial accesible | Pendiente | No creado / no verificado |
-| Prototipo estratégico funcional | Pendiente | No verificado |
-| Staging y prototipo técnico | Pendiente | No verificado |
-| Pruebas e integraciones | Pendiente | No verificadas |
-| Historial de commits diario | Repositorio GitHub público: pendiente de registrar URL | No auditado |
-| Confirmación de fechas y mentoría | Pendiente | No documentada |
-| PDF estratégico y archivo `.txt` | Pendiente | No generados |
+| Informe estratégico | [PDF](Gateways_Informe_Estrategico.pdf) | Publicado en el repositorio |
+| Revisión UX y competencia | Informe, páginas 4–5 | Revisión exploratoria; auditoría integral pendiente |
+| Customer journey | Informe, página 6 | Recorrido comparado; validación con huéspedes pendiente |
+| Diseño y prototipo | Informe, páginas 7–9 y 18 | Capturas locales de escritorio y móvil con catálogo histórico de demostración |
+| Plataforma técnica | [README técnico](../src/README.md) | Código e instrucciones de ejecución |
+| Pago Bitcoin de prueba | [Cierre local](../src/docs/plans/pagos/README.md) | Testnet 4, USD 1.00; conserva excepciones operativas |
+| Tracking de referidos | [Documentación](../src/modules/referrals/README.md) | Prototipo de atribución; incentivos y lealtad pendientes |
+| Analítica | [Umami](../src/docs/analytics.md) | Implementación de visitas y cuatro eventos de clic |
+| Google Docs e historial | Pendiente de incorporar y verificar | No acreditado mediante este índice |
+| Mentoría y aprobación comercial | Pendiente de incorporar | No acreditadas mediante este índice |
+
+Los resultados de pruebas corresponden a los registros técnicos enlazados. Esta actualización documental no implica una nueva ejecución.
 
 ## PDF estratégico final
 
-Consolidar oportunidad, evidencia de investigación, auditoría, recorridos, competencia, arquitectura web, contenido/SEO/IA, flujos del concierge, viabilidad Bitcoin, referidos/lealtad, KPIs, conversión, prototipo, operación y recomendación WordPress/rebuild/híbrido.
+El [informe estratégico](Gateways_Informe_Estrategico.pdf) está publicado en el repositorio. Incluye diagnóstico exploratorio, propuesta, capturas del MVP, recomendaciones y límites de la evidencia.
 
-Agregar responsables, fecha, fuentes, enlaces al prototipo y Google Docs, resultados, costos y límites conocidos. Revisar que no contenga datos privados y que los enlaces funcionen para el jurado. **Todavía no se ha generado ese PDF.**
+Su publicación no acredita por sí sola la aprobación comercial del negocio ni la entrega en la plataforma oficial del programa.
 
-Entregar además un archivo `.txt` con la URL real del repositorio público. Las etiquetas «project assignments», «assignments» y «study cases» no incluyen sus enlaces en el texto recibido: solicitarlos al programa en lugar de inventarlos.
+## Entrega oficial
+
+Pendiente de incorporar o verificar:
+
+- Archivo `.txt` con la URL pública del repositorio.
+- Google Doc y acceso al historial requerido.
+- Fecha, hora y destino oficial de entrega.
+- Comprobante de entrega y feedback de mentoría.
