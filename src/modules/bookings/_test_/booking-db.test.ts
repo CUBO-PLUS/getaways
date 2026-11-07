@@ -83,8 +83,7 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
 
   function create(worker = a, referral?: string, dates = ["2099-06-10", "2099-06-12"]) {
     return worker.run<Booking>({ action: "create", referral, input: {
-      listing_id: 1, check_in: dates[0], check_out: dates[1], guest_name: "Synthetic Guest", guest_email: "guest@example.test",
-      guest_phone: "+15555550123", guest_notes: "Private guest note",
+      listing_id: 1, check_in: dates[0], check_out: dates[1], guest_notes: "Private guest note",
     } });
   }
   const quote: QuoteUpdate = { guests: 2, price_per_night_cents: 10000, cleaning_fee_cents: 2000, extra_guest_fee_cents: 0,
@@ -852,7 +851,10 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
       guest_account_id: 1, user_id: 1,
     } });
     expect(forged.guest_account_id).toBeGreaterThan(1);
-    expect(forged.guest_email).toBe("victim@example.test");
+    // Contact details sent with the request are ignored: the booking carries the account's own.
+    expect(forged.guest_email).not.toBe("victim@example.test");
+    expect(forged.guest_name).not.toBe("Attacker");
+    expect(sql(`SELECT "email" = '${forged.guest_email}' AND "name" = '${forged.guest_name}' FROM "GuestAccount" WHERE "id" = ${forged.guest_account_id};`)).toBe("t");
     const noSession = await a.run<Api>({ action: "request", route: "bookings", method: "POST", cookie: "", body: {
       listing_id: 1, check_in: "2099-06-24", check_out: "2099-06-26", guest_name: "No Session", guest_email: "none@example.test",
     } });
@@ -876,6 +878,160 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect(sql(`SELECT count(*) FROM "GuestAccount" WHERE "passwordHash" = 'synthetic-password-123';`)).toBe("0");
     expect(sql(`SELECT count(*) FROM "AdminUser" WHERE email = 'mixed@example.test';`)).toBe("0");
   });
+
+  it("copies the account's name, email and optional phone onto new bookings", async () => {
+    expect((await a.run<{ status: number }>({ action: "guest", email: "bad-phone@example.test", phone: "call me" })).status).toBe(400);
+    expect(sql(`SELECT count(*) FROM "GuestAccount" WHERE email = 'bad-phone@example.test';`)).toBe("0");
+    expect((await a.run<{ status: number }>({ action: "guest", name: "Phone Guest", email: "phone@example.test", phone: " +503 6062 7813 " })).status).toBe(200);
+    expect(await create(a, undefined, ["2099-07-10", "2099-07-12"]))
+      .toMatchObject({ guest_name: "Phone Guest", guest_email: "phone@example.test", guest_phone: "+503 6062 7813" });
+    expect((await b.run<{ status: number }>({ action: "guest", name: "No Phone", email: "no-phone@example.test", phone: "" })).status).toBe(200);
+    expect(sql(`SELECT "phone" IS NULL FROM "GuestAccount" WHERE email = 'no-phone@example.test';`)).toBe("t");
+    expect(await create(b, undefined, ["2099-07-14", "2099-07-16"]))
+      .toMatchObject({ guest_name: "No Phone", guest_email: "no-phone@example.test", guest_phone: null });
+  });
+
+  type ListingApi = { status: number; headers: Record<string, string>; body: Record<string, unknown> };
+  const listingApi = (token: string, route: "list" | "detail" | "content" | "commercial" | "status", method: "GET" | "POST" | "PATCH" | "DELETE",
+    id?: number, body?: Record<string, unknown>, origin?: string) =>
+    a.run<ListingApi>({ action: "listingRequest", route, method, id, token, body, origin });
+  async function addStaff() {
+    sql(`INSERT INTO "AdminUser" (email, name, "passwordHash", role, "authVersion", "updatedAt") VALUES
+      ('editor@example.test', 'Editor', 'unused-test-hash', 'EDITOR', 1, now()),
+      ('manager@example.test', 'Manager', 'unused-test-hash', 'BOOKING_MANAGER', 1, now());`);
+    // One request at a time: a worker answers in order, without correlating replies.
+    const tokens: string[] = [];
+    for (const id of [1, 2, 3]) tokens.push(await a.run<string>({ action: "adminToken", id, authVersion: 1 }));
+    return tokens;
+  }
+
+  it("plan 4: ADMIN and EDITOR edit descriptive content; mixed, nested, stale or out-of-role patches write nothing", async () => {
+    const [, editor, manager] = await addStaff();
+    const key = randomUUID();
+    sql(`INSERT INTO "MediaAsset" ("objectKey", "originalName", "mimeType", "sizeBytes", width, height, "defaultAlt") VALUES
+      ('blog/${key}-1', 'one.jpg', 'image/jpeg', 10, 100, 80, 'Shared blog alt'), ('blog/${key}-2', 'two.jpg', 'image/jpeg', 10, 100, 80, null);
+      INSERT INTO "ListingTerm" (taxonomy, slug, name) VALUES ('hp_listing_category', 'villas-${key}', 'Villas'), ('hp_listing_pets', 'pets-${key}', 'Allowed');
+      INSERT INTO "ListingTermAssignment" ("listingId", "termId") SELECT 1, id FROM "ListingTerm" WHERE slug = 'pets-${key}';`);
+    const [first, second] = sql(`SELECT id FROM "MediaAsset" WHERE "objectKey" LIKE 'blog/${key}-%' ORDER BY "objectKey";`).split("\n").map(Number);
+    const villas = Number(sql(`SELECT id FROM "ListingTerm" WHERE slug = 'villas-${key}';`));
+    const snapshot = () => sql(`SELECT title || '|' || version || '|' || attributes::text || '|' || coalesce("coverMediaId"::text, '-') || '|' || "pricePerNightCents" || '|' || active FROM "Listing" WHERE id = 1;`);
+    const before = snapshot();
+
+    const detail = await listingApi(editor, "detail", "GET", 1);
+    expect(detail.status).toBe(200);
+    expect(detail.headers["cache-control"]).toContain("no-store");
+    expect(detail.body.listing).toMatchObject({ id: 1, version: 1, bookings: null, commercial: { pricePerNightCents: 10000 } });
+    expect((await listingApi(manager, "detail", "GET", 1)).status).toBe(403);
+    expect((await listingApi(manager, "list", "GET")).status).toBe(403);
+    expect((await listingApi(manager, "content", "PATCH", 1, { version: 1, title: "Manager edit" })).status).toBe(403);
+    expect((await listingApi(manager, "commercial", "PATCH", 1, { version: 1, pricePerNightCents: 1 })).status).toBe(403);
+    expect((await listingApi(manager, "status", "PATCH", 1, { version: 1, action: "deactivate" })).status).toBe(403);
+    expect((await listingApi(manager, "detail", "DELETE", 1, { version: 1, confirmed: true })).status).toBe(403);
+
+    for (const body of [{ version: 1, title: "Mixed", price: 1 }, { version: 1, title: "Mixed", active: false }, { version: 1, title: "Mixed", guests: 9 },
+      { version: 1, title: "Mixed", petsAllowed: false }]) {
+      expect((await listingApi(editor, "content", "PATCH", 1, body)).status).toBe(403);
+    }
+    for (const body of [{ version: 1, attributes: { price: "1" } }, { version: 1, "attributes.price": "1" },
+      { version: 1, gallery: [{ mediaId: first, alt: "x", nested: { price: 1 } }] }]) {
+      expect((await listingApi(editor, "content", "PATCH", 1, body)).status).toBe(400);
+    }
+    expect((await listingApi(editor, "content", "PATCH", 1, { version: 1, title: "Hostile" }, "https://attacker.example")).status).toBe(403);
+    expect((await listingApi(editor, "content", "PATCH", 1, { version: 1, gallery: [{ mediaId: 999_999, alt: "Missing" }] })).status).toBe(400);
+    expect(snapshot()).toBe(before);
+
+    const saved = await listingApi(editor, "content", "PATCH", 1, {
+      version: 1, title: "Edited by editor", bedrooms: 3, amenities: ["wifi"], categoryIds: [villas], coverMediaId: first,
+      gallery: [{ mediaId: first, alt: "Pool at dusk", roomGroup: "Outside" }, { mediaId: second, decorative: true }],
+    });
+    expect(saved).toMatchObject({ status: 200, body: { version: 2 } });
+    expect(sql(`SELECT title || '|' || version || '|' || (attributes->>'bedrooms') || '|' || (attributes->>'wifi') || '|' || "coverMediaId" || '|' || "pricePerNightCents" FROM "Listing" WHERE id = 1;`))
+      .toBe(`Edited by editor|2|3|1|${first}|10000`);
+    expect(sql(`SELECT string_agg("mediaId" || ':' || position || ':' || alt || ':' || coalesce("roomGroup", '-'), ',' ORDER BY position) FROM "ListingMedia" WHERE "listingId" = 1;`))
+      .toBe(`${first}:0:Pool at dusk:Outside,${second}:1::-`);
+    // Shared image metadata (used by the blog too) is never edited from a listing.
+    expect(sql(`SELECT "defaultAlt" FROM "MediaAsset" WHERE id = ${first};`)).toBe("Shared blog alt");
+    // Only categories change; the pets taxonomy assignment stays.
+    expect(sql(`SELECT string_agg(t.taxonomy, ',' ORDER BY t.taxonomy) FROM "ListingTermAssignment" a JOIN "ListingTerm" t ON t.id = a."termId" WHERE a."listingId" = 1;`))
+      .toBe("hp_listing_category,hp_listing_pets");
+
+    expect((await listingApi(editor, "content", "PATCH", 1, { version: 1, title: "Stale" })).status).toBe(409);
+    expect((await listingApi(editor, "commercial", "PATCH", 1, { version: 2, pricePerNightCents: 1 })).status).toBe(403);
+    expect((await listingApi(editor, "status", "PATCH", 1, { version: 2, action: "deactivate" })).status).toBe(403);
+    expect((await listingApi(editor, "detail", "DELETE", 1, { version: 2, confirmed: true })).status).toBe(403);
+    expect((await listingApi(editor, "list", "POST", undefined, { title: "Nope", slug: "nope" })).status).toBe(403);
+
+    expect((await listingApi(editor, "content", "PATCH", 1, { version: 2, gallery: [], coverMediaId: null })).status).toBe(200);
+    expect(sql(`SELECT count(*) FROM "ListingMedia" WHERE "listingId" = 1;`)).toBe("0");
+    expect(sql(`SELECT count(*) FROM "MediaAsset" WHERE id IN (${first}, ${second});`)).toBe("2");
+
+    sql(`UPDATE "AdminUser" SET "authVersion" = 2 WHERE id = 2;`);
+    expect((await listingApi(editor, "content", "PATCH", 1, { version: 3, title: "After revocation" })).status).toBe(401);
+    expect(sql(`SELECT title || '|' || version FROM "Listing" WHERE id = 1;`)).toBe("Edited by editor|3");
+  });
+
+  it("plan 4: ADMIN prices new bookings only, archives instead of deleting history, and withdrawn listings take no new payments", async () => {
+    const [admin] = await addStaff();
+    const earlier = await create(a, undefined, ["2099-08-01", "2099-08-03"]);
+    const open = await payable(a, undefined, ["2099-08-05", "2099-08-07"]);
+    let version = 1;
+
+    expect((await listingApi(admin, "commercial", "PATCH", 1, { version, baseGuests: 9 })).status).toBe(400);
+    expect((await listingApi(admin, "commercial", "PATCH", 1, { version, pricePerNightCents: null })).status).toBe(400);
+    expect((await listingApi(admin, "commercial", "PATCH", 1, { version, title: "Mixed", pricePerNightCents: 1 })).status).toBe(400);
+    expect(sql(`SELECT version || '|' || "pricePerNightCents" FROM "Listing" WHERE id = 1;`)).toBe("1|10000");
+    const priced = await listingApi(admin, "commercial", "PATCH", 1, { version, pricePerNightCents: 25_000, minStayNights: 2, checkInSeconds: 50_400 });
+    expect(priced).toMatchObject({ status: 200, body: { version: 2 } });
+    version = 2;
+
+    expect(await a.run<Booking>({ action: "get", id: earlier.id })).toMatchObject({ price_per_night_cents: 10_000, pricing_snapshot: { pricePerNightCents: 10_000 } });
+    expect(await create(a, undefined, ["2099-08-10", "2099-08-12"])).toMatchObject({ price_per_night_cents: 25_000, pricing_snapshot: { pricePerNightCents: 25_000 } });
+
+    expect((await listingApi(admin, "detail", "DELETE", 1, { version, confirmed: true })).status).toBe(409);
+    expect((await listingApi(admin, "status", "PATCH", 1, { version, action: "archive" })).status).toBe(400);
+    expect(await listingApi(admin, "status", "PATCH", 1, { version, action: "archive", confirmed: true }))
+      .toMatchObject({ status: 200, body: { version: 3, status: "archived" } });
+    version = 3;
+    expect(sql(`SELECT active || '|' || ("archivedAt" IS NOT NULL) FROM "Listing" WHERE id = 1;`)).toBe("false|true");
+    expect(sql(`SELECT count(*) FROM "Booking" WHERE "listingId" = 1;`)).toBe("3");
+
+    const withdrawn = await a.run<Api>({ action: "request", route: "bookings", method: "POST", body: { listing_id: 1, check_in: "2099-09-01", check_out: "2099-09-03" } });
+    expect(withdrawn.status).toBe(404);
+    const quoted = await a.run<Booking>({ action: "quote", id: earlier.id, version: earlier.version, quote });
+    expect(quoted).not.toBeNull();
+    const fresh = await a.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: earlier.checkout_session_id } });
+    expect(fresh).toMatchObject({ status: 409, body: { code: "listing_unavailable" } });
+    // A payment opened before the listing was withdrawn is still served and processed.
+    const existing = await a.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: open.checkout_session_id } });
+    expect(existing.status).toBe(200);
+    expect(existing.body.data).toMatchObject({ payment: { bookingId: open.id, status: "pending" } });
+
+    expect((await listingApi(admin, "status", "PATCH", 1, { version, action: "activate" })).status).toBe(409);
+    expect(await listingApi(admin, "status", "PATCH", 1, { version, action: "restore" })).toMatchObject({ status: 200, body: { status: "inactive" } });
+
+    const createdListing = await listingApi(admin, "list", "POST", undefined, { title: "Casa Nueva", slug: "casa-nueva" });
+    expect(createdListing).toMatchObject({ status: 201, body: { version: 1 } });
+    const newId = createdListing.body.id as number;
+    expect((await listingApi(admin, "list", "POST", undefined, { title: "Otra", slug: "casa-nueva" })).status).toBe(409);
+    expect(sql(`SELECT active || '|' || ("archivedAt" IS NULL) FROM "Listing" WHERE id = ${newId};`)).toBe("false|true");
+    const notReady = await listingApi(admin, "status", "PATCH", newId, { version: 1, action: "activate" });
+    expect(notReady.status).toBe(400);
+    expect(notReady.body.error).toMatch(/description.*cover image.*nightly price.*maximum number of guests/);
+    // A deletable listing with several associations: they all go, the shared images stay.
+    const key = randomUUID();
+    sql(`INSERT INTO "MediaAsset" ("objectKey", "originalName", "mimeType", "sizeBytes", width, height) VALUES
+      ('blog/${key}-1', 'one.jpg', 'image/jpeg', 10, 100, 80), ('blog/${key}-2', 'two.jpg', 'image/jpeg', 10, 100, 80);
+      INSERT INTO "ListingTerm" (taxonomy, slug, name) VALUES ('hp_listing_category', 'new-${key}', 'New');`);
+    const images = sql(`SELECT id FROM "MediaAsset" WHERE "objectKey" LIKE 'blog/${key}-%' ORDER BY "objectKey";`).split("\n").map(Number);
+    const category = Number(sql(`SELECT id FROM "ListingTerm" WHERE slug = 'new-${key}';`));
+    expect(await listingApi(admin, "content", "PATCH", newId, { version: 1, categoryIds: [category], coverMediaId: images[0],
+      gallery: images.map((mediaId) => ({ mediaId, alt: `Room ${mediaId}` })) })).toMatchObject({ status: 200, body: { version: 2 } });
+    expect((await listingApi(admin, "detail", "DELETE", newId, { version: 2 })).status).toBe(400);
+    expect(await listingApi(admin, "detail", "DELETE", newId, { version: 2, confirmed: true })).toMatchObject({ status: 200, body: { deleted: true } });
+    expect(sql(`SELECT (SELECT count(*) FROM "Listing" WHERE id = ${newId}) || '|' || (SELECT count(*) FROM "ListingMedia" WHERE "listingId" = ${newId})
+      || '|' || (SELECT count(*) FROM "ListingTermAssignment" WHERE "listingId" = ${newId}) || '|' || (SELECT count(*) FROM "MediaAsset" WHERE id IN (${images.join(",")}));`))
+      .toBe("0|0|0|2");
+  }, 30_000);
 
   it("revokes retained guest cookies on logout and account deactivation; throttles guest authentication persistently", async () => {
     const booking = await create();
