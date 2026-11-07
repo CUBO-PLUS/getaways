@@ -6,12 +6,13 @@ import Login from "@/modules/auth/client/login";
 import BlogLogin from "@/modules/content/client/blog-login";
 import PasswordForm from "@/modules/users/client/password-form";
 import UsersPanel from "@/modules/users/client/users-panel";
+import { CreateUserForm, EditUserForm } from "@/modules/users/client/user-form";
 import GuestAuthForm from "@/modules/guests/client/GuestAuthForm";
 
-const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(window.location.search) }));
+const { replace, push } = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push, refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(window.location.search) }));
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); replace.mockReset(); window.history.replaceState({}, "", "/"); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); replace.mockReset(); push.mockReset(); window.history.replaceState({}, "", "/"); });
 
 function expectSafeForm(form: HTMLFormElement | null, action: string) {
   expect(form).not.toBeNull();
@@ -20,16 +21,18 @@ function expectSafeForm(form: HTMLFormElement | null, action: string) {
 }
 
 it("renders credential forms with safe native submission before hydration", () => {
-  for (const [element, action] of [
+  for (const [element, action, additionalAction] of [
     [<Login key="login" />, "/api/admin/login"],
     [<BlogLogin key="blog-login" />, "/api/blog/admin/login"],
     [<PasswordForm key="password" />, "/api/admin/account/password"],
-    [<UsersPanel key="users" currentUserId={1} />, "/api/admin/users"],
+    [<CreateUserForm key="create-user" />, "/api/admin/users"],
+    [<EditUserForm key="edit-user" user={{ id: 2, name: "Editora", email: "editora@example.com", role: "EDITOR", active: true }} currentUserId={1} />, "/api/admin/users/2", "/api/admin/users/2/reset-password"],
     [<GuestAuthForm key="guest-login" mode="login" />, "/api/guest/login"],
     [<GuestAuthForm key="guest-register" mode="register" />, "/api/guest/register"],
   ] as const) {
     const document = new DOMParser().parseFromString(renderToString(element), "text/html");
     expectSafeForm(document.querySelector("form"), action);
+    if (additionalAction) expectSafeForm(document.querySelector(`form[action="${additionalAction}"]`), additionalAction);
   }
 });
 
@@ -47,13 +50,25 @@ it("keeps guest login returns on the site while allowing the saved checkout", as
   }
 });
 
-it("keeps user edit and password reset forms safe for native submission", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [
-    { id: 2, name: "Editora", email: "editora@example.com", role: "EDITOR", active: true },
-  ] }));
-  render(<UsersPanel currentUserId={1} />);
-  fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
-  expectSafeForm(screen.getByRole("button", { name: "Guardar cambios" }).closest("form"), "/api/admin/users/2");
-  fireEvent.click(screen.getByRole("button", { name: "Restablecer contraseña" }));
-  expectSafeForm(screen.getByRole("button", { name: "Restablecer" }).closest("form"), "/api/admin/users/2/reset-password");
+it("keeps the user list credential-free and creates accounts with reauthentication", async () => {
+  render(<UsersPanel users={[{ id: 2, name: "Editora", email: "editora@example.com", role: "EDITOR", active: true }]} currentUserId={1} created={false} />);
+  expect(screen.getByRole("link", { name: "Crear usuario" }).getAttribute("href")).toBe("/admin/users/new");
+  expect(screen.getByRole("link", { name: "Editar" }).getAttribute("href")).toBe("/admin/users/2");
+  expect(screen.queryByRole("textbox")).toBeNull();
+  expect(screen.queryByLabelText(/contraseña/i)).toBeNull();
+
+  const fetch = vi.fn().mockResolvedValue({ ok: true });
+  vi.stubGlobal("fetch", fetch);
+  vi.stubGlobal("confirm", vi.fn(() => true));
+  render(<CreateUserForm />);
+  fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Nueva editora" } });
+  fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "nueva@example.com" } });
+  fireEvent.change(screen.getByLabelText("Contraseña inicial"), { target: { value: "initial-pass-123" } });
+  fireEvent.change(screen.getByLabelText("Tu contraseña actual"), { target: { value: "admin-pass-123" } });
+  fireEvent.click(screen.getByRole("button", { name: "Crear usuario" }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/users?created=1"));
+  expect(fetch).toHaveBeenCalledWith("/api/admin/users", expect.objectContaining({
+    method: "POST",
+    body: JSON.stringify({ name: "Nueva editora", email: "nueva@example.com", password: "initial-pass-123", role: "EDITOR", currentPassword: "admin-pass-123" }),
+  }));
 });
