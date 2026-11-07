@@ -1,0 +1,86 @@
+[
+  {
+    "id": "column.public.GuestAccount.phone",
+    "label": "Add column \"phone\" to \"GuestAccount\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "phone",
+        "table": "GuestAccount"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"phone\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "GuestAccount",
+          "phone"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"phone\"",
+        "sql": "ALTER TABLE \"public\".\"GuestAccount\" ADD COLUMN \"phone\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"phone\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "GuestAccount",
+          "phone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.GuestAccount.guest_account_phone_nonempty_f790acfb",
+    "label": "Add check constraint \"guest_account_phone_nonempty_f790acfb\" on \"GuestAccount\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "guest_account_phone_nonempty_f790acfb",
+        "table": "GuestAccount"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"guest_account_phone_nonempty_f790acfb\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "guest_account_phone_nonempty_f790acfb",
+          "public",
+          "\"public\".\"GuestAccount\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"guest_account_phone_nonempty_f790acfb\"",
+        "sql": "ALTER TABLE \"public\".\"GuestAccount\" ADD CONSTRAINT \"guest_account_phone_nonempty_f790acfb\" CHECK (\"phone\" IS NULL OR btrim(\"phone\") <> '')"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"guest_account_phone_nonempty_f790acfb\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "guest_account_phone_nonempty_f790acfb",
+          "public",
+          "\"public\".\"GuestAccount\""
+        ]
+      }
+    ]
+  }
+]

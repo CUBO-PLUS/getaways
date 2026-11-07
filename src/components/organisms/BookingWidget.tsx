@@ -8,10 +8,8 @@ import BookingDatePicker from "@/components/molecules/BookingDatePicker";
 import { useBookingDates } from "@/modules/bookings/providers/BookingDates";
 import { addDaysIso, isoDateToLocalDate, nightsBetween, todayIso } from "@/modules/bookings/booking-dates";
 import PaymentButtonIcon from "@/components/atoms/PaymentButtonIcon";
-import PhoneNumberField from "@/components/molecules/PhoneNumberField";
 import { Button } from "@/components/atoms/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/ui/card";
-import { Input } from "@/components/atoms/ui/input";
 import { Label } from "@/components/atoms/ui/label";
 
 type BlockedRange = { start_date: string; end_date: string };
@@ -25,12 +23,6 @@ type BookingWidgetProps = {
   minNights?: string;
   checkoutMode: "checkout" | "contact";
 };
-
-const inputClassName = `min-w-0 min-h-11 bg-background text-heading [font-family:inherit] text-[14px] [font-weight:inherit]
-  [font-style:inherit] leading-[inherit] [font-variant:inherit] overflow-hidden text-ellipsis py-2.5 rounded-lg
-  transition-[border-color,box-shadow] duration-140 ease-[ease] enabled:hover:border-text/30
-  focus-visible:shadow-[0_0_0_3px_rgba(3,_155,_229,_0.18)] focus-visible:outline-none focus-visible:border-link
-  disabled:bg-text/3 disabled:text-muted-text disabled:cursor-not-allowed disabled:border-text/10`;
 
 function parseMoney(value?: string) {
   if (!value) return null;
@@ -85,10 +77,6 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
   /* Shared with the phone booking bar when one is on the page, local
      otherwise. See modules/bookings/providers/BookingDates.tsx. */
   const { checkIn, checkOut, setCheckIn: updateCheckIn, setCheckOut } = useBookingDates(minStay);
-  const [guestFirstName, setGuestFirstName] = useState("");
-  const [guestLastName, setGuestLastName] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
   const [blocked, setBlocked] = useState<BlockedRange[]>([]);
   const [availability, setAvailability] = useState<"loading" | "ready" | "failed">("loading");
   const loadingAvailability = availability === "loading";
@@ -144,7 +132,6 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
   // Not until the calendar has actually loaded: with no calendar every date looks free.
   const canReserve = Boolean(pricePerNight) && validDates && availability === "ready";
   const total = useMemo(() => (pricePerNight && nights > 0 ? pricePerNight * nights + cleaning : null), [cleaning, nights, pricePerNight]);
-  const guestName = `${guestFirstName} ${guestLastName}`.trim();
 
   async function submitBooking(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -185,9 +172,7 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
           listing_id: listingId,
           check_in: checkIn,
           check_out: checkOut,
-          guest_name: guestName,
-          guest_email: guestEmail,
-          guest_phone: guestPhone,
+          // No name, email or phone: the server takes them from the signed-in account.
           referral_code: getReferralCode(),
         }),
       });
@@ -254,26 +239,11 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 [@container_(max-width:_300px)]:grid-cols-1 max-[560.001px]:grid-cols-1">
-            <div className="flex flex-col text-heading text-[13px] font-semibold leading-[1.35] min-w-0 gap-1.5">
-              <Label htmlFor={`guest-first-name-${listingId}`}>First name</Label>
-              <Input className={inputClassName} id={`guest-first-name-${listingId}`} value={guestFirstName} onChange={(event) => setGuestFirstName(event.target.value)} placeholder="First name" autoComplete="given-name" required />
-            </div>
-            <div className="flex flex-col text-heading text-[13px] font-semibold leading-[1.35] min-w-0 gap-1.5">
-              <Label htmlFor={`guest-last-name-${listingId}`}>Last name</Label>
-              <Input className={inputClassName} id={`guest-last-name-${listingId}`} value={guestLastName} onChange={(event) => setGuestLastName(event.target.value)} placeholder="Last name" autoComplete="family-name" required />
-            </div>
-          </div>
-          <div className="flex flex-col text-heading text-[13px] font-semibold leading-[1.35] min-w-0 gap-1.5">
-            <Label htmlFor={`guest-email-${listingId}`}>Email</Label>
-            <Input className={inputClassName} id={`guest-email-${listingId}`} type="email" value={guestEmail} onChange={(event) => setGuestEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" required />
-          </div>
-          <div className="flex flex-col text-heading text-[13px] font-semibold leading-[1.35] min-w-0 gap-1.5">
-            <Label htmlFor={`guest-phone-${listingId}`}>Phone</Label>
-            <PhoneNumberField className="text-[14px]" id={`guest-phone-${listingId}`} value={guestPhone} onChange={setGuestPhone} />
-          </div>
-
-          <p className="text-muted-text text-[12px] leading-[18px] m-0">Our concierge will follow up by email for arrival details and any special requests.</p>
+          <p className="text-muted-text text-[12px] leading-[18px] m-0">
+            {checkoutEnabled
+              ? "We'll use the name, email and phone on your account. Our concierge will follow up by email for arrival details and any special requests."
+              : "Our concierge will follow up by email for arrival details and any special requests."}
+          </p>
 
           <div className="flex items-center justify-between bg-[rgba(15,_23,_39,_0.035)] p-3 gap-3 rounded-lg
             [@container_(max-width:_300px)]:items-start [@container_(max-width:_300px)]:flex-col

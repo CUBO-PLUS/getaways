@@ -268,6 +268,7 @@ model GuestAccount {
   name         String
   email        String    @unique
   passwordHash String
+  phone        String?
   authVersion  Int       @default(1)
   active       Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -277,6 +278,7 @@ model GuestAccount {
   @@check(expression: sql`"authVersion" > 0`, name: "guest_account_auth_version_positive")
   @@check(expression: sql`lower(btrim(email)) = email AND email <> ''`, name: "guest_account_email_normalized")
   @@check(expression: sql`btrim(name) <> ''`, name: "guest_account_name_nonempty")
+  @@check(expression: sql`"phone" IS NULL OR btrim("phone") <> ''`, name: "guest_account_phone_nonempty")
 }
 
 model ListingTerm {

@@ -8,9 +8,11 @@ export async function POST(request: Request) {
   let body: unknown;
   try { body = await request.json(); } catch { return privateCheckoutJson({ ok: false, error: "Invalid request." }, { status: 400 }); }
   if (!body || typeof body !== "object" || Array.isArray(body) || !["name", "email", "password"].every((key) => typeof (body as Record<string, unknown>)[key] === "string")) return privateCheckoutJson({ ok: false, error: "Invalid request." }, { status: 400 });
+  const phone = (body as Record<string, unknown>).phone;
+  if (phone !== undefined && typeof phone !== "string") return privateCheckoutJson({ ok: false, error: "Invalid request." }, { status: 400 });
   try {
     const { name, email, password } = body as { name: string; email: string; password: string };
-    const result = await registerGuest(request, name, email, password);
+    const result = await registerGuest(request, name, email, password, phone);
     if (result.error === "validation") return privateCheckoutJson({ ok: false, error: "Invalid account details." }, { status: 400 });
     if (result.error === "duplicate") return privateCheckoutJson({ ok: false, error: "An account could not be created with these details." }, { status: 409 });
     if (result.error === "throttled") return privateCheckoutJson({ ok: false, error: "Too many attempts." }, { status: 429, headers: { "Retry-After": String(result.retryAfter) } });

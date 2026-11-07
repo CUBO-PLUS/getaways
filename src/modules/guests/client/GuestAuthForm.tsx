@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/atoms/ui/button";
 import { Input } from "@/components/atoms/ui/input";
 import { Label } from "@/components/atoms/ui/label";
+import PhoneNumberField from "@/components/molecules/PhoneNumberField";
 
 function safeReturnTo(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return "/account";
@@ -24,6 +25,7 @@ export default function GuestAuthForm({ mode }: { mode: "login" | "register" }) 
   const params = useSearchParams();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [phone, setPhone] = useState("");
   const notice = params.get("notice") === "login-required";
   const login = mode === "login";
 
@@ -34,11 +36,14 @@ export default function GuestAuthForm({ mode }: { mode: "login" | "register" }) 
     if (!login) {
       const password = String(data.get("password") ?? "");
       if (password.length < 12 || new TextEncoder().encode(password).length > 72) { setError("Use at least 12 characters and at most 72 UTF-8 bytes."); setBusy(false); return; }
+      // Same rule as the server; a clear message instead of its generic "Invalid account details."
+      if (phone && (phone.length > 32 || !/^\+?[0-9 ()-]{6,}$/.test(phone))) { setError("Check the phone number, or leave it empty."); setBusy(false); return; }
     }
     try {
       const response = await fetch(`/api/guest/${login ? "login" : "register"}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(Object.fromEntries(data)),
+        // The phone widget is controlled, so its value is added here; leaving it empty is allowed.
+        body: JSON.stringify(login ? Object.fromEntries(data) : { ...Object.fromEntries(data), ...(phone ? { phone } : {}) }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.ok) { setError(result?.error ?? "Could not sign in. Please try again."); return; }
@@ -56,6 +61,7 @@ export default function GuestAuthForm({ mode }: { mode: "login" | "register" }) 
     <form method="post" action={`/api/guest/${login ? "login" : "register"}`} onSubmit={submit} className="mt-6 grid gap-4 rounded-lg border border-border bg-background p-6">
       {!login && <div className="grid gap-1.5 text-sm font-semibold"><Label htmlFor="name">Name</Label><Input id="name" name="name" autoComplete="name" required maxLength={120} /></div>}
       <div className="grid gap-1.5 text-sm font-semibold"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" autoComplete="email" required maxLength={254} /></div>
+      {!login && <div className="grid gap-1.5 text-sm font-semibold"><Label htmlFor="phone">Phone <span className="font-normal text-muted-text">(optional)</span></Label><PhoneNumberField id="phone" value={phone} onChange={setPhone} /></div>}
       <div className="grid gap-1.5 text-sm font-semibold"><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" autoComplete={login ? "current-password" : "new-password"} required minLength={login ? undefined : 12} maxLength={72} /></div>
       {!login && <p className="m-0 text-xs text-muted-text">At least 12 characters; at most 72 UTF-8 bytes. Password recovery is not available yet.</p>}
       {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}

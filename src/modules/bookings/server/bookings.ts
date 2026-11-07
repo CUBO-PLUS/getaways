@@ -45,11 +45,11 @@ export type BookingInput = {
   listing_id: number;
   check_in: string;
   check_out: string;
-  guest_name: string;
-  guest_email: string;
-  guest_phone?: string;
   guest_notes?: string;
 };
+
+/** The signed-in account the booking belongs to; its contact details are copied onto the booking. */
+export type BookingGuest = { id: number; name: string; email: string; phone: string | null };
 
 export type ListingRow = Pick<Awaited<ReturnType<typeof readCatalogListings>>[number], "id" | "slug" | "title" | "attributes">;
 
@@ -163,20 +163,22 @@ export function rangesOverlapPublic(aStart: string, aEnd: string, bStart: string
 }
 
 /**
- * Writes a new pending booking from the dates and guest details. The price here
- * is nights x nightly rate plus the cleaning fee. The checkout quote adds the
- * extra guests, pet, coupon and taxes later (see app/api/checkout/quote).
+ * Writes a new pending booking from the dates and the signed-in account. The
+ * guest's name, email and phone come from that account, never from the request.
+ * The price here is nights x nightly rate plus the cleaning fee. The checkout
+ * quote adds the extra guests, pet, coupon and taxes later (see app/api/checkout/quote).
  */
-export async function createPendingBooking(input: BookingInput, guestAccountId: number): Promise<Booking> {
+export async function createPendingBooking(input: BookingInput, guest: BookingGuest): Promise<Booking> {
   const maxInt4 = 2_147_483_647;
+  const guestAccountId = guest.id;
   if (!Number.isSafeInteger(guestAccountId) || guestAccountId < 1 || guestAccountId > maxInt4) {
     throw new ValidationError("Sign in to a guest account before booking.");
   }
   if (!Number.isSafeInteger(input.listing_id) || input.listing_id <= 0 || input.listing_id > maxInt4) {
     throw new ValidationError("This property cannot be booked safely.");
   }
-  const guestName = requireNonEmptyString(input.guest_name, "guest_name");
-  const guestEmail = requireNonEmptyString(input.guest_email, "guest_email");
+  const guestName = requireNonEmptyString(guest.name, "guest_name");
+  const guestEmail = requireNonEmptyString(guest.email, "guest_email");
   const checkIn = requireNonEmptyString(input.check_in, "check_in");
   const checkOut = requireNonEmptyString(input.check_out, "check_out");
   if (dayNumber(checkIn) === null || dayNumber(checkOut) === null) {
@@ -186,7 +188,7 @@ export async function createPendingBooking(input: BookingInput, guestAccountId: 
     throw new ValidationError("Check-out must be after check-in.");
   }
   if (guestName.trim().length > 200 || guestEmail.trim().length > 254 ||
-      (input.guest_phone?.length ?? 0) > 100 || (input.guest_notes?.length ?? 0) > 4000) {
+      (guest.phone?.length ?? 0) > 100 || (input.guest_notes?.length ?? 0) > 4000) {
     throw new ValidationError("Booking details are too long.");
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -249,7 +251,7 @@ export async function createPendingBooking(input: BookingInput, guestAccountId: 
     nights,
     guest_name: guestName.trim(),
     guest_email: guestEmail.trim(),
-    guest_phone: input.guest_phone?.trim() || null,
+    guest_phone: guest.phone?.trim() || null,
     guest_notes: input.guest_notes?.trim() || null,
     guests: null,
     currency: "USD",
