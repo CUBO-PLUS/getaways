@@ -34,7 +34,7 @@ export default function ListingCreateForm() {
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 grid gap-4">
+    <form onSubmit={submit} className="grid gap-5 rounded-2xl border border-[rgba(7,36,86,.075)] bg-white p-5 shadow-[0_5px_30px_rgba(7,36,86,.045)] sm:p-7 [&_label]:font-body [&_label]:text-[14px] [&_label]:font-medium [&_label]:text-[#394342] [&_input]:mt-2 [&_input]:block [&_input]:min-h-11 [&_input]:w-full [&_input]:rounded-lg [&_input]:border [&_input]:border-[rgba(7,36,86,.16)] [&_input]:bg-white [&_input]:px-3 [&_input]:font-body [&_input]:text-[14px] [&_input]:text-[#394342] [&_input]:focus-visible:outline-2 [&_input]:focus-visible:outline-offset-1 [&_input]:focus-visible:outline-[#0277bd]">
       <label>
         Título
         <input required maxLength={200} value={title} className="block w-full border p-2"
@@ -44,11 +44,11 @@ export default function ListingCreateForm() {
         Slug (dirección pública)
         <input required maxLength={100} pattern="[a-z0-9]+(-[a-z0-9]+)*" value={slug} className="block w-full border p-2 font-mono"
           onChange={(event) => { setSlug(event.target.value); setSlugEdited(true); }} />
-        <span className="block text-sm">Se publicará como /listing/{slug || "…"}. No se puede cambiar después.</span>
+        <span className="mt-2 block font-body text-[13px] leading-5 text-[#687371]">Se publicará como <span className="font-mono text-[12px] text-[#394342]">/listing/{slug || "…"}</span>. No se puede cambiar después.</span>
       </label>
-      <p className="text-sm">El hospedaje se crea inactivo. Podrás ponerlo a la venta cuando tenga descripción, portada, precio por noche y capacidad.</p>
-      {error && <p role="alert" className="text-red-700">{error}</p>}
-      <button disabled={busy} className="justify-self-start border px-4 py-2">{busy ? "Creando…" : "Crear hospedaje"}</button>
+      <p className="m-0 rounded-xl bg-[#f4f5f2] p-4 font-body text-[14px] leading-6 text-[#596260]">El hospedaje se crea inactivo. Podrás ponerlo a la venta cuando tenga descripción, portada, precio por noche y capacidad.</p>
+      {error && <p role="alert" className="m-0 rounded-lg bg-[#fff1f0] p-3 font-body text-[14px] text-red-700">{error}</p>}
+      <button disabled={busy} className="min-h-11 justify-self-start rounded-full bg-[#394342] px-5 font-body text-[14px] font-medium text-white hover:bg-[#2f3938] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0277bd] disabled:opacity-60">{busy ? "Creando…" : "Crear hospedaje"}</button>
     </form>
   );
 }

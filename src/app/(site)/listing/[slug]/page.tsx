@@ -28,20 +28,30 @@ export async function generateMetadata({
   ]
     .filter(Boolean)
     .join(". ") + ".";
+  const seoTitle = typeof attrs.seo_title === "string" && attrs.seo_title.trim().length <= 200 ? attrs.seo_title.trim() : "";
+  const seoDescription = typeof attrs.seo_description === "string" && attrs.seo_description.trim().length <= 500 ? attrs.seo_description.trim() : "";
+  const title = seoTitle || listing.title;
+  const metaDescription = seoDescription || description;
   const galleryIds = resolveGalleryIds(listing.featured_media_id, listing.gallery_media_ids);
   const cover = listing.gallery_media.find((media) => media.id === galleryIds[0]);
   const image = cover
     ? mediaPublicUrl(cover.storage_path)
     : undefined;
   return {
-    title: listing.title,
-    description,
+    title,
+    description: metaDescription,
     alternates: { canonical: `/listing/${slug}` },
     openGraph: {
       type: "website",
-      title: listing.title,
-      description,
+      title,
+      description: metaDescription,
       url: `/listing/${slug}`,
+      ...(image ? { images: [{ url: image, alt: listing.title }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: metaDescription,
       ...(image ? { images: [{ url: image, alt: listing.title }] } : {}),
     },
   };

@@ -28,6 +28,16 @@ describe("descriptive content patch", () => {
     } });
   });
 
+  it("normalizes SEO overrides, accepts explicit clearing, and enforces their text limits", () => {
+    expect(parseContentPatch({ version: 1, seoTitle: "  Search title ", seoDescription: "  Search description  " }))
+      .toEqual({ ok: true, value: { version: 1, seoTitle: "Search title", seoDescription: "Search description" } });
+    expect(parseContentPatch({ version: 1, seoTitle: " ", seoDescription: null }))
+      .toEqual({ ok: true, value: { version: 1, seoTitle: null, seoDescription: null } });
+    expect(parseContentPatch({ version: 1, seoTitle: "x".repeat(201) })).toMatchObject({ ok: false, status: 400 });
+    expect(parseContentPatch({ version: 1, seoDescription: "x".repeat(501) })).toMatchObject({ ok: false, status: 400 });
+    expect(parseContentPatch({ version: 1, seoTitle: 12 })).toMatchObject({ ok: false, status: 400 });
+  });
+
   it.each([
     ["price", 100], ["pricePerNightCents", 10_000], ["active", true], ["guests", 9], ["maxGuests", 9], ["petsAllowed", true],
     ["booking_min_length", 1], ["archivedAt", null], ["slug", "renamed"],
@@ -74,6 +84,12 @@ describe("descriptive attributes", () => {
 
   it("leaves amenities alone when the patch does not mention them", () => {
     expect(applyDescriptiveAttributes({ wifi: "1" }, { version: 1, title: "New" })).toEqual({ wifi: "1" });
+  });
+
+  it("maps SEO overrides to attributes and removes them when cleared", () => {
+    expect(applyDescriptiveAttributes({ seo_title: "Old", seo_description: "Old description", wifi: "1" }, {
+      version: 1, seoTitle: "New", seoDescription: null,
+    })).toEqual({ seo_title: "New", wifi: "1" });
   });
 });
 

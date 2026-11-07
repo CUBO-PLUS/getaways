@@ -13,7 +13,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const listing: StaffListingDetail = {
   id: 7, slug: "sun-salt", version: 4, status: "active", bookings: 2,
   content: {
-    title: "Sun & Salt", description: "<p>Ocean</p>", location: "El Zonte", building: null, bedrooms: 2, bathrooms: 2, parking: null,
+    title: "Sun & Salt", description: "<p>Ocean</p>", seoTitle: null, seoDescription: null, location: "El Zonte", building: null, bedrooms: 2, bathrooms: 2, parking: null,
     videoUrl: null, amenities: ["wifi"], categoryIds: [16], coverMediaId: 31,
     gallery: [
       { mediaId: 31, alt: "Terrace", decorative: false, roomGroup: null, width: 100, height: 80, name: "terrace.jpg" },
@@ -35,23 +35,24 @@ it("shows EDITOR the descriptive form only and sends no commercial field when sa
   expect(screen.getByText("Solo un administrador puede cambiar estos valores.")).toBeTruthy();
 
   fireEvent.change(screen.getByLabelText("Título"), { target: { value: "Sun & Salt Getaway" } });
+  fireEvent.click(screen.getByRole("tab", { name: "Tarifas y capacidad" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Contenido" }));
   fireEvent.click(screen.getByRole("button", { name: "Guardar contenido" }));
   await screen.findByText(/Guardado\. Los cambios ya se ven/);
 
   const [url, init] = fetch.mock.calls[0]!;
   expect(url).toBe("/api/admin/listings/7/content");
   const body = JSON.parse(String(init.body));
-  expect(Object.keys(body).sort()).toEqual(["amenities", "bathrooms", "bedrooms", "building", "categoryIds", "coverMediaId", "description",
-    "gallery", "location", "parking", "title", "version", "videoUrl"]);
-  expect(body).toMatchObject({ version: 4, title: "Sun & Salt Getaway", coverMediaId: 31, gallery: [
-    { mediaId: 31, alt: "Terrace", decorative: false, roomGroup: null }, { mediaId: 32, alt: "", decorative: true, roomGroup: "Bedroom" },
-  ] });
+  expect(Object.keys(body).sort()).toEqual(["amenities", "bathrooms", "bedrooms", "building", "categoryIds", "description", "location", "parking", "title", "version", "videoUrl"]);
+  expect(body).toMatchObject({ version: 4, title: "Sun & Salt Getaway" });
 });
 
 it("keeps local edits and offers an explicit reload when another session saved first", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "Someone else saved this listing." }), { status: 409 })));
   render(<ListingEditor listing={listing} library={[]} admin={false} />);
   fireEvent.change(screen.getByLabelText("Título"), { target: { value: "My unsaved title" } });
+  fireEvent.click(screen.getByRole("tab", { name: "Tarifas y capacidad" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Contenido" }));
   fireEvent.click(screen.getByRole("button", { name: "Guardar contenido" }));
   await screen.findByRole("button", { name: "recarga la versión actual" });
   expect((screen.getByLabelText("Título") as HTMLInputElement).value).toBe("My unsaved title");
@@ -61,6 +62,7 @@ it("lets ADMIN save prices in cents and refuses malformed amounts before sending
   const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ version: 5 }), { status: 200 }));
   vi.stubGlobal("fetch", fetch);
   render(<ListingEditor listing={listing} library={[]} admin />);
+  fireEvent.click(screen.getByRole("tab", { name: "Tarifas y capacidad" }));
 
   const price = screen.getByLabelText("Precio por noche (USD)") as HTMLInputElement;
   expect(price.value).toBe("100.00");
@@ -79,4 +81,33 @@ it("lets ADMIN save prices in cents and refuses malformed amounts before sending
   // With bookings on file, deletion is replaced by the archive advice.
   expect(screen.queryByRole("button", { name: /Eliminar definitivamente/ })).toBeNull();
   expect(screen.getByText(/tiene 2 reservas/)).toBeTruthy();
+});
+
+it("preserves edits across tabs and saves gallery then SEO with the latest version and isolated payloads", async () => {
+  const fetch = vi.fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify({ version: 5 }), { status: 200 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ version: 6 }), { status: 200 }));
+  vi.stubGlobal("fetch", fetch);
+  render(<ListingEditor listing={listing} library={[]} admin={false} />);
+
+  fireEvent.change(screen.getByLabelText("Título"), { target: { value: "Edited title" } });
+  fireEvent.click(screen.getByRole("tab", { name: /Galería/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Subirimagen 2/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar galería" }));
+  await screen.findByText("Galería y portada guardadas.");
+
+  fireEvent.click(screen.getByRole("tab", { name: "SEO" }));
+  const seoPanel = screen.getByRole("tabpanel", { name: "SEO" });
+  fireEvent.change(seoPanel.querySelector('input[maxlength="200"]')!, { target: { value: "  SEO title  " } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar SEO" }));
+  await screen.findByText("SEO guardado. Se aplicará en la ficha pública del hospedaje.");
+
+  const galleryBody = JSON.parse(String(fetch.mock.calls[0]![1].body));
+  expect(galleryBody).toEqual({ version: 4, coverMediaId: 31, gallery: [
+    { mediaId: 32, alt: "", decorative: true, roomGroup: "Bedroom" },
+    { mediaId: 31, alt: "Terrace", decorative: false, roomGroup: null },
+  ] });
+  expect(JSON.parse(String(fetch.mock.calls[1]![1].body))).toEqual({ version: 5, seoTitle: "SEO title", seoDescription: null });
+  fireEvent.click(screen.getByRole("tab", { name: "Contenido" }));
+  expect((screen.getByLabelText("Título") as HTMLInputElement).value).toBe("Edited title");
 });

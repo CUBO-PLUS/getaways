@@ -17,8 +17,8 @@ export default async function ListingPage({ params }: PageProps<"/admin/listings
   if (!listing) notFound();
 
   return (
-    <main lang="es" className="mx-auto max-w-4xl px-6 py-10 text-[#394342]">
-      <Link href="/admin/listings">← Hospedajes</Link>
+    <main lang="es" className="mx-auto max-w-6xl px-4 py-8 font-body text-[14px] text-[#394342] sm:px-6 lg:px-10 lg:py-10">
+      <Link href="/admin/listings" className="inline-flex min-h-10 items-center font-body text-[14px] font-medium text-[#394342] hover:underline focus-visible:outline-2 focus-visible:outline-[#0277bd]">← Volver a hospedajes</Link>
       {/* Keyed by version: a reload after a conflict starts from the saved state, never a stale draft. */}
       <ListingEditor key={listing.version} listing={listing} library={library} admin={actor.role === "ADMIN"} />
     </main>

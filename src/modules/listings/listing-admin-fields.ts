@@ -38,7 +38,7 @@ const RESTRICTED_KEYS = new Set([
 
 const CONTENT_KEYS = new Set([
   "version", "title", "description", "location", "building", "bedrooms", "bathrooms", "parking",
-  "videoUrl", "amenities", "categoryIds", "coverMediaId", "gallery",
+  "videoUrl", "amenities", "categoryIds", "coverMediaId", "gallery", "seoTitle", "seoDescription",
 ]);
 
 export const COMMERCIAL_FIELDS = [
@@ -59,6 +59,8 @@ export type ContentPatch = {
   bathrooms?: number | null;
   parking?: number | null;
   videoUrl?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
   amenities?: AmenityKey[];
   categoryIds?: number[];
   coverMediaId?: number | null;
@@ -184,6 +186,8 @@ export function parseContentPatch(body: Record<string, unknown>): FieldResult<Co
       if (url && !youtubeVideoId(url)) fail("Use a YouTube link for the video.");
       patch.videoUrl = url;
     }
+    if ("seoTitle" in body) patch.seoTitle = text(body.seoTitle, "SEO title", 200);
+    if ("seoDescription" in body) patch.seoDescription = text(body.seoDescription, "SEO description", 500);
     if ("amenities" in body) {
       if (!Array.isArray(body.amenities) || body.amenities.length > AMENITY_KEYS.length ||
         !body.amenities.every((key) => typeof key === "string" && (AMENITY_KEYS as readonly string[]).includes(key)) ||
@@ -225,6 +229,8 @@ export function applyDescriptiveAttributes(current: unknown, patch: ContentPatch
   put("bathrooms", patch.bathrooms);
   put("parking", patch.parking);
   put("video_url", patch.videoUrl);
+  put("seo_title", patch.seoTitle);
+  put("seo_description", patch.seoDescription);
   if (patch.amenities) {
     for (const key of AMENITY_KEYS) delete next[key];
     for (const key of patch.amenities) next[key] = "1";

@@ -105,6 +105,8 @@ export async function staffListingList(actor: Session, filters: ListingListFilte
 }
 
 const asString = (value: unknown) => (typeof value === "string" || typeof value === "number" ? String(value) : null);
+const asSeoText = (value: unknown, max: number) =>
+  typeof value === "string" && value.trim().length > 0 && value.trim().length <= max ? value.trim() : null;
 const asCount = (value: unknown) => {
   const parsed = Number(asString(value));
   return asString(value) !== null && Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
@@ -144,6 +146,8 @@ export async function staffListingDetail(actor: Session, id: number) {
       bathrooms: asCount(attributes.bathrooms),
       parking: asCount(attributes.parking),
       videoUrl: asString(attributes.video_url),
+      seoTitle: asSeoText(attributes.seo_title, 200),
+      seoDescription: asSeoText(attributes.seo_description, 500),
       amenities: AMENITY_KEYS.filter((key) => attributes[key] != null && String(attributes[key]).trim() !== "") as AmenityKey[],
       categoryIds: row.terms.flatMap(({ term }) => (term && term.taxonomy === LISTING_CATEGORY_TAXONOMY ? [term.id] : [])),
       coverMediaId: row.coverMediaId,
