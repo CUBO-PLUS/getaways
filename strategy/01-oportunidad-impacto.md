@@ -1,5 +1,7 @@
 # 01 — Oportunidad e impacto
 
+> Documento de planificación inicial. Sus requisitos, eventos y propuestas no constituyen evidencia de implementación o validación. Consultar el [estado actualizado](README.md#estado-actual) y el [informe estratégico](Gateways_Informe_Estrategico.pdf) para conocer los avances y límites documentados.
+
 ## Problema y valor
 
 Según el caso, Gateways capta huéspedes mediante Airbnb, redes sociales, WhatsApp y WordPress, pero tiene visibilidad limitada del recorrido completo. Quiere aumentar las reservas directas y comprender qué contenido/canal contribuye a ellas.
