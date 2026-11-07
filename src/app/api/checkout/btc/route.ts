@@ -83,6 +83,11 @@ export async function POST(request: Request) {
       return privateCheckoutJson({ ok: false, error: "Check-in has passed. This booking can no longer be charged." }, { status: 409 });
     }
     const listing = await getListing(booking.listing_id);
+    // A listing taken off sale (inactive or archived) accepts no new payments. Payments
+    // already opened are handled above, so late or pending ones are still processed.
+    if (!listing) {
+      return privateCheckoutJson({ ok: false, code: "listing_unavailable", error: "This property is no longer available for new payments. Contact us about this booking." }, { status: 409 });
+    }
     let payment: PaymentSession;
     try {
       payment = await activePaymentProvider.createPayment({

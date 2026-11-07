@@ -50,11 +50,11 @@ async function claims(request?: Request): Promise<{ id: number; authVersion: num
     return { id, authVersion: Number(payload.sv) };
   } catch (error) { if (error instanceof errors.JOSEError) return null; throw error; }
 }
-export async function getGuestSession(request?: Request): Promise<{ id: number; name: string; email: string; authVersion: number } | null> {
+export async function getGuestSession(request?: Request): Promise<{ id: number; name: string; email: string; phone: string | null; authVersion: number } | null> {
   let identity: Awaited<ReturnType<typeof claims>>;
   try { identity = await claims(request); } catch { return null; }
   if (!identity) return null;
-  const rows = await db.runtime().query(db.raw.sql`SELECT "id", "name", "email", "authVersion" FROM "GuestAccount" WHERE "id" = ${identity.id} AND "active" = true AND "authVersion" = ${identity.authVersion}`.returnsRow({ id: "pg/int4@1", name: "pg/text@1", email: "pg/text@1", authVersion: "pg/int4@1" }).build());
+  const rows = await db.runtime().query(db.raw.sql`SELECT "id", "name", "email", "phone", "authVersion" FROM "GuestAccount" WHERE "id" = ${identity.id} AND "active" = true AND "authVersion" = ${identity.authVersion}`.returnsRow({ id: "pg/int4@1", name: "pg/text@1", email: "pg/text@1", phone: { codecId: "pg/text@1", nullable: true }, authVersion: "pg/int4@1" }).build());
   return rows[0] ?? null;
 }
 export async function revokeGuestSession(request: Request): Promise<void> {

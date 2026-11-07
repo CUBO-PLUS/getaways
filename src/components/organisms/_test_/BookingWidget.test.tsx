@@ -7,7 +7,6 @@ const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/components/molecules/BookingDatePicker", () => ({ default: (props: { id: string; value: string; onChange(value: string): void }) =>
   <input aria-label={props.id} type="date" value={props.value} onChange={event => props.onChange(event.target.value)} /> }));
-vi.mock("@/components/molecules/PhoneNumberField", () => ({ default: () => null }));
 
 import BookingWidget from "@/components/organisms/BookingWidget";
 
@@ -31,11 +30,14 @@ it("returns to login with the chosen dates and referral, then restores those dat
   await screen.findByRole("button", { name: "Reserve now" });
   fireEvent.change(screen.getByLabelText("check-in-7"), { target: { value: checkIn } });
   fireEvent.change(screen.getByLabelText("check-out-7"), { target: { value: checkOut } });
-  fireEvent.change(screen.getByLabelText("First name"), { target: { value: "A" } });
-  fireEvent.change(screen.getByLabelText("Last name"), { target: { value: "Guest" } });
-  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "guest@example.test" } });
+  // Contact details come from the account: the widget asks for none of them.
+  expect(screen.queryByLabelText("First name")).toBeNull();
+  expect(screen.queryByLabelText("Email")).toBeNull();
+  expect(screen.queryByLabelText("Phone")).toBeNull();
   fireEvent.click(await screen.findByRole("button", { name: "Reserve now" }));
   await waitFor(() => expect(push).toHaveBeenCalled());
+  const [, init] = vi.mocked(fetch).mock.calls[1];
+  expect(Object.keys(JSON.parse(String(init?.body))).sort()).toEqual(["check_in", "check_out", "listing_id", "referral_code"]);
   const loginUrl = new URL(push.mock.calls[0][0], "https://example.test");
   const returnTo = new URL(loginUrl.searchParams.get("returnTo")!, "https://example.test");
   expect(returnTo.pathname).toBe("/listing/stay");

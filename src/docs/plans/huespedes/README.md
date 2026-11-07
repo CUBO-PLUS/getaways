@@ -7,6 +7,25 @@ sin escrituras sintéticas. **Entrega aceptada y cerrada para el entorno local e
 2026-11-05** por petición explícita de la persona solicitante: «marcalo como completada».
 El cierre no habilita producción ni incluye las fases T/P.
 
+## Contacto desde la cuenta y teléfono opcional — 2026-11-07
+
+Por petición de la persona solicitante, el checkout ya no pide nombre, correo ni
+teléfono: `POST /api/bookings` copia en la reserva los de la cuenta autenticada
+(`getGuestSession`) e ignora los que lleguen en el cuerpo. El registro admite un
+teléfono **opcional** (`GuestAccount.phone`, nullable, con check de no vacío); vacío
+se guarda como NULL y la reserva queda con `guestPhone` NULL.
+
+- Migración `20261107T0711_guest_account_phone` (columna + check, aditiva), planeada
+  desde `20261107T0153_allow_one_dollar_testnet_charge`. La ref `db` apuntaba a un
+  estado anterior y un primer plan recreaba `PaymentAttempt`; se descartó sin aplicar.
+- Aplicada al Compose local tras respaldo `backups/pre-guest-phone-20261107T071130Z.dump`
+  (21 tablas con datos en `pg_restore --list`); `db:check` coincide con el contrato.
+- La cuenta todavía no permite editar nombre, correo ni teléfono después del registro.
+- Evidencia: `booking-db.test.ts` sobre PostgreSQL desechable verifica teléfono
+  válido, inválido (400 sin fila) y vacío (NULL), y que nombre/correo enviados por el
+  cliente no sustituyen los de la cuenta; `BookingWidget.test.tsx` verifica que el
+  formulario no pide contacto y que el POST solo envía fechas, hospedaje y referido.
+
 ## Contrato y límites
 
 - `GuestAccount` es independiente de `AdminUser`: nombre, correo normalizado único,

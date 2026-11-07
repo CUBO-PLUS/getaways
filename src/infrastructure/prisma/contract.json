@@ -1368,6 +1368,13 @@
                   "kind": "scalar"
                 }
               },
+              "phone": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -1415,6 +1422,9 @@
                 },
                 "passwordHash": {
                   "column": "passwordHash"
+                },
+                "phone": {
+                  "column": "phone"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -3475,6 +3485,11 @@
                   "expression": "btrim(name) <> ''",
                   "name": "guest_account_name_nonempty_00a4830a",
                   "prefix": "guest_account_name_nonempty"
+                },
+                {
+                  "expression": "\"phone\" IS NULL OR btrim(\"phone\") <> ''",
+                  "name": "guest_account_phone_nonempty_f790acfb",
+                  "prefix": "guest_account_phone_nonempty"
                 }
               ],
               "columns": {
@@ -3528,6 +3543,11 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "phone": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-temporal@1",
@@ -4377,7 +4397,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "037777a4bf2bc4f8541a71ef82b3d78039573f89b113ecf5038b9f87007998f0"
+    "storageHash": "6056f5828c7832d63fc2f10a5cd28d4eff3831a36ff2e75ad5a3b97b72e3709a"
   },
   "execution": {
     "executionHash": "65c95db6daa7e56d6326e347254e9b8b1c002c5f50420791ca7784ed53ef1d47",

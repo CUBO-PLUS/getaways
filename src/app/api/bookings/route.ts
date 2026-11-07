@@ -4,7 +4,8 @@ import { recordReferralForBooking } from "@/modules/referrals/referral-store";
 import { privateCheckoutJson } from "@/modules/checkout/private-response";
 import { assertGuestAccountsAvailable, assertGuestSameOrigin, getGuestSession, GuestAccountsUnavailableError } from "@/modules/guests/server/auth";
 
-// The authenticated account, never a client-supplied user id or email, owns the booking.
+// The authenticated account, never a client-supplied user id or email, owns the
+// booking, and its name, email and phone are the ones written onto it.
 export async function POST(request: Request) {
   try {
     assertGuestAccountsAvailable();
@@ -19,9 +20,6 @@ export async function POST(request: Request) {
       listing_id: Number(body.listing_id),
       check_in: String(body.check_in ?? ""),
       check_out: String(body.check_out ?? ""),
-      guest_name: String(body.guest_name ?? ""),
-      guest_email: String(body.guest_email ?? ""),
-      guest_phone: body.guest_phone ? String(body.guest_phone) : undefined,
       guest_notes: body.guest_notes ? String(body.guest_notes) : undefined,
     };
 
@@ -29,7 +27,7 @@ export async function POST(request: Request) {
       return privateCheckoutJson({ ok: false, error: "Invalid listing." }, { status: 400 });
     }
 
-    const booking = await createPendingBooking(input, guest.id);
+    const booking = await createPendingBooking(input, guest);
     const sessionId = newCheckoutSessionId(booking.id);
     await attachCheckoutSession(booking.id, sessionId, booking.version);
 

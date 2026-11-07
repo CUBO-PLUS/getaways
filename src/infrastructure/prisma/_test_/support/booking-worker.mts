@@ -29,6 +29,13 @@ const adminRoutes = {
   notes: await import("../../../../app/api/admin/bookings/[id]/notes/route.ts"),
   cancel: await import("../../../../app/api/admin/bookings/[id]/cancel/route.ts"),
 };
+const listingRoutes = {
+  list: await import("../../../../app/api/admin/listings/route.ts"),
+  detail: await import("../../../../app/api/admin/listings/[id]/route.ts"),
+  content: await import("../../../../app/api/admin/listings/[id]/content/route.ts"),
+  commercial: await import("../../../../app/api/admin/listings/[id]/commercial/route.ts"),
+  status: await import("../../../../app/api/admin/listings/[id]/status/route.ts"),
+};
 const { getGuestReservations } = await import("../../../../modules/guests/server/reservations.ts");
 const { getGuestSession } = await import("../../../../modules/guests/server/auth.ts");
 const { createSession, getSession } = await import("../../../../modules/auth/server/auth.ts");
@@ -46,14 +53,15 @@ type Message =
   | { action: "sync"; id: number; reported?: "confirmed" | "cancelled" }
   | { action: "evidence"; payment: Record<string, unknown> | null }
   | { action: "hold"; listingId: number }
-  | { action: "guest"; email?: string; password?: string; name?: string; production?: boolean; origin?: string }
+  | { action: "guest"; email?: string; password?: string; name?: string; phone?: string; production?: boolean; origin?: string }
   | { action: "guestLogin"; email: string; password: string }
   | { action: "guestLogout" }
   | { action: "crossAudience" }
   | { action: "history"; cookie?: string }
   | { action: "dto"; sessionId: string; cookie?: string }
   | { action: "adminRequest"; route: keyof typeof adminRoutes; method: "GET" | "PATCH" | "POST"; id?: number; token?: string; body?: Record<string, unknown>; origin?: string; query?: string }
-  | { action: "adminToken"; id: number; authVersion: number };
+  | { action: "adminToken"; id: number; authVersion: number }
+  | { action: "listingRequest"; route: keyof typeof listingRoutes; method: "GET" | "POST" | "PATCH" | "DELETE"; id?: number; token?: string; body?: Record<string, unknown>; origin?: string; query?: string };
 
 const [connection] = await db.runtime().query(db.raw.sql`SELECT pg_backend_pid()::int AS pid`.returnsRow({ pid: "pg/int4@1" }).build());
 process.send!({ ready: { pid: process.pid, backend: connection.pid } });
@@ -121,6 +129,19 @@ process.on("message", async (message: Message | { resume: true }) => {
         break;
       }
       case "adminToken": result = await createSession(message.id, message.authVersion); break;
+      case "listingRequest": {
+        const route = listingRoutes[message.route] as Partial<Record<"GET" | "POST" | "PATCH" | "DELETE", (request: Request, context?: unknown) => Promise<Response>>>;
+        const handler = route[message.method];
+        if (!handler) throw new Error("Unsupported listing request");
+        const suffix = message.route === "list" ? "" : `/${message.id}${message.route === "detail" ? "" : `/${message.route}`}`;
+        const request = new Request(`https://booking.example.test/api/admin/listings${suffix}${message.query ?? ""}`, {
+          method: message.method, headers: { origin: message.origin ?? process.env.BLOG_APP_ORIGIN!, ...(message.token ? { cookie: `blog_admin_session=${message.token}` } : {}), ...(message.method !== "GET" ? { "content-type": "application/json" } : {}) },
+          ...(message.method !== "GET" ? { body: JSON.stringify(message.body ?? {}) } : {}),
+        });
+        const response = await handler(request, message.route === "list" ? undefined : { params: Promise.resolve({ id: String(message.id) }) });
+        result = { status: response.status, headers: Object.fromEntries(response.headers), body: await response.json() };
+        break;
+      }
       case "hold":
         await db.transaction(async tx => {
           await tx.query(db.raw.sql`SELECT id FROM "Listing" WHERE id = ${message.listingId} FOR NO KEY UPDATE`.returnsRow({ id: "pg/int4@1" }).build());
@@ -135,7 +156,7 @@ process.on("message", async (message: Message | { resume: true }) => {
         let response: Response;
         try { response = await guestRoutes.register.POST(new Request("https://booking.example.test/api/guest/register", {
           method: "POST", headers: message.origin === undefined ? { origin: process.env.BLOG_APP_ORIGIN! } : { origin: message.origin },
-          body: JSON.stringify({ name: message.name ?? "Synthetic Guest", email: message.email ?? `guest-${process.pid}@example.test`, password: message.password ?? "synthetic-password-123" }),
+          body: JSON.stringify({ name: message.name ?? "Synthetic Guest", email: message.email ?? `guest-${process.pid}@example.test`, password: message.password ?? "synthetic-password-123", ...(message.phone === undefined ? {} : { phone: message.phone }) }),
         })); } finally { Object.assign(process.env, { NODE_ENV: previous }); }
         if (response.status === 200) guestCookie = response.headers.get("set-cookie")!.split(";", 1)[0];
         result = { status: response.status, cookie: response.headers.get("set-cookie") };

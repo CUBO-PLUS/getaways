@@ -16,7 +16,9 @@ y su petición «cierra lo que queda pendiente». Pagos está migrado y activado
 BTCPay testnet4; la reserva 2 quedó confirmada con un pago liquidado de USD 1.00
 de testnet. [Evidencia y excepciones](pagos/README.md#cierre-local-aceptado--2026-11-07).
 El panel operativo está aceptado; [evidencia y límites](reservas/04-panel-reservas.md).
-**El siguiente trabajo funcional es el plan 4**, todavía pendiente. El cierre local
+**El plan 4 está implementado localmente desde el 2026-11-07 y pendiente de aceptación**
+([evidencia](gestion-hospedajes/README.md#implementación-y-evidencia-técnica--2026-11-07)); el checkout
+toma ya nombre, correo y teléfono opcional de la cuenta del huésped. El cierre local
 no acredita webhook automático, restauración ensayada ni producción/mainnet.
 Inventario de referencia: 2026-10-31.
 
@@ -95,7 +97,7 @@ conservan la aceptación anterior y no certifican los nuevos alcances.
   - [x] 3.3 — Adaptación de entradas, corte a PostgreSQL y verificación. **Hito B2 de persistencia aceptado localmente.**
   - [x] **Fase P — Integración de reservas y pagos BTCPay en testnet.** Aceptada localmente el 2026-11-07: USD 1.00 liquidado y reserva 2 confirmada mediante reconciliación autoritativa. [Evidencia y excepciones](pagos/README.md#cierre-local-aceptado--2026-11-07). No acredita cobro del precio real ni notificaciones automáticas.
   - [x] 3.4 — Panel operativo de reservas / C1: implementado, verificado y aceptado localmente el 2026-11-07 tras la revisión de la persona solicitante. Incluye refresco manual del pago sin omitir controles financieros. [Evidencia y excepciones](reservas/04-panel-reservas.md).
-- [ ] **Plan 4 — [Administración de hospedajes](gestion-hospedajes/README.md).** Siguiente trabajo funcional tras el cierre local del recorrido prioritario. Sus dependencias funcionales siguen siendo los planes 1–2 y B2, no el panel 3.4.
+- [ ] **Plan 4 — [Administración de hospedajes](gestion-hospedajes/README.md).** Implementado localmente el 2026-11-07, con pruebas sobre PostgreSQL desechable; pendiente del recorrido en navegador, el corte C2 y la aceptación. Sus dependencias funcionales siguen siendo los planes 1–2 y B2, no el panel 3.4.
   - [ ] 4.1 — Gestión editorial y permisos por campo.
   - [ ] 4.2 — Gestión comercial de ADMIN.
   - [ ] 4.3 — Ciclo de vida, eliminación protegida y aceptación integrada.
