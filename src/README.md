@@ -69,7 +69,22 @@ After the reviewed users migration has been applied, run `docker exec -it gatewa
 
 Login and reauthentication use PostgreSQL rate limits. Without a trusted proxy, all clients share the same global budget; enable `AUTH_TRUST_PROXY=1` only behind a non-bypassable proxy that overwrites `X-Real-IP`.
 
-Other useful commands:
+### Admin statistics and Umami
+
+The `/admin` overview reads reservations from PostgreSQL and basic traffic from Umami.
+Set `UMAMI_API_KEY` in the server environment. Optionally set `UMAMI_API_URL` to the
+Umami service's internal base URL, for example `http://umami:3000` (without `/api`).
+Both containers must already share a Docker network and the hostname must resolve
+there; `localhost` inside the app container refers to the app, not Umami. Compose
+forwards both variables to the app. In separately managed deployments, configure
+them in the app service's runtime environment and recreate/redeploy that service.
+If the URL is unset, the API uses `https://uma.mauriciodmo.com`.
+
+These variables are server-only: the browser tracking script and “Ver más en Umami”
+link always use the public domain. Never add a `NEXT_PUBLIC_` prefix or commit the key.
+Missing credentials or unavailable Umami leave the reservation overview usable.
+
+### Checks
 
 ```bash
 npx tsc --noEmit -p .   # type check

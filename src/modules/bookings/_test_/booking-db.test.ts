@@ -252,6 +252,27 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect((await create()).pricing_snapshot).toMatchObject({ pricePerNightCents: 99000, maxGuests: 1, petsAllowed: false });
   });
 
+  it("aggregates the selected period separately from global attention counts and returns only five newest rows", async () => {
+    sql(`INSERT INTO "Booking" ("listingId", "checkIn", "checkOut", nights, "guestName", "guestEmail", "pricePerNightCents", "cleaningFeeCents", "petFeeCents", "extraGuestFeeCents", "discountCents", "taxCents", "totalAmountCents", status, "agreedListingTitle", "createdAt", "updatedAt", "paymentReviewRequired", "pricingReviewRequired") VALUES
+      (1, '2099-06-10', '2099-06-11', 1, 'Newest', 'newest@example.test', 0, 0, 0, 0, 0, 0, 1000, 'confirmed', 'Historical', now() - interval '1 day', now(), false, true),
+      (1, '2099-06-10', '2099-06-11', 1, 'Second', 'second@example.test', 0, 0, 0, 0, 0, 0, 2000, 'cancelled', 'Historical', now() - interval '2 days', now(), false, true),
+      (1, '2099-06-10', '2099-06-11', 1, 'Third', 'third@example.test', 0, 0, 0, 0, 0, 0, 3000, 'pending_payment', 'Historical', now() - interval '3 days', now(), false, true),
+      (1, '2099-06-10', '2099-06-11', 1, 'Fourth', 'fourth@example.test', 0, 0, 0, 0, 0, 0, 4000, 'confirmed', 'Historical', now() - interval '4 days', now(), true, true),
+      (1, '2099-06-10', '2099-06-11', 1, 'Fifth', 'fifth@example.test', 0, 0, 0, 0, 0, 0, 5000, 'pending_payment', 'Historical', now() - interval '5 days', now(), false, true),
+      (1, '2099-06-10', '2099-06-11', 1, 'Sixth', 'sixth@example.test', 0, 0, 0, 0, 0, 0, 6000, 'confirmed', 'Historical', now() - interval '6 days', now(), false, true),
+      (1, '2099-06-10', '2099-06-11', 1, 'Outside', 'outside@example.test', 0, 0, 0, 0, 0, 0, 7000, 'pending_payment', 'Historical', now() - interval '10 days', now(), false, true);
+      INSERT INTO "PaymentAttempt" (id, "bookingId", provider, "storeId", network, "realTotalCents", "testAmountCents", status, "updatedAt")
+        SELECT '33333333-3333-4333-8333-333333333333', id, 'btcpay-testnet', 'synthetic-store', 'testnet', "totalAmountCents", 100, 'review', now() FROM "Booking" WHERE "guestName" = 'Fourth';
+      INSERT INTO "PaymentAttempt" (id, "bookingId", provider, "storeId", network, "realTotalCents", "testAmountCents", status, "updatedAt")
+        SELECT '44444444-4444-4444-8444-444444444444', id, 'btcpay-testnet', 'synthetic-store', 'testnet', "totalAmountCents", 100, 'review', now() FROM "Booking" WHERE "guestName" = 'Outside';`);
+
+    await expect(a.run({ action: "bookingStatistics", role: "EDITOR", period: 7 })).rejects.toThrow("forbidden");
+    const stats = await a.run<{ total: number; confirmed: number; cancelled: number; confirmedReservationCents: number; pendingPayment: number; pendingPaymentCents: number; paymentReviewRequired: number; recent: Array<{ guestName: string; listingTitle: string }> }>({ action: "bookingStatistics", role: "ADMIN", period: 7 });
+    expect(stats).toMatchObject({ total: 6, confirmed: 3, cancelled: 1, confirmedReservationCents: 11000,
+      pendingPayment: 3, pendingPaymentCents: 15000, paymentReviewRequired: 2,
+      recent: ["Newest", "Second", "Third", "Fourth", "Fifth"].map(guestName => ({ guestName, listingTitle: "Agreed historical title" })) });
+  }, 30_000);
+
   it("protects staff booking operations, versions edits, and records an idempotent cancellation without changing payment data", async () => {
     const booking = await create();
     await a.run({ action: "quote", id: booking.id, version: booking.version, quote });

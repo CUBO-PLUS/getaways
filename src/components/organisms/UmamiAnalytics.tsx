@@ -2,10 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-
-const TRACKED_HOST = "getaways.mauriciodmo.com";
-const UMAMI_URL = "https://uma.mauriciodmo.com/script.js";
-const WEBSITE_ID = "d8867140-793b-4409-9b42-e5d167109220";
+import { UMAMI_SCRIPT_URL, UMAMI_TRACKED_HOST, UMAMI_WEBSITE_ID } from "@/shared/analytics/umami";
 
 type UmamiPayload = Record<string, unknown>;
 
@@ -22,7 +19,7 @@ function isPrivatePath(pathname: string): boolean {
 function beforeUmamiSend(type: string, payload: unknown): UmamiPayload | false {
   // Re-check at send time: the site layout stays mounted across client navigation.
   if (
-    window.location.hostname !== TRACKED_HOST ||
+    window.location.hostname !== UMAMI_TRACKED_HOST ||
     isPrivatePath(window.location.pathname) ||
     type !== "event" ||
     !payload ||
@@ -36,7 +33,7 @@ function beforeUmamiSend(type: string, payload: unknown): UmamiPayload | false {
   if (typeof event.website !== "string") return false;
   const clean: UmamiPayload = {
     website: event.website,
-    hostname: TRACKED_HOST,
+    hostname: UMAMI_TRACKED_HOST,
     url: window.location.pathname,
   };
 
@@ -75,7 +72,7 @@ export default function Umami() {
 
   useEffect(() => {
     if (
-      window.location.hostname !== TRACKED_HOST ||
+      window.location.hostname !== UMAMI_TRACKED_HOST ||
       isPrivatePath(window.location.pathname)
     ) {
       return;
@@ -85,10 +82,10 @@ export default function Umami() {
     if (document.getElementById("umami-analytics")) return;
     const script = document.createElement("script");
     script.id = "umami-analytics";
-    script.src = UMAMI_URL;
+    script.src = UMAMI_SCRIPT_URL;
     script.async = true;
-    script.dataset.websiteId = WEBSITE_ID;
-    script.dataset.domains = TRACKED_HOST;
+    script.dataset.websiteId = UMAMI_WEBSITE_ID;
+    script.dataset.domains = UMAMI_TRACKED_HOST;
     script.dataset.excludeSearch = "true";
     script.dataset.excludeHash = "true";
     script.dataset.beforeSend = "umamiBeforeSend";

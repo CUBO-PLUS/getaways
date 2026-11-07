@@ -14,6 +14,8 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for the app in .env}
       DATABASE_COMPOSE_HOST: db
+      UMAMI_API_URL: ${UMAMI_API_URL:-https://uma.mauriciodmo.com}
+      UMAMI_API_KEY: ${UMAMI_API_KEY:-}
       S3_ENDPOINT: http://rustfs:9000
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_BUCKET: ${S3_BUCKET:-blog-media}

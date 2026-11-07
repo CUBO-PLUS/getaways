@@ -39,6 +39,7 @@ const listingRoutes = {
 const { getGuestReservations } = await import("../../../../modules/guests/server/reservations.ts");
 const { getGuestSession } = await import("../../../../modules/guests/server/auth.ts");
 const { createSession, getSession } = await import("../../../../modules/auth/server/auth.ts");
+const { getBookingStatistics } = await import("../../../../modules/bookings/server/booking-statistics.ts");
 let guestCookie = "";
 
 type Message =
@@ -61,7 +62,8 @@ type Message =
   | { action: "dto"; sessionId: string; cookie?: string }
   | { action: "adminRequest"; route: keyof typeof adminRoutes; method: "GET" | "PATCH" | "POST"; id?: number; token?: string; body?: Record<string, unknown>; origin?: string; query?: string }
   | { action: "adminToken"; id: number; authVersion: number }
-  | { action: "listingRequest"; route: keyof typeof listingRoutes; method: "GET" | "POST" | "PATCH" | "DELETE"; id?: number; token?: string; body?: Record<string, unknown>; origin?: string; query?: string };
+  | { action: "listingRequest"; route: keyof typeof listingRoutes; method: "GET" | "POST" | "PATCH" | "DELETE"; id?: number; token?: string; body?: Record<string, unknown>; origin?: string; query?: string }
+  | { action: "bookingStatistics"; role: "ADMIN" | "EDITOR" | "BOOKING_MANAGER"; period: 7 | 30 | 90 };
 
 const [connection] = await db.runtime().query(db.raw.sql`SELECT pg_backend_pid()::int AS pid`.returnsRow({ pid: "pg/int4@1" }).build());
 process.send!({ ready: { pid: process.pid, backend: connection.pid } });
@@ -82,6 +84,7 @@ process.on("message", async (message: Message | { resume: true }) => {
         break;
       }
       case "get": result = await store.getBookingById(message.id); break;
+      case "bookingStatistics": result = await getBookingStatistics({ id: 1, authVersion: 1, role: message.role }, message.period); break;
       case "dto": {
         const request = new Request("https://booking.example.test", { headers: { cookie: message.cookie ?? guestCookie } });
         result = { checkout: await getCheckoutData(message.sessionId, request), receipt: await bookings.getBookingConfirmationData(message.sessionId, request) };
