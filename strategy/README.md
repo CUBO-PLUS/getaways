@@ -67,7 +67,5 @@ Las contribuciones realizadas deben respaldarse mediante commits, documentos y e
 - Investigación con huéspedes y validación del journey y las propuestas con el negocio.
 - Documentación unificada de APIs e integraciones.
 - Aprobación de incentivos, presupuesto y condiciones de referidos y lealtad.
-- Línea base, metas e instrumentación de atribución hasta reserva confirmada.
 - Validación comercial de Bitcoin y cierre de las excepciones operativas documentadas.
-- Incorporación y verificación del Google Doc, feedback de mentoría y comprobantes de entrega.
 - Registro de la fecha oficial de entrega confirmada por el programa.
