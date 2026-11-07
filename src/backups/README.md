@@ -7,7 +7,11 @@ Guardar también una copia segura fuera de esta máquina.
 
 ## Guardar el progreso completo
 
-Desde `src/`, con el Compose local `gateways-dev` activo:
+Desde `src/`, con PostgreSQL y RustFS del Compose local `gateways-dev` activos.
+La app puede ejecutarse en el host; no hace falta el contenedor `app`. El script
+carga `.env*` con la configuración de desarrollo y usa las credenciales S3 de la
+aplicación, sin cambiarlas por credenciales administrativas. `S3_ENDPOINT` debe
+apuntar a loopback y al puerto publicado por RustFS:
 
 ```bash
 node scripts/backup-progress.mjs "Completado: ... Pendiente: ..."
@@ -16,8 +20,8 @@ node scripts/backup-progress.mjs "Completado: ... Pendiente: ..."
 La skill de proyecto **`guardar-progreso`** reutiliza este comando. Se puede pedir
 «guarda el progreso con DB y RustFS» o cargar `@guardar-progreso` en OpenCode.
 
-Cada ejecución crea un directorio único `progreso-<UTC>-<sufijo>/`, su `.tar.gz` y
-un `.tar.gz.sha256`. Incluye:
+Cada ejecución deja solo `progreso-<UTC>-<sufijo>.tar.gz` y su `.tar.gz.sha256`,
+con permisos privados y dos líneas de resumen. Dentro del paquete se incluye:
 
 - `postgres.dump` y `postgres.list`: toda la BD mediante un snapshot exportado.
 - `objects/` y `rustfs-manifest.json`: todos los objetos actuales del bucket
@@ -33,9 +37,42 @@ el listado del bucket no cambie durante la copia. La aplicación usa objetos
 inmutables: no es un snapshot distribuido ni una copia del volumen completo de
 RustFS. No incluye credenciales, roles globales, políticas/historial del bucket ni
 archivos fuente sin commit. No restaura ni reinicia servicios, ni borra copias previas.
-Un fallo deja el intento incompleto identificado; no usarlo como checkpoint válido.
+El directorio de trabajo se elimina solo tras verificar los objetos y comparar el
+archivo empaquetado. Un fallo conserva el intento incompleto identificado; no
+usarlo como checkpoint válido. Las copias anteriores no se limpian automáticamente.
+Para revisar el contenido, extraer en una carpeta temporal privada bajo `backups/`,
+verificar `SHA256SUMS`, `checkpoint.json`, `postgres.list` y el helper sin `--execute`;
+eliminar después únicamente esa extracción temporal.
 
-### Último checkpoint verificado — 2026-11-04
+### Último checkpoint verificado — 2026-11-07
+
+`progreso-20261107T053706375Z-QYKRN6.tar.gz`
+
+SHA-256: `88a8c950745e4b93ec5acf19949f15295cef7c0bed1144df4bb23e1b89bd4c85`.
+Completado a las 05:37:12 UTC, posterior a las migraciones locales de pagos y la
+activación del proveedor BTCPay remoto. BD `gateways` completa, incluidas
+`Booking` y `PaymentAttempt`, y 179 objetos actuales del bucket `blog-media`
+(186 655 527 bytes). Hash exterior, 186 checksums internos, dump legible y helper
+de 179 objetos en modo `verified-only` comprobados. Paquete y checksum `0600`;
+extracción privada eliminada después de verificar. Sin reinicios, restauraciones
+ni cambios en respaldos anteriores. **Restauración no ensayada; no incluye código
+sin commit ni credenciales.**
+
+### Checkpoint anterior a la migración de pagos — 2026-11-07
+
+`progreso-20261107T052142289Z-KOFaSq.tar.gz`
+
+SHA-256: `25e65537372a6d831eef1eefe90f98461a778ec6e1b29373051746d231c87739`.
+Completado a las 05:21:48 UTC desde el host, sin iniciar ni reiniciar servicios.
+BD `gateways` completa (PostgreSQL 18.6) y 179 objetos del bucket `blog-media`
+(186 655 527 bytes). Dump legible con datos de hospedajes, relaciones, medios,
+reservas y blog. Hash exterior, 186 checksums internos, referencias conciliadas,
+listado estable y helper de 179 objetos en modo `verified-only` verificados.
+Paquete y checksum con permisos `0600`; extracción de verificación eliminada.
+La app Docker permanece detenida. Las copias anteriores permanecen intactas.
+**Restauración no ensayada. No incluye código sin commit ni credenciales.**
+
+### Checkpoint previo al corte B2 — 2026-11-04
 
 `progreso-20261104T224003331Z-UcgQFM.tar.gz`
 
@@ -101,6 +138,31 @@ los objetos sin red ni escrituras, desde `src/`:
 ```bash
 node backups/progreso-20261102T190057675Z-eyXUZX/restore-objects.mjs
 ```
+
+## Originales previos a la limpieza selectiva — 2026-11-07
+
+`originales-blog-catalogo-20261107T055737Z-64192e.tar.gz` y su `.sha256`,
+ambos privados (`0600`). SHA-256:
+`69fcfe0e98db85281c88b84c4c7b002931de1297e0d825bb7a365474a537dea0`.
+
+Complementa los checkpoints PostgreSQL/RustFS: conserva los ocho JSON fuente y
+los 320 archivos originales de `public/media/` (328 archivos, 262 708 802 bytes
+empaquetados). `originals-manifest.json` registra el SHA-256 por archivo; se
+compararon los 328 miembros empaquetados contra los originales antes del borrado.
+No incluye credenciales ni sustituye el respaldo de la BD y los objetos actuales.
+
+Solo se retiraron del árbol activo `data/posts.json`, `data/post_terms.json`,
+`data/listings.json`, `data/listing_terms.json` y `data/terms.json`.
+Las páginas, el índice de medios, los cupones, los archivos de `public/media/` y
+las variables de entorno actuales siguen en uso y no se eliminaron.
+
+Para recuperar una fuente histórica, verificar primero el `.sha256` y extraer
+en una carpeta privada **aislada**, nunca sobre el árbol activo. Comprobar todos
+los hashes de `originals-manifest.json` antes de usarla. Los importadores requieren
+esa carpeta como `<source-root>`; no vuelven automáticamente a los originales.
+La importación sigue requiriendo revisión y aprobación; no ejecutar `--apply` o
+`--execute` sobre la base actual para deshacer esta limpieza. Guardar una copia
+segura fuera de esta máquina. No se ensayó una nueva restauración de BD/S3.
 
 ## Recuperación
 

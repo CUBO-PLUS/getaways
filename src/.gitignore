@@ -15,6 +15,7 @@
 
 # local booking data written by the dev server (never commit)
 /.data/
+/.local/
 
 # misc
 .DS_Store

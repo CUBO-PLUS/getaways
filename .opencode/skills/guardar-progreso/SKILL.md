@@ -12,24 +12,28 @@ description: Guarda un checkpoint local de Gateways con un dump completo de Post
    no marques tareas como verificadas solo porque exista código.
 2. Confirma que el encargo autoriza crear el respaldo. «Guarda el progreso» o
    «haz el dump de DB y RustFS» lo autorizan; una pregunta sobre cómo hacerlo no.
-3. Comprueba los contenedores locales `gateways-dev-app-1`, `gateways-dev-db-1` y
+3. Comprueba los contenedores locales `gateways-dev-db-1` y
    `gateways-dev-rustfs-1`. Si faltan, están detenidos o no corresponden al proyecto,
    detente y explica el bloqueo. No arranques, pares ni reinicies servicios ni
-   cambies a producción o a credenciales administrativas automáticamente.
+   cambies a producción o a credenciales administrativas automáticamente. La app
+   Docker no es necesaria: el script usa las credenciales S3 de aplicación de
+   `src/.env*` desde el host y exige el endpoint local publicado por RustFS.
 4. Reutiliza el script del proyecto, ejecutándolo desde `src/`:
 
    ```sh
    node scripts/backup-progress.mjs "Completado: ... Pendiente: ..."
    ```
 
-   Sustituye la nota por el progreso real. El script crea un directorio único
-   `backups/progreso-<UTC>-<sufijo>/`, un `.tar.gz` y su `.sha256`, sin reemplazar
+   Sustituye la nota por el progreso real. El script deja únicamente
+   `backups/progreso-<UTC>-<sufijo>.tar.gz` y su `.sha256`, sin reemplazar
    respaldos previos. Exporta un snapshot PostgreSQL y copia el bucket completo,
-   incluidos objetos no referenciados. No requiere extraer credenciales del contenedor.
+   incluidos objetos no referenciados. Verifica los objetos y el archivo empaquetado
+   antes de eliminar solo su directorio de trabajo; ante fallos lo conserva.
 5. Comprueba que el comando terminó correctamente. Desde `src/backups/`, verifica
-   `sha256sum -c NOMBRE.tar.gz.sha256`; dentro del directorio nuevo verifica
-   `sha256sum -c SHA256SUMS`. Comprueba también `postgres.list`, `checkpoint.json`
-   y `node RUTA/restore-objects.mjs` **sin** `--execute` para verificar los objetos.
+   `sha256sum -c NOMBRE.tar.gz.sha256`. Extrae en un directorio temporal privado
+   bajo `src/backups/` para verificar `sha256sum -c --quiet SHA256SUMS`,
+   `postgres.list`, `checkpoint.json` y `node RUTA/restore-objects.mjs` **sin**
+   `--execute`. Elimina únicamente esa extracción temporal tras verificarla.
    Ese helper solo verifica los archivos guardados; la conciliación con BD y la
    estabilidad del bucket se comprueban durante la creación y constan en el checkpoint.
 6. Registra en el seguimiento pertinente la ruta, fecha, recuentos y resultado,

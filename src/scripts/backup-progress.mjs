@@ -6,12 +6,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
-import { GetObjectCommand, paginateListObjectsV2 } from "@aws-sdk/client-s3";
+import { GetObjectCommand, paginateListObjectsV2, S3Client } from "@aws-sdk/client-s3";
+import nextEnv from "@next/env";
+import { restoreObjects } from "./restore-progress-objects.mjs";
 
 const src = path.resolve(import.meta.dirname, "..");
 const backups = path.join(src, "backups");
-const app = "gateways-dev-app-1";
 const database = "gateways-dev-db-1";
+const rustfs = "gateways-dev-rustfs-1";
 const dbShell = ["exec", "-i", database, "sh", "-c"];
 const docker = (args, options = {}) => execFileSync("docker", args, { encoding: "utf8", ...options });
 const write = (file, bytes) => fs.writeFile(file, bytes, { mode: 0o600, flag: "wx" });
@@ -38,40 +40,47 @@ export function assertMediaCovered(media, manifest) {
   }
 }
 
-async function backupObjects(name) {
-  assert.match(name, /^progreso-\d{8}T\d{9}Z-[a-zA-Z0-9]+$/);
-  const directory = path.join(backups, name);
-  assert.ok((await fs.stat(directory)).isDirectory());
-  const { getS3Client, getBlogMediaBucket } = await import("../infrastructure/storage/s3.ts");
-  const client = getS3Client();
-  const bucket = getBlogMediaBucket();
-  const list = async () => {
-    const objects = [];
-    for await (const page of paginateListObjectsV2({ client }, { Bucket: bucket })) objects.push(...page.Contents ?? []);
-    return objects.sort((a, b) => a.Key.localeCompare(b.Key));
-  };
-  const before = await list();
-  const manifest = { bucket, capturedAt: new Date().toISOString(), objects: [] };
-  await fs.mkdir(path.join(directory, "objects"), { mode: 0o700 });
-  for (const item of before) {
-    const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: item.Key, IfMatch: item.ETag }));
-    assert.ok(object.Body, "Respuesta de objeto sin contenido");
-    const bytes = Buffer.from(await object.Body.transformToByteArray());
-    assert.equal(bytes.length, item.Size, "El tamaño del objeto cambió");
-    const sha256 = createHash("sha256").update(bytes).digest("hex");
-    if (object.Metadata?.sha256) assert.equal(sha256, object.Metadata.sha256, "Hash remoto incorrecto");
-    const file = `objects/${String(manifest.objects.length).padStart(5, "0")}`;
-    await write(path.join(directory, file), bytes);
-    assert.equal(await hashFile(path.join(directory, file)), sha256);
-    manifest.objects.push({ key: item.Key, file, sha256, size: bytes.length,
-      contentType: object.ContentType, metadata: object.Metadata,
-      contentEncoding: object.ContentEncoding, contentLanguage: object.ContentLanguage,
-      contentDisposition: object.ContentDisposition, cacheControl: object.CacheControl,
-      expires: object.Expires?.toISOString() });
+async function backupObjects(directory) {
+  const { S3_ENDPOINT, S3_REGION, S3_BUCKET: bucket, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY } = process.env;
+  assert.ok(S3_ENDPOINT && S3_REGION && bucket && S3_ACCESS_KEY_ID && S3_SECRET_ACCESS_KEY, "Falta configuración S3 de la aplicación");
+  const endpoint = new URL(S3_ENDPOINT);
+  assert.ok(endpoint.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(endpoint.hostname)
+    && !endpoint.username && !endpoint.password, "S3_ENDPOINT debe apuntar al RustFS local");
+  const ports = JSON.parse(docker(["inspect", "--format", '{{json (index .NetworkSettings.Ports "9000/tcp")}}', rustfs]));
+  assert.ok(ports?.some(({ HostPort }) => HostPort === (endpoint.port || "80")), "S3_ENDPOINT no coincide con el puerto de RustFS");
+  const client = new S3Client({ endpoint: S3_ENDPOINT, region: S3_REGION, forcePathStyle: true,
+    credentials: { accessKeyId: S3_ACCESS_KEY_ID, secretAccessKey: S3_SECRET_ACCESS_KEY } });
+  try {
+    const list = async () => {
+      const objects = [];
+      for await (const page of paginateListObjectsV2({ client }, { Bucket: bucket })) objects.push(...page.Contents ?? []);
+      return objects.sort((a, b) => a.Key.localeCompare(b.Key));
+    };
+    const before = await list();
+    const manifest = { bucket, capturedAt: new Date().toISOString(), objects: [] };
+    await fs.mkdir(path.join(directory, "objects"), { mode: 0o700 });
+    for (const item of before) {
+      const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: item.Key, IfMatch: item.ETag }));
+      assert.ok(object.Body, "Respuesta de objeto sin contenido");
+      const bytes = Buffer.from(await object.Body.transformToByteArray());
+      assert.equal(bytes.length, item.Size, "El tamaño del objeto cambió");
+      const sha256 = createHash("sha256").update(bytes).digest("hex");
+      if (object.Metadata?.sha256) assert.equal(sha256, object.Metadata.sha256, "Hash remoto incorrecto");
+      const file = `objects/${String(manifest.objects.length).padStart(5, "0")}`;
+      await write(path.join(directory, file), bytes);
+      manifest.objects.push({ key: item.Key, file, sha256, size: bytes.length,
+        contentType: object.ContentType, metadata: object.Metadata,
+        contentEncoding: object.ContentEncoding, contentLanguage: object.ContentLanguage,
+        contentDisposition: object.ContentDisposition, cacheControl: object.CacheControl,
+        expires: object.Expires?.toISOString() });
+    }
+    // ponytail: objects are immutable in this app; quiesce writers before supporting mutable objects or bucket version history.
+    assertStableObjects(before, await list());
+    await write(path.join(directory, "rustfs-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+    return manifest;
+  } finally {
+    client.destroy();
   }
-  // ponytail: objects are immutable in this app; quiesce writers before supporting mutable objects or bucket version history.
-  assertStableObjects(before, await list());
-  await write(path.join(directory, "rustfs-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 function toFile(command, args, file) {
@@ -82,13 +91,13 @@ function toFile(command, args, file) {
 
 export async function backupProgress(note) {
   assert.ok(note?.trim(), 'Uso: node scripts/backup-progress.mjs "Avance y pendientes"');
-  for (const container of [app, database, "gateways-dev-rustfs-1"]) {
+  nextEnv.loadEnvConfig(src, true);
+  assert.notEqual(process.env.NODE_ENV, "production", "Solo se admite el entorno local");
+  for (const container of [database, rustfs]) {
     assert.equal(docker(["inspect", "--format", '{{ index .Config.Labels "com.docker.compose.project" }}', container]).trim(), "gateways-dev", "Solo se admite el Compose local gateways-dev");
+    assert.equal(docker(["inspect", "--format", '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}', container]).trim(), src, "El servicio no corresponde a este árbol");
     assert.equal(docker(["inspect", "--format", "{{.State.Running}}", container]).trim(), "true", "Servicio detenido");
   }
-  const mounts = JSON.parse(docker(["inspect", "--format", "{{json .Mounts}}", app]));
-  assert.ok(mounts.some((mount) => mount.Type === "bind" && mount.Source === src && mount.Destination === "/app"), "La app no comparte este árbol en /app");
-  assert.equal(docker(["inspect", "--format", "{{.Config.WorkingDir}}", app]).trim(), "/app");
   const directory = await fs.mkdtemp(path.join(backups, `progreso-${new Date().toISOString().replace(/[-:.]/g, "")}-`));
   await fs.chmod(directory, 0o700);
   const name = path.basename(directory);
@@ -118,9 +127,9 @@ SELECT json_build_object(
     finally { closeSync(dumpInput); }
     assert.ok(listing.includes("BlogPublication"), "El dump no contiene el blog");
     await write(path.join(directory, "postgres.list"), listing);
-    docker(["exec", "--user", `${process.getuid()}:${process.getgid()}`, app, "node", "--conditions=react-server", "--experimental-strip-types", "scripts/backup-progress.mjs", "--objects", name]);
-    const manifest = JSON.parse(await fs.readFile(path.join(directory, "rustfs-manifest.json"), "utf8"));
+    const manifest = await backupObjects(directory);
     assertMediaCovered(state.media, manifest);
+    await restoreObjects(directory);
     const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: src, encoding: "utf8" }).trim();
     const gitStatus = execFileSync("git", ["status", "--short"], { cwd: src, encoding: "utf8" });
     const checkpoint = { format: "gateways-progress-v1", startedAt: state.capturedAt, completedAt: new Date().toISOString(),
@@ -143,7 +152,9 @@ SELECT json_build_object(
     execFileSync("tar", ["--compare", "--gzip", "--file", archive, "--directory", backups], { stdio: "pipe" });
     const sha256 = await hashFile(archive);
     await write(`${archive}.sha256`, `${sha256}  ${path.basename(archive)}\n`);
-    return { directory, archive, sha256, ...checkpoint };
+    // Only discard this run's staging files after verifying the complete archive.
+    await fs.rm(directory, { recursive: true });
+    return { archive, sha256, ...checkpoint };
   } catch (error) {
     console.error(`Respaldo incompleto retenido en ${directory}; no se debe usar como checkpoint válido.`);
     throw error;
@@ -156,8 +167,9 @@ SELECT json_build_object(
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     process.umask(0o077);
-    if (process.argv[2] === "--objects") await backupObjects(process.argv[3]);
-    else console.log(JSON.stringify(await backupProgress(process.argv[2]), null, 2));
+    assert.equal(process.argv.length, 3, 'Uso: node scripts/backup-progress.mjs "Avance y pendientes"');
+    const result = await backupProgress(process.argv[2]);
+    console.log(`Respaldo: ${path.relative(src, result.archive)}\nBD completa y ${result.objects} objetos; hashes verificados. Restauración no ensayada.`);
   } catch (error) {
     console.error(`No se completó el respaldo (${error.name}); no se modificaron ni restauraron los servicios.`);
     process.exitCode = 1;
