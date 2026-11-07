@@ -29,8 +29,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/admin/b
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10 text-[#394342]">
-      <Link href="/admin">← Panel</Link>
-      <h1 className="mt-5 text-3xl">Reservas</h1>
+      <h1 className="m-0 text-3xl">Reservas</h1>
       <form method="get" className="my-6 grid gap-3 sm:grid-cols-4">
         <label>
           Hospedaje
