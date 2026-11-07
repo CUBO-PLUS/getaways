@@ -16,6 +16,7 @@ import { parsePricingSnapshot } from "@/modules/bookings/booking-persistence";
 import { priceFieldsFromAttributes } from "@/modules/bookings/booking-quote";
 import { readCatalogListings } from "@/modules/listings/server/catalog";
 import { getGuestSession } from "@/modules/guests/server/auth";
+import { getPaymentAttemptForBooking } from "@/modules/payments/server/payment-attempts";
 
 /*
  * The booking rules: what counts as a valid stay, what dates are taken, and
@@ -63,11 +64,13 @@ export async function getListing(id: number): Promise<ListingRow | null> {
 export async function getBookingConfirmationData(sessionId: string | undefined, request?: Request) {
   const booking = sessionId ? await getBookingBySessionId(sessionId, request) : null;
   const listing = booking ? await getListing(booking.listing_id) : null;
+  const attempt = booking ? await getPaymentAttemptForBooking(booking.id) : null;
   return {
     sessionId: booking ? sessionId : undefined,
     booking: booking ? {
       status: booking.status, guest_name: booking.guest_name, check_in: booking.check_in, check_out: booking.check_out,
       nights: booking.nights, total_amount_cents: booking.total_amount_cents,
+      testPayment: attempt ? { amount_cents: attempt.testAmountCents, network: "testnet" as const, status: attempt.status === "paid" ? "paid" as const : attempt.status === "review" ? "review" as const : "pending" as const } : null,
     } : null,
     listing: booking ? { title: booking.agreed_listing_title || listing?.title || "Your listing", slug: listing?.slug ?? null } : null,
   };

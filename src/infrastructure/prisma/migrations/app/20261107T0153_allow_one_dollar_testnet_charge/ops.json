@@ -1,0 +1,86 @@
+[
+  {
+    "id": "dropCheckConstraint.PaymentAttempt.payment_attempt_amounts_valid_44184b03",
+    "label": "Drop check constraint \"payment_attempt_amounts_valid_44184b03\" on \"PaymentAttempt\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "payment_attempt_amounts_valid_44184b03",
+        "table": "PaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"payment_attempt_amounts_valid_44184b03\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "payment_attempt_amounts_valid_44184b03",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"payment_attempt_amounts_valid_44184b03\"",
+        "sql": "ALTER TABLE \"public\".\"PaymentAttempt\" DROP CONSTRAINT \"payment_attempt_amounts_valid_44184b03\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"payment_attempt_amounts_valid_44184b03\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "payment_attempt_amounts_valid_44184b03",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.PaymentAttempt.payment_attempt_amounts_valid_5ba9d6f2",
+    "label": "Add check constraint \"payment_attempt_amounts_valid_5ba9d6f2\" on \"PaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "payment_attempt_amounts_valid_5ba9d6f2",
+        "table": "PaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"payment_attempt_amounts_valid_5ba9d6f2\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "payment_attempt_amounts_valid_5ba9d6f2",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"payment_attempt_amounts_valid_5ba9d6f2\"",
+        "sql": "ALTER TABLE \"public\".\"PaymentAttempt\" ADD CONSTRAINT \"payment_attempt_amounts_valid_5ba9d6f2\" CHECK (\"realTotalCents\" > 0 AND \"testAmountCents\" IN (1, 100))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"payment_attempt_amounts_valid_5ba9d6f2\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "payment_attempt_amounts_valid_5ba9d6f2",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ]
+  }
+]

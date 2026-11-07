@@ -1,18 +1,17 @@
 /*
- * The payment contract students implement. See TASK.md for the full assignment.
- *
- * A provider creates a payment for a booking's total and reports on it later.
- * It never confirms a booking by itself: when a payment is really paid, the
- * provider calls markPaid(paymentId) from modules/bookings/server/booking-store.ts. That is the
- * only way a booking becomes "confirmed".
+ * BTCPay payment evidence keeps the real stay quote separate from the test charge.
+ * Only authoritative settlement can confirm a booking; there is no simulated payment.
  */
+
+export const BTCPAY_TEST_AMOUNT_CENTS = 100;
+export const BTCPAY_TEST_AMOUNT_USD = (BTCPAY_TEST_AMOUNT_CENTS / 100).toFixed(2);
 
 export type PaymentSession = {
   /** Provider's id for this payment. Stored on the booking as payment_reference. */
   id: string;
   /** The booking this payment is for. */
   bookingId: number;
-  /** What the guest must pay, in US cents. Taken from the booking's quoted total. */
+  /** Real stay quote in US cents; a testnet charge is carried separately below. */
   amountCents: number;
   currency: "USD";
   btc?: {
@@ -25,7 +24,11 @@ export type PaymentSession = {
     /** ISO time after which the invoice or address quote is no longer valid. */
     expiresAt?: string;
   };
-  status: "pending" | "paid" | "expired" | "failed";
+  /** Real quote stays distinct from the fixed testnet charge. */
+  testAmountCents?: 1 | typeof BTCPAY_TEST_AMOUNT_CENTS;
+  network?: "testnet";
+  checkoutLink?: string;
+  status: "pending" | "paid" | "expired" | "failed" | "review";
 };
 
 export interface PaymentProvider {

@@ -1,5 +1,6 @@
 name: gateways-dev
 
+# BTCPay, Bitcoin Core y NBXplorer se gestionan en el VPS, no en este stack local.
 services:
   app:
     build:

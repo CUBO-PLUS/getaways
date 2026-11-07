@@ -1,0 +1,206 @@
+[
+  {
+    "id": "table.PaymentAttempt",
+    "label": "Create table \"PaymentAttempt\"",
+    "summary": "Creates table \"PaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "PaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"PaymentAttempt\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"PaymentAttempt\"",
+        "sql": "CREATE TABLE \"public\".\"PaymentAttempt\" (\n  \"bookingId\" int4 NOT NULL,\n  \"btcAmount\" text,\n  \"btcDestination\" text,\n  \"checkoutLink\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"invoiceId\" text,\n  \"network\" text NOT NULL,\n  \"provider\" text NOT NULL,\n  \"realTotalCents\" int8 NOT NULL,\n  \"reviewReason\" text,\n  \"status\" text NOT NULL,\n  \"storeId\" text NOT NULL,\n  \"testAmountCents\" int4 NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"payment_attempt_amounts_valid_44184b03\" CHECK (\"realTotalCents\" > 0 AND \"testAmountCents\" = 1),\n  CONSTRAINT \"payment_attempt_testnet_only_d4ccbaa2\" CHECK (network = 'testnet')\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"PaymentAttempt\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.PaymentAttempt.PaymentAttempt_bookingId_key",
+    "label": "Add unique constraint on \"PaymentAttempt\" (bookingId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "PaymentAttempt_bookingId_key",
+        "table": "PaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"PaymentAttempt_bookingId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PaymentAttempt_bookingId_key",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"PaymentAttempt_bookingId_key\"",
+        "sql": "ALTER TABLE \"public\".\"PaymentAttempt\" ADD CONSTRAINT \"PaymentAttempt_bookingId_key\" UNIQUE (\"bookingId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"PaymentAttempt_bookingId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PaymentAttempt_bookingId_key",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.PaymentAttempt.PaymentAttempt_invoiceId_key",
+    "label": "Add unique constraint on \"PaymentAttempt\" (invoiceId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "PaymentAttempt_invoiceId_key",
+        "table": "PaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"PaymentAttempt_invoiceId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PaymentAttempt_invoiceId_key",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"PaymentAttempt_invoiceId_key\"",
+        "sql": "ALTER TABLE \"public\".\"PaymentAttempt\" ADD CONSTRAINT \"PaymentAttempt_invoiceId_key\" UNIQUE (\"invoiceId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"PaymentAttempt_invoiceId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PaymentAttempt_invoiceId_key",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PaymentAttempt.PaymentAttempt_status_createdAt_idx_58610442",
+    "label": "Create index \"PaymentAttempt_status_createdAt_idx_58610442\" on \"PaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PaymentAttempt_status_createdAt_idx_58610442",
+        "table": "PaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PaymentAttempt_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PaymentAttempt_status_createdAt_idx_58610442\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PaymentAttempt_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"PaymentAttempt_status_createdAt_idx_58610442\" ON \"public\".\"PaymentAttempt\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PaymentAttempt_status_createdAt_idx_58610442\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PaymentAttempt_status_createdAt_idx_58610442\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.PaymentAttempt.PaymentAttempt_bookingId_fkey",
+    "label": "Add foreign key \"PaymentAttempt_bookingId_fkey\" on \"PaymentAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "PaymentAttempt_bookingId_fkey",
+        "table": "PaymentAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"PaymentAttempt_bookingId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PaymentAttempt_bookingId_fkey",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"PaymentAttempt_bookingId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"PaymentAttempt\"\nADD CONSTRAINT \"PaymentAttempt_bookingId_fkey\"\nFOREIGN KEY (\"bookingId\")\nREFERENCES \"public\".\"Booking\" (\"id\")\nON DELETE RESTRICT\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"PaymentAttempt_bookingId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PaymentAttempt_bookingId_fkey",
+          "public",
+          "\"public\".\"PaymentAttempt\""
+        ]
+      }
+    ]
+  }
+]

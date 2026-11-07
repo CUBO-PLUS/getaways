@@ -10,7 +10,7 @@ function money(cents: number) {
 }
 
 export default function CheckoutTemplate({ data }: { data: CheckoutData }) {
-  const { sessionId, booking, listing, isDev, methods, nightLabel, awaitingPayment, priceLocked, pricingBelow } = data;
+  const { sessionId, booking, listing, testChargeUsd, methods, nightLabel, awaitingPayment, priceLocked, pricingBelow } = data;
 
   return (
     <main className="min-h-dvh grid place-items-center bg-[rgba(15,_23,_39,_0.03)] px-5 py-[clamp(24px,_6vw,_64px)]">
@@ -25,16 +25,14 @@ export default function CheckoutTemplate({ data }: { data: CheckoutData }) {
               <span className="block text-muted-text text-[12px]">Secure online payment</span>
             </div>
           </div>
-          {isDev && <span className="flex-none self-start bg-[#7a5206] text-white text-[11px] font-bold tracking-[0.5px] uppercase whitespace-nowrap
-            px-2.5 py-1 rounded-full">Demo</span>}
+          <span className="flex-none self-start bg-[#7a5206] text-white text-[11px] font-bold tracking-[0.5px] uppercase whitespace-nowrap
+            px-2.5 py-1 rounded-full">Testnet</span>
         </header>
 
-        {isDev && (
-          <p className="mt-0 mb-5 bg-[rgba(255,_193,_7,_0.12)] text-[#7a5206] text-[13px] leading-[1.5] mx-0 px-3.5 py-2.5 rounded-[8px] border
-            border-solid border-[rgba(178,_122,_12,_0.3)]" role="status">
-            Student mock. No payment is real and nothing is charged.
-          </p>
-        )}
+        <p className="mt-0 mb-5 bg-[rgba(255,_193,_7,_0.12)] text-[#7a5206] text-[13px] leading-[1.5] mx-0 px-3.5 py-2.5 rounded-[8px] border
+          border-solid border-[rgba(178,_122,_12,_0.3)]" role="status">
+          BTCPay testnet only. Fixed test charge: USD {testChargeUsd}. The real stay price is not charged.
+        </p>
 
         <p className="mt-0 mb-1.5 text-[11px] font-extrabold tracking-[1px] uppercase text-link-strong mx-0">Reservation</p>
         <h1 className="mt-0 mb-6.5 mx-0 text-[30px] leading-[1.2]" id="checkout-heading">Confirm your stay</h1>

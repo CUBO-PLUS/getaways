@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
       { key: "Referrer-Policy", value: "no-referrer" },
       { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
     ];
-    return ["/checkout", "/booking-confirmation", "/api/bookings", "/api/checkout/:path*", "/account/:path*", "/api/guest/:path*"].map((source) => ({ source, headers }));
+    return ["/checkout", "/booking-confirmation", "/api/bookings", "/api/checkout/:path*", "/account/:path*", "/api/guest/:path*", "/admin/bookings/:path*", "/api/admin/bookings/:path*"].map((source) => ({ source, headers }));
   },
 };
 

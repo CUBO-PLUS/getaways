@@ -8,7 +8,7 @@ import BitcoinPanel from "@/components/organisms/BitcoinPanel";
 import type { PaymentSession } from "@/modules/payments/types";
 
 /*
- * The payment choice. The class build has one method: Bitcoin (student mock).
+ * The payment choice: Bitcoin through BTCPay Testnet.
  * Its panel is BitcoinPanel; the server side is app/api/checkout/btc.
  */
 
@@ -17,7 +17,6 @@ export type CheckoutMethod = {
   name: string;
   detail: string;
   available: boolean;
-  demo: boolean;
 };
 
 export default function CheckoutMethods({
@@ -28,7 +27,7 @@ export default function CheckoutMethods({
 }: {
   sessionId: string;
   methods: CheckoutMethod[];
-  /** The quoted total the booking carries. The panel shows this figure. */
+  /** The real stay quote, shown separately from the fixed test charge. */
   totalAmountCents: number;
   /** Told when the payment panel opens or closes, so the price questions above can lock while it is open. */
   onPanelChange?: (open: boolean) => void;
@@ -39,7 +38,6 @@ export default function CheckoutMethods({
   const [message, setMessage] = useState<string | null>(null);
 
   const usable = methods.filter((method) => method.available);
-  const demo = usable.some((method) => method.demo);
 
   function goToConfirmation() {
     router.push(`/booking-confirmation?session_id=${encodeURIComponent(sessionId)}`);
@@ -78,7 +76,6 @@ export default function CheckoutMethods({
         sessionId={sessionId}
         payment={payment}
         totalAmountCents={totalAmountCents}
-        demo={demo}
         onPaid={goToConfirmation}
         onBack={() => {
           setPayment(null);
@@ -110,12 +107,12 @@ export default function CheckoutMethods({
                 <strong className="text-[15px] text-text">{method.name}</strong>
                 <span>{method.detail}</span>
               </span>
-              {method.demo && <span className="flex-none self-start bg-[#7a5206] text-white text-[11px] font-bold tracking-[0.5px] uppercase whitespace-nowrap
-                px-2.5 py-1 rounded-full">Demo</span>}
             </button>
           </li>
         ))}
       </ul>
+
+      {usable.length === 0 && <p role="status">Bitcoin testnet payments are currently unavailable. Please contact our team.</p>}
 
       {message && (
         <p className="flex items-start mt-3 mb-0 text-[13px] leading-[1.5] text-[#8a1c2b] mx-0 gap-2" role="alert">

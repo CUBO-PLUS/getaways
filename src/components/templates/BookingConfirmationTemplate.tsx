@@ -202,7 +202,13 @@ export default function BookingConfirmationTemplate({ data }: { data: BookingCon
         icon={<CalendarClock size={26} />}
         eyebrow="Reservation pending"
         title="Your request is recorded"
-        lede="Your dates are not confirmed yet. If you started a payment, we're waiting for the provider to confirm it; otherwise our team will contact you to arrange payment."
+        lede={booking.testPayment?.network === "testnet"
+          ? booking.testPayment.status === "review"
+            ? "This testnet payment needs manual review. Your stay quote is not the amount paid, and the reservation is not confirmed yet."
+            : booking.testPayment.status === "paid"
+              ? `The ${money(booking.testPayment.amount_cents)} testnet charge is recorded. Your ${money(booking.total_amount_cents)} stay quote is not paid; reservation confirmation is still pending.`
+              : `Your reservation is not confirmed yet. The fixed ${money(booking.testPayment.amount_cents)} testnet charge is separate from the stay quote.`
+          : "Your dates are not confirmed yet. If you started a payment, we're waiting for the provider to confirm it; otherwise our team will contact you to arrange payment."}
         actions={
           <>
             <Link
@@ -228,7 +234,9 @@ export default function BookingConfirmationTemplate({ data }: { data: BookingCon
         icon={<XCircle size={26} />}
         eyebrow="Booking cancelled"
         title="This booking was cancelled"
-        lede="This booking was cancelled. Contact our team to review any payment and discuss next steps."
+        lede={booking.testPayment?.network === "testnet"
+          ? `This booking was cancelled. Any ${money(booking.testPayment.amount_cents)} testnet charge is separate from the stay quote and requires manual review; no refund is implied.`
+          : "This booking was cancelled. Contact our team to review any payment and discuss next steps."}
         actions={browseActions}
         footnote={<>Reference: {sessionId}</>}
       />
@@ -273,10 +281,13 @@ export default function BookingConfirmationTemplate({ data }: { data: BookingCon
           <Row label="Check-in" value={formatDate(booking.check_in)} />
           <Row label="Check-out" value={formatDate(booking.check_out)} />
           <Row label="Nights" value={booking.nights} />
-          <li className="flex items-baseline justify-between px-5 py-4 gap-4 bg-[rgba(15,_23,_39,_0.035)] max-[420.001px]:items-start max-[420.001px]:flex-col max-[420.001px]:gap-0.5">
+          {booking.testPayment?.network === "testnet" ? <>
+            <Row label="Testnet charge" value={`${money(booking.testPayment.amount_cents)} · ${booking.testPayment.status}`} />
+            <Row label="Stay quote (not charged)" value={money(booking.total_amount_cents)} />
+          </> : <li className="flex items-baseline justify-between px-5 py-4 gap-4 bg-[rgba(15,_23,_39,_0.035)] max-[420.001px]:items-start max-[420.001px]:flex-col max-[420.001px]:gap-0.5">
             <span className="flex-none text-heading text-[13px] font-semibold leading-[22px]">Total paid</span>
             <span className="min-w-0 text-heading font-heading text-[24px] font-bold tabular-nums leading-[1.15] text-right wrap-anywhere max-[420.001px]:text-left">{money(booking.total_amount_cents)}</span>
-          </li>
+          </li>}
         </ul>
       </section>
 

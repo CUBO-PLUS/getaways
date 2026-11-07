@@ -225,6 +225,7 @@ model Booking {
   updatedAt              temporal.updatedAt()
   listing                Listing   @relation(fields: [listingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   guestAccount           GuestAccount? @relation(fields: [guestAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  paymentAttempt         PaymentAttempt?
 
   @@index([listingId, status, checkIn])
   @@index([createdAt])
@@ -237,6 +238,29 @@ model Booking {
   @@check(expression: sql`currency = 'USD'`, name: "booking_currency_usd")
   @@check(expression: sql`version > 0`, name: "booking_version_positive")
   @@check(expression: sql`("pricingSnapshot" IS NULL) = "pricingReviewRequired"`, name: "booking_pricing_review_consistent")
+}
+
+model PaymentAttempt {
+  id                    String   @id
+  bookingId             Int      @unique
+  provider              String
+  storeId               String
+  network               String
+  realTotalCents        BigInt
+  testAmountCents       Int
+  invoiceId             String?  @unique
+  checkoutLink          String?
+  btcDestination        String?
+  btcAmount             String?
+  status                String
+  reviewReason          String?
+  createdAt             DateTime @default(now())
+  updatedAt             temporal.updatedAt()
+  booking               Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([status, createdAt])
+  @@check(expression: sql`"realTotalCents" > 0 AND "testAmountCents" IN (1, 100)`, name: "payment_attempt_amounts_valid")
+  @@check(expression: sql`network = 'testnet'`, name: "payment_attempt_testnet_only")
 }
 
 model GuestAccount {
