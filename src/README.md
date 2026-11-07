@@ -1,8 +1,8 @@
-# Getaways El Salvador: student repo (mock Bitcoin checkout)
+# Getaways El Salvador: BTCPay Testnet checkout
 
-This is the public website of Getaways El Salvador, a vacation-rental business, prepared as a class project. The site, the property pages, the photos and the blog run locally. The booking flow runs up to the payment step. The payment step is a **starter stub**: your job is to build the mock Bitcoin payment. See [TASK.md](./TASK.md).
+This is the public website of Getaways El Salvador, a vacation-rental business, prepared as a class project. Blog, properties and bookings use PostgreSQL; migrated photos use private RustFS/S3. Bitcoin checkout uses **BTCPay Testnet**, with a fixed **USD 1.00 test charge for new attempts**, separate from the stay quote. There is no placeholder provider or simulated-payment button. Production/mainnet payments remain disabled. See [payment configuration and limits](docs/plans/pagos/infraestructura-local.md).
 
-Resumen en español: este repositorio es la versión pública de la web de Getaways El Salvador. Todo corre en local, sin claves ni cuentas. El pago con Bitcoin es un "stub" que ustedes deben completar. Las instrucciones completas están en [TASK.md](./TASK.md) (sección en español al final).
+Resumen en español: el sitio local requiere PostgreSQL, RustFS y configuración privada. Los nuevos pagos de reserva usan BTCPay Testnet por USD 1.00, sin cobrar la cotización real del hospedaje. [TASK.md](./TASK.md) conserva el enunciado histórico, no el flujo actual.
 
 ## Requirements
 
@@ -45,13 +45,19 @@ docker compose -f compose.dev.yaml up -d --wait
 
 Compose binds the S3 API and console to loopback; the app container uses `http://rustfs:9000`, while a process running on the host uses `http://127.0.0.1:9000`. `rustfs-init` idempotently creates the private `blog-media` bucket. No anonymous/public-read policy is applied. RustFS persists data in the `rustfs_data` volume; a volume is not a backup. Back up PostgreSQL and RustFS objects together and test restoring both. Production endpoint, TLS, private networking, credentials, and backup schedule must be configured by the operator; they are not verifiable from this repository.
 
-The contract is `infrastructure/prisma/contract.prisma`; the server-only client is exported as `db` from `@/infrastructure/prisma/db`. Prisma 8 uses `@prisma/orm-postgres`, not `@prisma/client`. Commit the emitted `contract.json` and `contract.d.ts` alongside the contract. Blog, staff accounts and the catalogue use PostgreSQL; booking storage has not yet been migrated.
+The contract is `infrastructure/prisma/contract.prisma`; the server-only client is exported as `db` from `@/infrastructure/prisma/db`. Prisma 8 uses `@prisma/orm-postgres`, not `@prisma/client`. Commit the emitted `contract.json` and `contract.d.ts` alongside the contract. Blog, staff/guest accounts, catalogue, bookings and payment attempts use PostgreSQL.
 
-The catalogue migration CLI is `pnpm listings:import` (read-only inventory),
-`pnpm listings:import --apply` (explicit import) and `pnpm listings:import --verify`
+The recovery migration CLI is `pnpm listings:import <source-root>` (read-only inventory),
+`pnpm listings:import <source-root> --apply` (explicit import) and `pnpm listings:import <source-root> --verify`
 (read-only source/database/S3 comparison). Back up the database and objects and
 stop application writers before applying. Existing differences abort instead of
 overwriting edits. See [plan 2 and local evidence](docs/plans/catalogo-y-medios/README.md).
+
+Original blog/catalogue JSON has been retired from the active tree. Import tools
+require an explicit source folder containing `data/` and `public/media/`, not the
+running application's data. Blog dry-run/conversion also require `<source-root>`;
+blog approval/import retain their existing explicit source arguments. See the
+[verified originals archive](backups/README.md#originales-previos-a-la-limpieza-selectiva--2026-11-07).
 
 After editing the contract, emit it and plan a versioned migration from the actual database marker; review and rehearse it on an isolated copy before applying. Do not run `db:init` against an existing database. The development client cache is invalidated when the contract or connection URL changes.
 
@@ -83,21 +89,21 @@ npx next build          # production build
 | `app/api/bookings/` | Creates a booking with its quoted total. |
 | `app/api/checkout/quote/` | Price quote: nights, cleaning, extra guests, pets, coupon, IVA 13%, tourism tax 5%. |
 | `app/api/checkout/status/` | Reads booking status. |
-| `app/api/checkout/btc/` | **Student work.** Starter route for the Bitcoin payment. |
+| `app/api/checkout/btc/` | BTCPay Testnet invoice creation, persisted status and authoritative reconciliation. |
 | `app/api/listings/[id]/availability/` | Availability for a listing (confirmed bookings only). |
 | `modules/bookings/booking-quote.ts` | Real pricing logic. Keep it. |
-| `modules/bookings/server/booking-store.ts` | Bookings in memory, saved to `.data/bookings.json` (gitignored). `markPaid()` lives here. |
+| `modules/bookings/server/booking-store.ts` | PostgreSQL bookings and guarded payment/cancellation transitions. |
 | `modules/bookings/server/bookings.ts`, `modules/checkout/checkout-session.ts` | Booking helpers used by the pages and routes. |
 | `modules/coupons/server/coupons.ts`, `modules/coupons/coupon-rules.ts` | Coupon lookup. The sample code is `GETAWAYS10` (10% off). |
-| `modules/payments/types.ts` | The `PaymentProvider` contract that students implement. |
-| `modules/payments/btc-mock.ts` | **Student work.** Starter stub for the Bitcoin provider. |
-| `modules/payments/index.ts` | Exports the active payment provider. |
-| `components/organisms/BitcoinPanel.tsx` | **Student work.** Bitcoin payment UI shown on checkout. |
+| `modules/payments/types.ts` | Payment evidence and the USD 1.00 new-test-charge constant. |
+| `modules/payments/btcpay-testnet.ts` | BTCPay Testnet invoice creation and settlement verification. |
+| `modules/payments/index.ts` | Explicit BTCPay selection; missing/obsolete configuration fails closed. |
+| `components/organisms/BitcoinPanel.tsx` | BTCPay payment instructions and reconciliation; no simulation. |
 | `components/organisms/CheckoutExtras.tsx`, `components/organisms/CheckoutMethods.tsx` | Checkout bill and payment-method area. |
-| `infrastructure/data/local-client.ts` | Local, read-only data client built from `data/*.json`. No database. |
+| `infrastructure/data/local-client.ts` | Read-only JSON client for static pages and site artwork only. |
 | `modules/content/server/content.ts`, `modules/listings/server/listings.ts`, `shared/media/server/media.ts` | Editorial, catalogue and media queries, with unchanged function signatures. |
 | `shared/media/media.ts` | Static media URLs and persisted `/api/media/{id}` or blog media URLs. |
-| `data/*.json` | Public site data: pages, posts, listings (with prices), terms, media index. |
+| `data/*.json` | Static pages, site media index and coupons; blog/catalogue originals retired. |
 | `public/media/` | Photos and files referenced by `data/media.json`. |
 | `_test_/support/` | Test-only stand-in for `server-only`. |
 
@@ -111,7 +117,7 @@ npx next build          # production build
 - `shared/` contains utilities, UI class merging, media helpers, HTML/CSS sanitization and structured data. Server-specific files live under `server/`; existing `server-only` and `use client` boundaries are retained. Import client-safe helpers/types directly, not through mixed barrels.
 - `infrastructure/data/local-client.ts` is a local JSON reader, not a Supabase connection. Its historical `publicSupabaseClient` / `hasPublicSupabaseConfig` names remain only to preserve the small internal query API without changing query behavior. JSON imports use `@/data`.
 - Tests live in an area's `_test_/` folder. `vitest.config.mts` explicitly discovers those folders; `_test_/organization.test.ts` prevents misplaced tests and obsolete imports. Run `npm test`, `npx tsc --noEmit --incremental false` and `npm run lint` from this directory.
-- Data stays in `data/`, images in `public/`, and tool/Docker/environment configuration remains at the project root. The Bitcoin provider and panel remain student stubs.
+- Static snapshots stay in `data/`, static images in `public/`, and tool/Docker/environment configuration remains at the project root. Operational data lives in PostgreSQL/private S3.
 
 ### Styling
 
@@ -123,9 +129,9 @@ Stored Gutenberg blocks receive static utilities in `shared/security/server/sani
 ## How data works
 
 - Blog and property catalogue readers, including checkout, use PostgreSQL without JSON fallback. Prices are typed cents/basis points, adapted to the existing presentation shape.
-- `infrastructure/data/local-client.ts` remains a read-only JSON interface for static pages and site artwork. Catalogue JSON files are import originals, not an operational data source.
-- Catalogue/blog photos are immutable objects in the existing private S3 bucket, served through authorized media routes. Static site images remain in `public/media/`; originals are retained unchanged.
-- Bookings are different: they are created while you use the site. They are kept in memory and saved to `.data/bookings.json`, so a dev restart keeps them. Delete that folder to reset all bookings.
+- `infrastructure/data/local-client.ts` remains a read-only JSON interface for static pages and site artwork. Blog/catalogue source JSON and its local query tables have been retired; a verified private archive preserves the originals for recovery.
+- Catalogue/blog photos are immutable objects in the existing private S3 bucket, served through authorized media routes. Static site images remain in `public/media/`, preserved along with their shared media index.
+- Bookings and payment attempts persist in PostgreSQL. Historical payment references remain untouched; retiring the old mock does not convert them or open replacement invoices.
 - The public data has no guest data, no staff data and no keys.
 
 ## Secrets

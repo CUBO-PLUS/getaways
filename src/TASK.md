@@ -1,5 +1,11 @@
 # Assignment: implement a mock Bitcoin payment
 
+> **Historical assignment — superseded 2026-11-07.** The placeholder provider and
+> simulated-payment action have been retired. Current checkout uses BTCPay Testnet
+> with USD 1.00 for new attempts, keeping the stay quote separate. Missing provider
+> configuration disables checkout; do not reintroduce simulation from this brief.
+> See [current payment documentation](docs/plans/pagos/README.md).
+
 ## English
 
 ### Goal

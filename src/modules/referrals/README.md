@@ -1,6 +1,12 @@
 # Gateways Referral Tracking MVP (CUBO+)
 
-**Scope:** referral-code attribution for pending bookings, synchronization to confirmed/cancelled when the existing mock Bitcoin booking status changes, and an internal local report. No discount, partner rewards or public admin UI.
+**Scope:** referral-code attribution for pending bookings, synchronization to confirmed/cancelled after authoritative booking payment transitions, and an internal local report. No discount, partner rewards or public admin UI.
+
+**Payment update — 2026-11-07:** the placeholder provider and simulated-payment
+action are retired. BTCPay Testnet settlement is authoritative, with USD 1.00 for
+new attempts and an unchanged stay quote. Payment reconciliation retains referral
+recovery; GET status reads never reconcile payments. Mock-payment walkthroughs
+below describe the historical assignment, not the current checkout.
 
 ## Set up on a clean clone (Windows PowerShell)
 

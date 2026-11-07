@@ -10,10 +10,40 @@ Se conserva como excepción operativa el ensayo pendiente de restauración del r
 fresco; no certifica producción ni pagos reales. **H está implementada, verificada
 y migrada al Compose local el 2026-11-05 UTC**, con corte autorizado por la persona
 solicitante; **H aceptada y cerrada para el entorno local el 2026-11-05** por petición
-«marcalo como completada». Plan 4, 3.4 y las fases de infraestructura
-y pagos siguen pendientes. La prioridad es un
+«marcalo como completada». **T/P tienen implementación y revisión técnica; sus
+cambios están sin commit en `feature/btcpay-testnet-reservas`, en el directorio
+original. Pagos fue migrado y activado localmente contra BTCPay testnet4 el
+2026-11-07 UTC**, con autorización; falta aceptación del recorrido pagado.
+[Evidencia y pendientes](pagos/README.md). **3.4 está implementada y verificada con
+Luna**, disponible en esa rama sin aceptación C1;
+[evidencia](reservas/04-panel-reservas.md#implementación-y-evidencia-técnica--2026-11-05). Plan 4 sigue
+pendiente. La prioridad es un
 recorrido local de reserva y pago en testnet asociado a una cuenta de huésped.
 Inventario de referencia: 2026-10-31.
+
+**Cambio de infraestructura — 2026-11-06:** por petición de la persona solicitante,
+BTCPay se consume desde `https://btcpay.mauriciodmo.com`. El stack y sus cinco
+volúmenes BTCPay locales fueron eliminados sin tocar PostgreSQL/RustFS de la app.
+Los Compose de pagos se retiraron; no reiniciar el stack BTCPay local.
+La API del VPS aprobó sincronización, verificación de wallet/red y preflight remoto
+en la comprobación del 2026-11-07 01:17 UTC. La prueba privada dura diez minutos y
+requiere renovación. Falta el recorrido pagado de testnet y su aceptación;
+esta comprobación no acepta automáticamente T/P.
+
+**Activación local autorizada — 2026-11-07 UTC:** se verificó el respaldo reciente
+y se creó un dump PostgreSQL previo adicional. Las dos migraciones pendientes
+aprobaron, conservando exactamente las 17 tablas existentes; `PaymentAttempt`
+quedó vacía. Esquema/marcador verificados y segunda aplicación sin operaciones.
+La app de `http://localhost:3000` usa `btcpay-testnet` con la tienda actual del VPS;
+Core testnet4 se comprobó por su génesis, no solo por una dirección `tb1`.
+La reserva que ya tenía referencia mock se conservó: para evaluar una nueva factura
+se necesita otra reserva. No se abrió una factura, confirmó un pago ni creó un commit.
+
+**Cambio de importe autorizado — 2026-11-07 UTC:** tras comprobar que USD 0.01
+equivale a unos 13 satoshis y no alcanza el umbral on-chain de la wallet, la persona
+solicitante autorizó **USD 1.00 de testnet para nuevos intentos** («colocalo a un
+dolar mejor»). Se mantienen el precio real de la estancia y los intentos antiguos
+de un centavo, sin reescribirlos ni crearles una factura de reemplazo.
 
 **Seguimiento posterior:** la persona solicitante autoriza el testing de la fase
 actual 3.1–3.3/B2. Comandos, resultados y límites en
@@ -52,19 +82,20 @@ conservan la aceptación anterior y no certifican los nuevos alcances.
   - [x] 2.2 — Importación verificada de hospedajes y medios.
   - [x] 2.3 — Lectores públicos, checkout y acceso a medios sobre PostgreSQL.
 - [x] **Fase H — [Cuentas de huéspedes](huespedes/README.md).** Implementada con subagentes Luna, verificada, migrada y aceptada localmente el 2026-11-05 por petición «marcalo como completada». Registro, sesiones y reservas propias separados del personal; respaldo final y 16 tablas previas preservadas. No habilita producción.
-- [ ] **Fase T — BTCPay en Docker Compose local.** Preparar BTCPay Server, NBXplorer y Bitcoin Core XXS en testnet; puede avanzarse en paralelo con el catálogo y las cuentas.
+- [ ] **Fase T — Infraestructura BTCPay.** Compose local verificado previamente y ahora retirado por petición; destino actual VPS del operador por HTTPS. Sincronización y preflight remotos aprobados en la comprobación registrada. [Evidencia y límites](pagos/README.md). Pendiente aceptación/corte; no se da por cerrada.
 - [ ] **Plan 3 — [Persistencia y gestión de reservas](reservas/README.md).** Requiere el plan 2; el recorrido de huéspedes incorpora además la fase H.
   **Implementación y corte local 3.1–3.3 completados**, integrados en el checkout original
   y activos sobre PostgreSQL; [evidencia](reservas/05-evidencia-local.md).
   [Testing técnico B2 completado](reservas/06-testing-b2.md), con recorrido mock y
   carreras reales sobre PostgreSQL desechable. **Aceptación local registrada** por
   petición «cierra en @src/docs/plans/», con la excepción de restauración indicada
-  arriba. El plan 3 completo no se cierra: 3.4 continúa después de H/T/P.
+  arriba. El plan 3 completo no se cierra: falta aceptar y habilitar 3.4/C1 después
+  del recorrido operativo H/T/P; su implementación aislada ya está verificada.
   - [x] 3.1 — Modelo e importación privada de reservas.
   - [x] 3.2 — Consistencia financiera, snapshots y concurrencia.
   - [x] 3.3 — Adaptación de entradas, corte a PostgreSQL y verificación. **Hito B2 de persistencia aceptado localmente.**
-  - [ ] **Fase P — Integración de reservas y pagos BTCPay en testnet.** Requiere H, T y B2; completa el recorrido prioritario.
-  - [ ] 3.4 — Panel operativo de reservas, después del recorrido prioritario.
+  - [ ] **Fase P — Integración de reservas y pagos BTCPay en testnet.** Código y revisión técnica con Luna completados; cargo de prueba nuevo autorizado: USD 1.00. [Evidencia y límites](pagos/README.md). Falta el recorrido con fondos de testnet, payabilidad del nuevo importe y corte autorizado; no acredita cobro real.
+  - [ ] 3.4 — Panel operativo de reservas: implementado y revisado con Luna, 27 integraciones y recorrido de navegador aprobados en aislamiento. [Evidencia](reservas/04-panel-reservas.md#implementación-y-evidencia-técnica--2026-11-05). Pendientes aceptación/corte C1; no acepta P ni habilita el corte antes del recorrido prioritario.
 - [ ] **Plan 4 — [Administración de hospedajes](gestion-hospedajes/README.md).** Mantenerlo después del recorrido prioritario. Sus dependencias funcionales siguen siendo los planes 1–2 y B2, no el panel 3.4.
   - [ ] 4.1 — Gestión editorial y permisos por campo.
   - [ ] 4.2 — Gestión comercial de ADMIN.
@@ -113,13 +144,14 @@ de habilitar su uso fuera del entorno local; T/P permanecen fuera de este cierre
 
 - [ ] Antes de habilitar pagos, verificar el requisito previo a B1 de entradas y totales exactos y representables en reservas, API y proveedor; rechazar los no representables sin establecer límites comerciales arbitrarios.
 - [ ] Exigir registro o inicio de sesión para el nuevo recorrido; crear la reserva pendiente con propietario, fechas, condiciones y precio calculados en servidor. Conservar referidos y snapshots.
-- [ ] Crear una factura BTCPay de **USD 0.01** por cada intento de prueba, independientemente del precio de la estancia. Guardar el precio real y el importe de prueba por separado y mostrar claramente que el pago es de prueba en testnet.
+- [ ] Crear una factura BTCPay de **USD 1.00** por cada nuevo intento de prueba, independientemente del precio de la estancia. Guardar el precio real y el importe de prueba por separado y mostrar claramente que el pago es de prueba en testnet. Conservar el importe original de los intentos históricos de USD 0.01.
 - [ ] Aislar datos y configuración de prueba, comprobar que app, BTCPay y nodo usan testnet y bloquear el importe fijo y el flujo de prueba en mainnet. Una prueba pagada no acredita que se haya cobrado el precio real.
 - [ ] Persistir referencias y estado de los intentos; evitar facturas duplicadas y reconciliar resultados inciertos antes de reintentar. No mantener una transacción de base abierta durante llamadas de red.
 - [ ] Verificar la firma de las notificaciones de BTCPay, relacionarlas con la factura y tienda esperadas y procesarlas de forma idempotente. Confirmar solo con evidencia válida de pago liquidado; reconciliar notificaciones perdidas o fuera de orden.
 - [ ] Mantener la protección contra reservas solapadas y tratar pagos parciales, vencidos, tardíos, cancelaciones y conflictos de disponibilidad como casos explícitos de revisión; no reconfirmar una reserva cancelada ni afirmar un reembolso no realizado.
 - [ ] Probar de extremo a extremo con fondos de testnet: dos usuarios aislados, creación de reserva, factura, pago, confirmación e historial. Cubrir notificaciones duplicadas o inválidas y pagos tardíos, además de los controles financieros y de concurrencia existentes.
-- [ ] Verificar que USD 0.01 sea pagable con las reglas y comisiones on-chain de testnet. Si no lo es, registrar el bloqueo y consultar antes de cambiar el importe solicitado.
+- [x] Registrar el bloqueo de USD 0.01 por el umbral de polvo on-chain y consultar antes de cambiarlo: la persona solicitante autorizó USD 1.00 para nuevos intentos.
+- [ ] Verificar que USD 1.00 sea pagable con las reglas y comisiones on-chain de testnet. Si no lo es, registrar el bloqueo y consultar antes de volver a cambiar el importe.
 
 **Aceptación del recorrido prioritario:** cuenta propia, reserva persistida y factura
 de prueba asociadas; pago confirmado mediante BTCPay y acceso del huésped limitado a
