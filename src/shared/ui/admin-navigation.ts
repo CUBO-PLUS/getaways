@@ -31,7 +31,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     label: null,
     items: [
-      { href: "/admin", label: "Panel", description: "Resumen de las secciones disponibles.", icon: LayoutDashboard, roles: ["ADMIN", "EDITOR", "BOOKING_MANAGER"], exact: true },
+      { href: "/admin", label: "Panel", description: "Reservas pendientes y actividad del sitio.", icon: LayoutDashboard, roles: ["ADMIN", "EDITOR", "BOOKING_MANAGER"], exact: true },
     ],
   },
   {

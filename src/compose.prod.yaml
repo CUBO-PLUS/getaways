@@ -12,6 +12,8 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for the app in .env}
       DATABASE_COMPOSE_HOST: db
+      UMAMI_API_URL: ${UMAMI_API_URL:-https://uma.mauriciodmo.com}
+      UMAMI_API_KEY: ${UMAMI_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
