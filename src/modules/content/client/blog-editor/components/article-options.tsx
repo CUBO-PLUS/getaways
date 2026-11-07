@@ -1,13 +1,14 @@
 /* eslint-disable @next/next/no-img-element -- Private media requires the editor session. */
 import { useState } from "react";
+import { FileText, ImageIcon, Search, Tags } from "lucide-react";
 import { cn } from "@/shared/ui/utils";
 import { control, input, type Category, type Draft } from "../shared";
 
 const articleTabs = [
-  ["details", "Resumen y dirección"],
-  ["categories", "Categorías"],
-  ["cover", "Portada"],
-  ["seo", "Buscadores (SEO)"],
+  ["details", "Resumen y dirección", FileText],
+  ["categories", "Categorías", Tags],
+  ["cover", "Portada", ImageIcon],
+  ["seo", "Buscadores (SEO)", Search],
 ] as const;
 
 type ArticleTab = typeof articleTabs[number][0];
@@ -23,10 +24,10 @@ type Props = {
 export function ArticleOptions({ draft, categories, uploading, field, upload }: Props) {
   const [articleTab, setArticleTab] = useState<ArticleTab>("details");
   return (
-    <section aria-labelledby="article-options-title" className="mx-auto my-6 max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
-      <h2 id="article-options-title" className="m-0 text-lg">Opciones del artículo</h2>
-      <div role="tablist" aria-label="Opciones del artículo" className="mt-4 flex flex-wrap gap-1 border-b border-slate-200 pb-3">
-        {articleTabs.map(([name, label], index) => (
+    <section aria-labelledby="article-options-title" className="mx-auto my-6 min-w-0 max-w-5xl overflow-hidden rounded-2xl border border-[rgba(7,36,86,.075)] bg-white font-body text-sm text-[#394342] shadow-[0_5px_30px_rgba(7,36,86,.045)] [&_button]:font-body [&_input]:font-body [&_textarea]:font-body">
+      <div className="relative overflow-x-auto border-b border-slate-200">
+      <div role="tablist" aria-label="Opciones del artículo" className="flex min-w-max sm:min-w-0">
+        {articleTabs.map(([name, label, Icon], index) => (
           <button
             key={name}
             type="button"
@@ -35,7 +36,7 @@ export function ArticleOptions({ draft, categories, uploading, field, upload }: 
             aria-controls={`article-panel-${name}`}
             aria-selected={articleTab === name}
             tabIndex={articleTab === name ? 0 : -1}
-            className={cn(control, "border-transparent", articleTab === name && "border-slate-300 bg-slate-100 text-slate-950")}
+            className={cn("inline-flex min-h-14 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-none border-r border-b-[3px] border-r-slate-200 px-5 font-body text-sm font-medium last:border-r-0 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[#0277bd]", articleTab === name ? "border-b-[#394342] bg-[#edf2ee] text-[#394342]" : "border-b-transparent bg-[#f8f9f7] text-[#596260] hover:bg-[#eef1ed]")}
             onClick={() => setArticleTab(name)}
             onKeyDown={event => {
               const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
@@ -50,11 +51,13 @@ export function ArticleOptions({ draft, categories, uploading, field, upload }: 
               document.getElementById(`article-tab-${articleTabs[next][0]}`)?.focus();
             }}
           >
-            {label}{name === "categories" ? ` (${draft.categories.length})` : ""}
+            <Icon size={16} aria-hidden /><span>{label}{name === "categories" ? ` (${draft.categories.length})` : ""}</span>
           </button>
         ))}
       </div>
-      <div className="mt-5 text-sm text-slate-700 [&_p]:mb-2 [&_p]:text-xs [&_p]:leading-5">
+      </div>
+      <div className="p-5 text-sm text-[#394342] sm:p-7 [&_p]:mb-2 [&_p]:text-xs [&_p]:leading-5">
+        <h2 id="article-options-title" className="m-0 mb-5 font-heading text-[22px] font-medium text-[#394342]">Opciones del artículo</h2>
         <div role="tabpanel" id="article-panel-details" aria-labelledby="article-tab-details" hidden={articleTab !== "details"} tabIndex={0}>
           <div className="grid gap-6 md:grid-cols-2">
             <label className="block" htmlFor="excerpt">
@@ -183,6 +186,7 @@ export function ArticleOptions({ draft, categories, uploading, field, upload }: 
           </div>
         </div>
       </div>
+      <p className="m-0 border-t border-slate-200 bg-[#f8f9f7] px-5 py-3 text-xs leading-5 text-slate-500 sm:px-7">Las opciones y el contenido comparten el autoguardado del borrador. Cambiar de pestaña conserva tus ediciones.</p>
     </section>
   );
 }

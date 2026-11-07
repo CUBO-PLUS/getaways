@@ -10,11 +10,12 @@ type Props = {
   panel: Panel;
   uploading: boolean;
   openLink: (trigger: HTMLElement) => void;
-  startInsert: (trigger: HTMLElement) => void;
-  openPanel: (panel: Panel, trigger: HTMLElement) => void;
+  startInsert?: (trigger: HTMLElement) => void;
+  openPanel?: (panel: Panel, trigger: HTMLElement) => void;
+  hideImageTools?: boolean;
 };
 
-export function EditorToolbar({ editor, editorState, panel, uploading, openLink, startInsert, openPanel }: Props) {
+export function EditorToolbar({ editor, editorState, panel, uploading, openLink, startInsert, openPanel, hideImageTools = false }: Props) {
   const groups = [
     ["Texto", [
       ["Negrita", Bold, () => editor?.chain().focus().toggleBold().run(), editorState?.bold],
@@ -89,7 +90,7 @@ export function EditorToolbar({ editor, editorState, panel, uploading, openLink,
         </div>
       ))}
 
-      <div role="group" aria-label="Insertar y revisar contenido">
+      <div role="group" aria-label={hideImageTools ? "Enlaces" : "Insertar y revisar contenido"}>
         <div className="flex flex-wrap gap-1">
           <button
             type="button"
@@ -100,24 +101,24 @@ export function EditorToolbar({ editor, editorState, panel, uploading, openLink,
           >
             <Link2 size={16} aria-hidden="true" /> Enlace
           </button>
-          <button
+          {!hideImageTools && <button
             type="button"
             className={cn(control, "inline-flex min-h-9 items-center gap-1.5 px-2 text-xs")}
             aria-haspopup="dialog"
             disabled={uploading}
-            onClick={event => startInsert(event.currentTarget)}
+            onClick={event => startInsert?.(event.currentTarget)}
           >
             <ImagePlus size={16} aria-hidden="true" /> Insertar imagen
-          </button>
-          <button
+          </button>}
+          {!hideImageTools && <button
             type="button"
             className={cn(control, "inline-flex min-h-9 items-center gap-1.5 px-2 text-xs")}
             aria-haspopup="dialog"
             aria-expanded={panel === "images"}
-            onClick={event => openPanel("images", event.currentTarget)}
+            onClick={event => openPanel?.("images", event.currentTarget)}
           >
             <ImageIcon size={16} aria-hidden="true" /> Revisar imágenes ({editorState?.images.length ?? 0})
-          </button>
+          </button>}
         </div>
       </div>
     </div>
