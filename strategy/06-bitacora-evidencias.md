@@ -36,12 +36,3 @@ Los resultados de pruebas corresponden a los registros técnicos enlazados. Esta
 El [informe estratégico](Gateways_Informe_Estrategico.pdf) está publicado en el repositorio. Incluye diagnóstico exploratorio, propuesta, capturas del MVP, recomendaciones y límites de la evidencia.
 
 Su publicación no acredita por sí sola la aprobación comercial del negocio ni la entrega en la plataforma oficial del programa.
-
-## Entrega oficial
-
-Pendiente de incorporar o verificar:
-
-- Archivo `.txt` con la URL pública del repositorio.
-- Google Doc y acceso al historial requerido.
-- Fecha, hora y destino oficial de entrega.
-- Comprobante de entrega y feedback de mentoría.
