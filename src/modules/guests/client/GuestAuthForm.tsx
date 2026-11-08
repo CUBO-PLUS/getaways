@@ -15,6 +15,7 @@ function safeReturnTo(value: string | null) {
     if (url.origin !== window.location.origin) return "/account";
     if (/^\/listing\/[^/]+\/?$/.test(url.pathname)) return url.pathname + url.search;
     if (url.pathname === "/account") return "/account";
+    if (url.pathname === "/assistant" && !url.search) return "/assistant";
     if (url.pathname === "/checkout" && /^\?session_id=[A-Za-z0-9_-]+$/.test(url.search)) return url.pathname + url.search;
   } catch { /* invalid URL */ }
   return "/account";

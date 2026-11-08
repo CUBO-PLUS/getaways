@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/infrastructure/prisma/db";
+import { enqueueRagSource } from "@/infrastructure/prisma/rag-source-queue";
 import type { Session } from "@/modules/auth/server/auth";
 import type { CategoryKind, CategorySummary } from "@/modules/categories/category-fields";
 import { parseCategoryInput } from "@/modules/categories/category-fields";
@@ -65,6 +66,15 @@ export async function updateCategory(actor: Session, kind: CategoryKind, id: num
       ? await tx.orm.public.BlogCategory.where({ id }).forUpdate().first()
       : await tx.orm.public.ListingTerm.where({ id, taxonomy }).forUpdate().first();
     if (!current) throw new ListingAdminError(404, "Category not found");
+    const affectedSources = kind === "blog"
+      ? values.name !== current.name
+        ? await tx.query(db.raw.sql`SELECT post_id AS id FROM (
+            SELECT "postId" AS post_id FROM "BlogPostCategory" WHERE "categoryId" = ${id}
+            UNION SELECT "publicationPostId" FROM "BlogPublicationCategory" WHERE "categoryId" = ${id}
+          ) associations`.returnsRow({ id: "pg/int4@1" }).build())
+        : []
+      : await tx.query(db.raw.sql`SELECT DISTINCT "listingId" AS id FROM "ListingTermAssignment" WHERE "termId" = ${id}`
+          .returnsRow({ id: "pg/int4@1" }).build());
     if (values.slug !== current.slug) {
       const currentSlug = kind === "blog" ? await tx.orm.public.BlogCategory.where({ slug: values.slug }).first() : await tx.orm.public.ListingTerm.where({ taxonomy, slug: values.slug }).first();
       const reservedSlug = kind === "blog" ? await tx.orm.public.BlogCategorySlugAlias.where({ slug: values.slug }).first() : await tx.orm.public.ListingCategorySlugAlias.where({ slug: values.slug }).first();
@@ -78,9 +88,12 @@ export async function updateCategory(actor: Session, kind: CategoryKind, id: num
       if (kind === "blog") await tx.orm.public.BlogCategorySlugAlias.create({ slug: current.slug, categoryId: id });
       else await tx.orm.public.ListingCategorySlugAlias.create({ slug: current.slug, categoryId: id });
     }
-    return kind === "blog"
+    const updated = kind === "blog"
       ? tx.orm.public.BlogCategory.where({ id }).update(values)
       : tx.orm.public.ListingTerm.where({ id, taxonomy }).update(values);
+    const result = await updated;
+    for (const source of affectedSources) await enqueueRagSource(tx, kind === "blog" ? "blog" : "listing", source.id);
+    return result;
   });
 }
 

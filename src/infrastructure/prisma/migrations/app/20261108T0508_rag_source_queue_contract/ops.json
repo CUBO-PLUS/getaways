@@ -1,0 +1,80 @@
+[
+  {
+    "id": "table.RagSourceQueue",
+    "label": "Create table \"RagSourceQueue\"",
+    "summary": "Creates table \"RagSourceQueue\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "RagSourceQueue"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"RagSourceQueue\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagSourceQueue\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"RagSourceQueue\"",
+        "sql": "CREATE TABLE \"public\".\"RagSourceQueue\" (\n  \"attempts\" int4 DEFAULT 0 NOT NULL,\n  \"availableAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"generation\" int8 DEFAULT '1'::int8 NOT NULL,\n  \"lastError\" text,\n  \"leaseToken\" text,\n  \"lockedAt\" timestamptz,\n  \"sourceId\" text NOT NULL,\n  \"sourceType\" text NOT NULL,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"sourceType\", \"sourceId\"),\n  CONSTRAINT \"rag_source_queue_counters_valid_a1c33900\" CHECK (generation > 0 AND attempts >= 0),\n  CONSTRAINT \"rag_source_queue_status_valid_d3be0e7c\" CHECK (status IN ('pending', 'processing', 'failed')),\n  CONSTRAINT \"rag_source_queue_type_valid_ed9c1704\" CHECK (\"sourceType\" IN ('blog', 'listing'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"RagSourceQueue\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagSourceQueue\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.RagSourceQueue.RagSourceQueue_status_availableAt_idx_98697328",
+    "label": "Create index \"RagSourceQueue_status_availableAt_idx_98697328\" on \"RagSourceQueue\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "RagSourceQueue_status_availableAt_idx_98697328",
+        "table": "RagSourceQueue"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"RagSourceQueue_status_availableAt_idx_98697328\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagSourceQueue_status_availableAt_idx_98697328\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"RagSourceQueue_status_availableAt_idx_98697328\"",
+        "sql": "CREATE INDEX \"RagSourceQueue_status_availableAt_idx_98697328\" ON \"public\".\"RagSourceQueue\" (\"status\", \"availableAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"RagSourceQueue_status_availableAt_idx_98697328\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagSourceQueue_status_availableAt_idx_98697328\""
+        ]
+      }
+    ]
+  }
+]

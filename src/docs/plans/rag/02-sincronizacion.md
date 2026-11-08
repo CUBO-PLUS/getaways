@@ -10,7 +10,7 @@
 - [ ] Registrar de forma persistente el trabajo pendiente en la misma transacción que
   cambia la fuente pública, sin llamar al modelo ni mantener transacciones abiertas
   durante la inferencia. El guardado editorial no depende del éxito de embeddings.
-- [ ] Procesar fuera de la transacción con concurrencia limitada, reintentos, registro
+- [x] Procesar fuera de la transacción con concurrencia limitada, reintentos, registro
   de fallos y recuperación tras reinicios; definir cómo se inicia y supervisa el
   procesador en cada entorno, sin depender de una petición web efímera.
 - [ ] Agrupar cambios repetidos de una fuente y omitir fragmentos cuya huella y versión
@@ -21,7 +21,7 @@
   o eliminar; consultar siempre visibilidad y vigencia actual antes de responder.
 - [ ] Evitar que un snapshot desactualizado se presente como vigente durante el
   procesamiento o después de un fallo. Definir estado pendiente y recuperación segura.
-- [ ] Reconciliar periódicamente pendientes y fuentes para reparar operaciones omitidas
+- [x] Reconciliar periódicamente pendientes y fuentes para reparar operaciones omitidas
   sin indexar contenido privado ni producir escrituras duplicadas.
 
 ## Aceptación

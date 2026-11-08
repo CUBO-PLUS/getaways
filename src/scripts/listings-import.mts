@@ -8,6 +8,7 @@ import sharp from "sharp";
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { optimizeImage, optimizedImageKey } from "../infrastructure/images/optimize.ts";
 import { normalizeLegacyListing } from "../modules/listings/listing-import-normalization.ts";
+import { enqueueRagSource } from "../infrastructure/prisma/rag-source-queue.ts";
 
 type Term = { id: number; wp_id: string | null; taxonomy: string; slug: string; name: string };
 type Media = { id: number; wp_id: string | null; storage_path: string; original_filename: string; alt_text: string | null };
@@ -219,6 +220,7 @@ export async function importListings(root: string, apply: boolean, verify: boole
           if (!existingListingMedia.some(x => x.listingId === l.id)) await tx.orm.public.ListingMedia.create(value);
         }
       }
+      for (const listing of normalized) await enqueueRagSource(tx, "listing", listing.id);
       const listingSequence = db.raw.sql`SELECT setval(pg_get_serial_sequence('"Listing"', 'id'), GREATEST((SELECT last_value FROM "Listing_id_seq"), (SELECT COALESCE(MAX(id),1) FROM "Listing")), true) AS value`.returnsRow({ value: "pg/int8@1" }).build();
       const [listingSeq] = await tx.query(listingSequence);
       if (!listingSeq) throw new Error("could not advance Listing sequence");

@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { optimizeImage, optimizedImageKey } from "../infrastructure/images/optimize.ts";
 import { db } from "../infrastructure/prisma/db.ts";
+import { enqueueRagSource } from "../infrastructure/prisma/rag-source-queue.ts";
 import { getBlogMediaBucket, getS3Client } from "../infrastructure/storage/s3.ts";
 import { BLOG_DOCUMENT_SCHEMA_VERSION, validateBlogDocument } from "../modules/content/blog-schema.ts";
 import { analyzeBlogSources } from "./blog-import-dry-run.mjs";
@@ -310,6 +311,7 @@ export async function importBlog(root: string, conversionBytes: Uint8Array, appr
         await tx.orm.public.BlogPostCategory.create({ postId: post.id, categoryId });
         await tx.orm.public.BlogPublicationCategory.create({ publicationPostId: publication.postId, categoryId });
       }
+      await enqueueRagSource(tx, "blog", post.id);
       await tx.orm.public.BlogImportMapping.create({ source: SOURCE, sourceId, targetKind: "post", targetId: post.id, fingerprint: fingerprint({ sourceWpId: article.source.wpId, slug: article.source.slug }) });
     }
     return { mode: "imported", articles: conversion.articles.length, media: prepared.length };

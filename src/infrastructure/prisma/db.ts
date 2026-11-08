@@ -1,6 +1,7 @@
 import "server-only";
 import "temporal-polyfill/full/global";
 import postgres, { type PostgresClient } from "@prisma/orm-postgres/runtime";
+import pgvectorRuntimeDescriptor from "@prisma/orm-extension-pgvector/runtime";
 import type { Contract } from "./contract.d";
 import contractJson from "./contract.json" with { type: "json" };
 import { databaseUrl } from "./database-url.mjs";
@@ -13,6 +14,7 @@ const key = JSON.stringify([contractJson.storage.storageHash, contractJson.execu
 export const db = globalForPrisma.gatewaysDbCache?.key === key ? globalForPrisma.gatewaysDbCache.client : postgres<Contract>({
   contractJson,
   url,
+  extensions: [pgvectorRuntimeDescriptor],
 });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.gatewaysDbCache = { client: db, key };

@@ -26,3 +26,9 @@ COPY --from=build --chown=node:node /app/public ./public
 USER node
 EXPOSE 3000
 CMD ["node", "server.js"]
+
+FROM dependencies AS rag-worker
+COPY --chown=node:node . .
+ENV NODE_ENV=production
+USER node
+CMD ["pnpm", "rag:worker"]

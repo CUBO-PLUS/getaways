@@ -1,4 +1,4 @@
-import { youtubeVideoId } from "@/shared/media/video-embed";
+import { youtubeVideoId } from "../../shared/media/video-embed.ts";
 
 /*
  * The write boundary of the listing admin: what each endpoint accepts, as an

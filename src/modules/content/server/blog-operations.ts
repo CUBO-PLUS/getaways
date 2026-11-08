@@ -1,6 +1,7 @@
 import "server-only";
 
 import { db } from "@/infrastructure/prisma/db";
+import { enqueueRagSource } from "@/infrastructure/prisma/rag-source-queue";
 import { BLOG_DOCUMENT_SCHEMA_VERSION, type BlogDocument, validateBlogDocument } from "@/modules/content/blog-schema";
 import { BLOG_ID_MAX } from "@/modules/content/blog-ids";
 import { validatePublishableBlogPost } from "@/modules/content/blog-publication-validation";
@@ -56,13 +57,15 @@ export async function saveBlogDraft(id: number, input: Record<string, unknown>, 
     if (categoryIds.some((categoryId) => !categories.some((category) => category.id === categoryId))) throw new TypeError("unknown category");
     const document = await validateBlogDocument(input.document, { schemaVersion: BLOG_DOCUMENT_SCHEMA_VERSION, hasMedia });
     if (post.firstPublishedAt && post.slug !== input.slug) throw new TypeError("slug is immutable after first publication");
-  if (post.slug !== input.slug) {
+    const slugChanged = post.slug !== input.slug;
+    if (slugChanged) {
       const slug = input.slug as string;
       const duplicate = await tx.orm.public.BlogPost.where({ slug }).first();
       if (duplicate && duplicate.id !== id) throw new TypeError("slug already exists");
     }
     const updated = await tx.orm.public.BlogPost.where({ id }).update({ slug: input.slug as string, title: input.title as string, excerpt: input.excerpt as string, document, documentSchemaVersion: BLOG_DOCUMENT_SCHEMA_VERSION, coverMediaId: input.coverMediaId as number | null, coverAlt: input.coverAlt as string | null, seoTitle: input.seoTitle as string | null, seoDescription: input.seoDescription as string | null, version: Number(version) + 1 });
     if (!updated) throw new Error("Blog draft disappeared during update");
+    if (slugChanged) await enqueueRagSource(tx, "blog", id);
     await tx.orm.public.BlogPostCategory.where({ postId: id }).deleteAll();
     for (const categoryId of categoryIds) await tx.orm.public.BlogPostCategory.create({ postId: id, categoryId });
     return { id: updated.id, slug: updated.slug, version: updated.version };
@@ -92,6 +95,7 @@ export async function publishBlogDraft(id: number, expectedVersion: number, requ
     const publication = await tx.orm.public.BlogPublication.create({ postId: id, title: post.title, excerpt: post.excerpt, document: post.document, documentSchemaVersion: post.documentSchemaVersion, coverMediaId: post.coverMediaId, coverAlt: post.coverAlt, seoTitle: post.seoTitle, seoDescription: post.seoDescription, publishedAt });
     for (const category of categories) await tx.orm.public.BlogPublicationCategory.create({ publicationPostId: id, categoryId: category.categoryId });
     if (!post.firstPublishedAt) await tx.orm.public.BlogPost.where({ id }).update({ firstPublishedAt: now });
+    await enqueueRagSource(tx, "blog", id);
     return { id, slug: post.slug, publishedAt: publication.publishedAt, firstPublishedAt: publishedAt, publication, hasUnpublishedChanges: false };
   });
 }
@@ -106,6 +110,7 @@ export async function unpublishBlogDraft(id: number, expectedVersion: number, re
     if (post.version !== expectedVersion) throw new BlogConflict(post.version);
     const publication = await tx.orm.public.BlogPublication.where({ postId: id }).first();
     await tx.orm.public.BlogPublication.where({ postId: id }).deleteAll();
+    if (publication) await enqueueRagSource(tx, "blog", id);
     return { id, slug: post.slug, version: post.version, publishedAt: publication?.publishedAt ?? null, firstPublishedAt: post.firstPublishedAt, publication: null, hasUnpublishedChanges: false };
   });
 }

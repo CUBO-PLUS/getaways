@@ -3,6 +3,7 @@ import { Temporal } from "temporal-polyfill/full";
 import couponRows from "@/data/coupons.json";
 import type { CouponRow } from "@/data/types";
 import { db } from "@/infrastructure/prisma/db";
+import { enqueueRagSource } from "@/infrastructure/prisma/rag-source-queue";
 import type { Role, Session } from "@/modules/auth/server/auth";
 import {
   AMENITY_KEYS,
@@ -227,6 +228,7 @@ export async function saveListingContent(actor: Session, id: number, patch: Cont
         if (!present.has(termId)) await tx.orm.public.ListingTermAssignment.create({ listingId: id, termId });
       }
     }
+    await enqueueRagSource(tx, "listing", id);
     return { version: updated.version };
   });
 }
@@ -250,6 +252,7 @@ export async function saveListingCommercial(actor: Session, id: number, patch: C
     // Existing bookings keep their own pricing snapshot; only new quotes use these values.
     const updated = await tx.orm.public.Listing.where({ id, version }).update({ ...changes, version: version + 1 });
     if (!updated) throw conflict();
+    await enqueueRagSource(tx, "listing", id);
     return { version: updated.version };
   });
 }
@@ -282,6 +285,7 @@ export async function changeListingStatus(actor: Session, id: number, change: St
     }
     const updated = await tx.orm.public.Listing.where({ id, version: change.version }).update({ ...values, version: change.version + 1 });
     if (!updated) throw conflict();
+    await enqueueRagSource(tx, "listing", id);
     return { version: updated.version, status: (updated.archivedAt ? "archived" : updated.active ? "active" : "inactive") as ListingStatus };
   });
 }
@@ -295,6 +299,7 @@ export async function createListing(actor: Session, input: { title: string; slug
     }
     // New listings start off sale: they cannot be activated until the minimum data is complete.
     const created = await tx.orm.public.Listing.create({ slug: input.slug, title: input.title, contentHtml: "", attributes: {}, active: false });
+    await enqueueRagSource(tx, "listing", created.id);
     return { id: created.id, version: created.version };
   });
 }
@@ -314,6 +319,7 @@ export async function deleteListing(actor: Session, id: number, version: number)
       throw new ListingAdminError(409, "A coupon is tied to this listing, so it cannot be deleted. Archive it instead.");
     }
     // Associations go; the shared images themselves stay in the library.
+    await enqueueRagSource(tx, "listing", id);
     await tx.orm.public.ListingMedia.where({ listingId: id }).deleteAndCount();
     await tx.orm.public.ListingTermAssignment.where({ listingId: id }).deleteAndCount();
     const deleted = await tx.orm.public.Listing.where({ id, version }).delete();

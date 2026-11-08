@@ -4,14 +4,14 @@
 
 ## Recuperación
 
-- [ ] Combinar búsqueda semántica por contexto y búsqueda textual por nombre y términos;
+- [x] Combinar búsqueda semántica por contexto y búsqueda textual por nombre y términos;
   evaluar ambas por separado y combinadas con preguntas reales y multilingües.
-- [ ] Convertir requisitos inequívocos a filtros estructurados validados con un
+- [x] Convertir requisitos inequívocos a filtros estructurados validados con un
   vocabulario permitido: servicios, ubicación, capacidad y otros datos confirmados.
 - [ ] Reutilizar las claves y convenciones del catálogo; auditar datos heredados y
   distinguir verdadero, falso y desconocido donde la fuente lo permita. La ausencia de
   una casilla de servicio sigue la semántica vigente del catálogo, no una inferencia.
-- [ ] Aplicar todos los filtros obligatorios antes del ranking: `wifi` **y** `hammocks`
+- [x] Aplicar todos los filtros obligatorios antes del ranking: `wifi` **y** `hammocks`
   solo devuelve alojamientos que cumplan ambos. No relajar filtros sin explicarlo.
 - [ ] Para capacidad y otros campos desconocidos, no afirmar cumplimiento. Revisar
   diferencias con `filterListings`, que conserva capacidad desconocida en ciertos casos.
@@ -19,7 +19,7 @@
   explícitamente cuáles requisitos no cumplen o no están confirmados.
 - [ ] Verificar visibilidad, vigencia y autorización de cada fuente en la consulta;
   devolver IDs, fragmentos y metadatos de procedencia para citas y cards.
-- [ ] Soportar conteo y paginación completa cuando se soliciten todos los alojamientos,
+- [x] Soportar conteo y paginación completa cuando se soliciten todos los alojamientos,
   sin confundir el límite de contexto vectorial con el total de resultados.
 - [ ] Consultar precio y disponibilidad desde la lógica vigente y en tiempo real cuando
   proceda; no garantizar disponibilidad ni una cotización a partir del índice.
@@ -32,3 +32,24 @@
   «hamacas»/«hammocks»; registrar errores y decisiones de ajuste.
 - [ ] Medir latencia y calidad sobre un conjunto representativo; documentar límites y
   agregar índices o infraestructura adicionales solo cuando la medición lo justifique.
+
+## Implementación disponible
+
+- `src/modules/rag/search.ts` exporta `searchRag` y `validateRagSearchInput` para uso
+  server-only. La respuesta separa `totalCount` del page size y cada resultado incluye
+  `sourceType`, `sourceId`, URL canónica, título, sección, fragmento y score.
+- La API R4 `/api/rag/answer` detecta explícitamente `wifi`/`wi-fi` y `hamacas`/`hammocks`
+  como filtros obligatorios del esquema permitido antes de ranking; no delega esta
+  extracción al modelo. Si no hay coincidencias, informa que no halló alojamientos que
+  confirmen todos los servicios. Negaciones y términos no mapeados no se convierten en
+  requisitos positivos.
+- La consulta combina coseno pgvector con ranking textual `simple` y deduplica a un
+  fragmento mejor posicionado por fuente. Amenidades (claves `AMENITY_KEYS`), slugs de
+  categorías existentes y capacidad mínima se validan; todos los filtros aplican con
+  AND. Capacidad nula no cumple un mínimo.
+- La SQL excluye publicaciones futuras/no publicadas, listings inactivos/archivados y
+  fuentes con trabajo R2 pendiente, procesándose o agotado con error registrado. Esta
+  última condición evita servir snapshots viejos tras un fallo terminal de reindexación.
+- Quedan pendientes filtros estructurados adicionales (ubicación/edificio y métricas),
+  autorización del llamador en la futura API R4/R5, evaluación multilingüe/calidad,
+  medición de latencia y comprobación de precio/disponibilidad en tiempo real.

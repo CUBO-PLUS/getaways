@@ -30,6 +30,16 @@ services:
       retries: 3
       start_period: 30s
 
+  rag-worker:
+    build:
+      context: .
+      target: rag-worker
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set external DATABASE_URL for the worker in .env}
+
   rustfs:
     image: rustfs/rustfs:1.0.4
     restart: unless-stopped

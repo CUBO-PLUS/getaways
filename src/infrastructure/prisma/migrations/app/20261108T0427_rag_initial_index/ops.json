@@ -1,0 +1,284 @@
+[
+  {
+    "id": "table.RagChunk",
+    "label": "Create table \"RagChunk\"",
+    "summary": "Creates table \"RagChunk\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "RagChunk"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"RagChunk\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagChunk\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"RagChunk\"",
+        "sql": "CREATE TABLE \"public\".\"RagChunk\" (\n  \"contentHash\" text NOT NULL,\n  \"embedding\" vector(768) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"ordinal\" int4 NOT NULL,\n  \"section\" text NOT NULL,\n  \"sourceId\" int4 NOT NULL,\n  \"text\" text NOT NULL,\n  \"tokenCount\" int4 NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"rag_chunk_valid_c19e923c\" CHECK (ordinal >= 0 AND btrim(text) <> '')\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"RagChunk\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagChunk\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.RagSource",
+    "label": "Create table \"RagSource\"",
+    "summary": "Creates table \"RagSource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "RagSource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"RagSource\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagSource\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"RagSource\"",
+        "sql": "CREATE TABLE \"public\".\"RagSource\" (\n  \"canonicalUrl\" text NOT NULL,\n  \"contentHash\" text NOT NULL,\n  \"embeddingDimensions\" int4 NOT NULL,\n  \"embeddingModel\" text NOT NULL,\n  \"embeddingRevision\" text NOT NULL,\n  \"extractorVersion\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"indexedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"sourceId\" text NOT NULL,\n  \"sourceType\" text NOT NULL,\n  \"title\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"rag_source_type_valid_ed9c1704\" CHECK (\"sourceType\" IN ('blog', 'listing'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"RagSource\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagSource\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.RagChunk.RagChunk_sourceId_ordinal_key",
+    "label": "Add unique constraint on \"RagChunk\" (sourceId, ordinal)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "RagChunk_sourceId_ordinal_key",
+        "table": "RagChunk"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"RagChunk_sourceId_ordinal_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RagChunk_sourceId_ordinal_key",
+          "public",
+          "\"public\".\"RagChunk\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"RagChunk_sourceId_ordinal_key\"",
+        "sql": "ALTER TABLE \"public\".\"RagChunk\" ADD CONSTRAINT \"RagChunk_sourceId_ordinal_key\" UNIQUE (\"sourceId\", \"ordinal\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"RagChunk_sourceId_ordinal_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RagChunk_sourceId_ordinal_key",
+          "public",
+          "\"public\".\"RagChunk\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.RagSource.RagSource_sourceType_sourceId_key",
+    "label": "Add unique constraint on \"RagSource\" (sourceType, sourceId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "RagSource_sourceType_sourceId_key",
+        "table": "RagSource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"RagSource_sourceType_sourceId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RagSource_sourceType_sourceId_key",
+          "public",
+          "\"public\".\"RagSource\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"RagSource_sourceType_sourceId_key\"",
+        "sql": "ALTER TABLE \"public\".\"RagSource\" ADD CONSTRAINT \"RagSource_sourceType_sourceId_key\" UNIQUE (\"sourceType\", \"sourceId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"RagSource_sourceType_sourceId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RagSource_sourceType_sourceId_key",
+          "public",
+          "\"public\".\"RagSource\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.RagChunk.RagChunk_sourceId_idx_d92a2571",
+    "label": "Create index \"RagChunk_sourceId_idx_d92a2571\" on \"RagChunk\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "RagChunk_sourceId_idx_d92a2571",
+        "table": "RagChunk"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"RagChunk_sourceId_idx_d92a2571\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagChunk_sourceId_idx_d92a2571\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"RagChunk_sourceId_idx_d92a2571\"",
+        "sql": "CREATE INDEX \"RagChunk_sourceId_idx_d92a2571\" ON \"public\".\"RagChunk\" (\"sourceId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"RagChunk_sourceId_idx_d92a2571\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagChunk_sourceId_idx_d92a2571\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.RagSource.RagSource_sourceType_idx_d8b2a801",
+    "label": "Create index \"RagSource_sourceType_idx_d8b2a801\" on \"RagSource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "RagSource_sourceType_idx_d8b2a801",
+        "table": "RagSource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"RagSource_sourceType_idx_d8b2a801\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagSource_sourceType_idx_d8b2a801\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"RagSource_sourceType_idx_d8b2a801\"",
+        "sql": "CREATE INDEX \"RagSource_sourceType_idx_d8b2a801\" ON \"public\".\"RagSource\" (\"sourceType\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"RagSource_sourceType_idx_d8b2a801\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RagSource_sourceType_idx_d8b2a801\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.RagChunk.RagChunk_sourceId_fkey",
+    "label": "Add foreign key \"RagChunk_sourceId_fkey\" on \"RagChunk\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "RagChunk_sourceId_fkey",
+        "table": "RagChunk"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"RagChunk_sourceId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RagChunk_sourceId_fkey",
+          "public",
+          "\"public\".\"RagChunk\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"RagChunk_sourceId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"RagChunk\"\nADD CONSTRAINT \"RagChunk_sourceId_fkey\"\nFOREIGN KEY (\"sourceId\")\nREFERENCES \"public\".\"RagSource\" (\"id\")\nON DELETE CASCADE\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"RagChunk_sourceId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RagChunk_sourceId_fkey",
+          "public",
+          "\"public\".\"RagChunk\""
+        ]
+      }
+    ]
+  }
+]

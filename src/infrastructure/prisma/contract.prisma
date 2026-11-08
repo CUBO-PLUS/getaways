@@ -337,3 +337,57 @@ model ListingMedia {
   @@index([listingId, position])
   @@check(expression: sql`position >= 0`, name: "listing_media_position_nonnegative")
 }
+
+model RagSource {
+  id                  Int         @id @default(autoincrement())
+  sourceType          String
+  sourceId            String
+  canonicalUrl        String
+  title               String
+  contentHash         String
+  extractorVersion    String
+  embeddingModel      String
+  embeddingRevision   String
+  embeddingDimensions Int
+  indexedAt           DateTime    @default(now())
+  chunks              RagChunk[]
+
+  @@unique([sourceType, sourceId])
+  @@index([sourceType])
+  @@check(expression: sql`"sourceType" IN ('blog', 'listing')`, name: "rag_source_type_valid")
+}
+
+model RagSourceQueue {
+  sourceType  String
+  sourceId    String
+  generation  BigInt   @default(1)
+  status      String   @default("pending")
+  attempts    Int      @default(0)
+  availableAt DateTime @default(now())
+  lockedAt    DateTime?
+  leaseToken  String?
+  lastError   String?
+  updatedAt   DateTime @default(now())
+
+  @@id([sourceType, sourceId])
+  @@index([status, availableAt])
+  @@check(expression: sql`"sourceType" IN ('blog', 'listing')`, name: "rag_source_queue_type_valid")
+  @@check(expression: sql`generation > 0 AND attempts >= 0`, name: "rag_source_queue_counters_valid")
+  @@check(expression: sql`status IN ('pending', 'processing', 'failed')`, name: "rag_source_queue_status_valid")
+}
+
+model RagChunk {
+  id          Int       @id @default(autoincrement())
+  sourceId    Int
+  ordinal     Int
+  section     String
+  text        String
+  contentHash String
+  tokenCount  Int
+  embedding   pgvector.Vector(768)
+  source      RagSource @relation(fields: [sourceId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([sourceId, ordinal])
+  @@index([sourceId])
+  @@check(expression: sql`ordinal >= 0 AND btrim(text) <> ''`, name: "rag_chunk_valid")
+}
