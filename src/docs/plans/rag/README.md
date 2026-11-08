@@ -30,20 +30,22 @@ indexar datos reales, cambiar la política de cuentas ni desplegar en producció
 
 ## Estado actual
 
-- La implementación RAG está en `main`; el código actual también conserva cambios sin
-  commit. El asistente recibió confirmación del usuario de que la respuesta funciona.
+- La implementación RAG está en `main`. El usuario confirmó que el asistente responde.
 - El índice local contiene 9 blogs y 11 listings (20 fuentes), con 548 chunks. La cola
   no tiene trabajos activos ni filas con error (`lastError`); el estado terminal
   `failed` con `lastError = NULL` no representa un fallo según el contrato actual.
 - Compose tiene activos app y worker. Los logs recientes del worker muestran una
   reconciliación de 20 fuentes sin cambios.
-- Se añadieron imágenes públicas a las cards; los cambios relacionados están sin commit.
+- Se añadieron imágenes públicas a las cards en el commit `d59f8c9`.
 - `src/modules/guests/server/auth.ts` permite origen HTTPS para huéspedes; el antiguo
   bloqueo histórico de producción/localhost ya no describe la implementación y no debe
   usarse como impedimento del plan.
-- El índice local y una respuesta funcional no equivalen a evaluación multilingüe,
-  revisión de seguridad integral, recuperación ensayada, despliegue productivo ni
-  aceptación del plan. Esos puntos siguen explícitamente pendientes.
+- El usuario da por terminado el trabajo local y acepta su cierre en ese alcance
+  (2026-11-08); esto no es aceptación formal de R1–R6 ni autorización de producción.
+- Las casillas de fases y aceptación permanecen sin marcar. La aceptación local no
+  acredita pruebas no realizadas ni evidencia interrumpida: concurrencia real,
+  evaluación multilingüe y semántica integral, recuperación de la aplicación en su
+  entorno, límites de seguridad y aceptación por entorno siguen sin demostrarse.
 
 ## Aceptación del plan
 
@@ -54,5 +56,6 @@ indexar datos reales, cambiar la política de cuentas ni desplegar en producció
 - [ ] La página exige sesión para consultar y presenta resultados visuales verificables.
 - [ ] Se registra evidencia, limitaciones, recuperación y aceptación por entorno.
 
-El estado funcional confirmado no constituye aceptación formal del plan; no se marca
-ninguna fase como aceptada.
+El usuario acepta cerrar el trabajo local sin más pruebas por ahora. Esta decisión de
+alcance no constituye aceptación formal del plan: no se marca ninguna fase como aceptada
+y los puntos pendientes se conservan en [verificación y operación](06-verificacion-y-operacion.md).

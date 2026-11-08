@@ -415,3 +415,19 @@ equivale por sí sola a autorizar producción ni acredita una restauración ensa
   conmutación ni reconstrucción del índice; la ausencia de índice ANN queda pendiente
   de decisión/perfilado. Esto no acredita recuperación integral, R6 ni aceptación de
   producción.
+
+### Cierre local solicitado por el usuario (2026-11-08)
+
+- El usuario indicó que el trabajo local puede darse por terminado y que ya es suficiente
+  de pruebas. Se registra como aceptación/cierre **local y de alcance**, no como aceptación
+  formal de R1–R6, certificación de calidad, autorización de despliegue ni aceptación de
+  producción. No se ejecutaron pruebas adicionales para registrar esta decisión.
+- Se mantienen sin marcar todas las casillas de fases y aceptación. No se convierten en
+  resultados las comprobaciones pendientes o interrumpidas: concurrencia real entre
+  sesiones; evaluación multilingüe y semántica integral (incluida la correspondencia entre
+  citas y afirmaciones); recuperación de la aplicación/servicio tras restaurar; límites y
+  revisión integral de seguridad; y aceptación/evidencia del entorno de destino.
+- La evidencia local descrita arriba conserva su alcance específico: pruebas focalizadas,
+  comprobaciones con fixtures y restauración lógica aislada no sustituyen esas validaciones.
+  Cualquier continuación deberá reabrir los puntos pendientes con evidencia verificable;
+  este cierre no afirma que estén resueltos.
