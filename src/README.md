@@ -1,166 +1,175 @@
-# Getaways El Salvador: BTCPay Testnet checkout
+# Getaways El Salvador: aplicación y entrada técnica
 
-This is the public website of Getaways El Salvador, a vacation-rental business, prepared as a class project. Blog, properties and bookings use PostgreSQL; migrated photos use private RustFS/S3. Bitcoin checkout uses **BTCPay Testnet**, with a fixed **USD 1.00 test charge for new attempts**, separate from the stay quote. There is no placeholder provider or simulated-payment button. Production/mainnet payments remain disabled. See [payment configuration and limits](docs/plans/pagos/infraestructura-local.md).
+[Resumen global, equipo y estrategia](../README.md) ·
+[Índice de arquitectura](./docs/arquitectura/README.md) ·
+[Flujos implementados](./docs/arquitectura/flujos.md#flujos-de-aplicación) ·
+[Datos y operación](./docs/arquitectura/datos-y-operacion.md#datos-y-operación)
 
-Resumen en español: el sitio local requiere PostgreSQL, RustFS y configuración privada. Los nuevos pagos de reserva usan BTCPay Testnet por USD 1.00, sin cobrar la cotización real del hospedaje. [TASK.md](./TASK.md) conserva el enunciado histórico, no el flujo actual.
+Esta carpeta contiene la aplicación Next.js de Getaways El Salvador. El runtime
+separa deliberadamente los datos operativos en PostgreSQL, los bytes de medios en
+RustFS mediante S3 y las páginas estáticas/arte del sitio en JSON o archivos
+locales. El catálogo, blog, reservas, cuentas, pagos y RAG no usan el JSON local
+como fallback operativo.
 
-## Requirements
+El checkout actual usa **BTCPay Testnet** y un cargo fijo de prueba de **USD
+1.00** para cada tentativa nueva, separado de la cotización real de la estancia.
+No hay proveedor simulado y las guardas de configuración no aceptan mainnet.
+[`TASK.md`](./TASK.md) conserva el enunciado histórico; no describe el flujo
+vigente.
 
-- Node.js 24 or newer
-- pnpm 12
+## Cómo orientarse
 
-PostgreSQL and private RustFS/S3 are required for the blog and property catalogue.
-Static editorial pages and site artwork still use local JSON/files.
+| Necesitas | Documento canónico |
+| --- | --- |
+| Capas, módulos, límites y mapa de lectura | [Índice de arquitectura](./docs/arquitectura/README.md) |
+| Recorridos detallados, secuencias, estados, checkout y RAG | [Flujos](./docs/arquitectura/flujos.md#flujos-de-aplicación) |
+| Fuentes de verdad, relaciones, topologías y guardas operativas | [Datos y operación](./docs/arquitectura/datos-y-operacion.md#datos-y-operación) |
+| Preparación de producción, sin afirmar despliegue | [Guía de producción](./docs/produccion.md) |
+| Respaldo y restauración local | [Guía de respaldos](./backups/README.md#guardar-el-progreso-completo) |
 
-## Run it
+Las páginas enlazadas se referencian entre sí: el índice vuelve a este README y
+a los dos documentos de arquitectura, y los documentos de flujos y datos vuelven
+al índice. No se repiten aquí sus diagramas Mermaid ni sus recorridos detallados.
+
+## Arquitectura resumida
+
+`app/` expone páginas, layouts y route handlers del App Router. `modules/`
+contiene las reglas de dominio server-only; `infrastructure/` conecta PostgreSQL,
+RustFS/S3, archivos locales y pgvector; `ai/` contiene adaptadores de modelos
+para RAG; y `scripts/` ejecuta importaciones, provisión y workers fuera de la
+petición web.
+
+El [índice de arquitectura](./docs/arquitectura/README.md) conserva el mapa de
+capas y módulos. El [documento de datos y operación](./docs/arquitectura/datos-y-operacion.md#fuentes-de-verdad-y-límites)
+es la referencia para propiedad de datos y topología; el [documento de
+flujos](./docs/arquitectura/flujos.md#reserva-cotización-y-pago) es la referencia
+para recorridos de reserva, pago y RAG.
+
+## Requisitos y desarrollo local
+
+Requisitos mínimos:
+
+- Node.js 24 o posterior.
+- pnpm 12.
+- Docker para PostgreSQL y RustFS locales.
+
+Desde `src/`, copia `.env.example` a `.env` si aún no existe y completa los
+valores privados necesarios. No guardes credenciales reales en el repositorio.
+Después, instala dependencias, levanta las dependencias locales y arranca la
+aplicación en el host:
 
 ```bash
 pnpm install
+docker compose -f compose.dev.yaml up -d --wait db rustfs rustfs-init
+pnpm db:generate
+pnpm db:check
 pnpm dev
 ```
 
-Open http://localhost:3000.
+Abre <http://localhost:3000>. La imagen local de `db` usa PostgreSQL 18.6 con
+pgvector 0.8.7 y habilita `vector` solo al crear un volumen nuevo. Para un
+volumen existente, respáldalo y habilita la extensión por separado; los scripts
+de inicialización no se vuelven a ejecutar sobre un volumen ya creado.
+`DATABASE_COMPOSE_HOST` adapta una URL de loopback solo dentro de Compose; un
+proceso en el host usa el puerto publicado.
 
-### Prisma 8 and the local development database
-
-From this directory, with Docker running:
-
-```bash
-cp .env.example .env  # only if .env does not exist; configure its credentials
-docker compose -f compose.dev.yaml up -d --wait db
-pnpm db:generate
-pnpm db:check
-pnpm test:db
-```
-
-The application and Prisma CLI use the same `DATABASE_URL` from `.env`, with `127.0.0.1` and the published port for the host. Inside Compose, `DATABASE_COMPOSE_HOST=db` translates a loopback URL to `db:5432`; remote URLs are unchanged. PostgreSQL itself still needs `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` for initialization; keep them consistent with the URL. Changing these values does not change an existing database volume or its credentials. Keep `.env` private and never commit it. Do not keep an overriding `DATABASE_URL` in `.env.local`.
-
-The development PostgreSQL image includes pgvector 0.8.7 and enables `vector` when initializing a new database volume. For an existing volume, back up the cluster and stop application writers before replacing the database container, then run `CREATE EXTENSION IF NOT EXISTS vector;` as a PostgreSQL superuser in the application database. Initialization scripts do not run on existing volumes. This only configures the local database; an external production PostgreSQL server must be configured separately.
-
-### Local RustFS for blog media
-
-Copy `.env.example` to `.env` and replace both RustFS root and application credential placeholders with unique random values. The root identity is only for the local RustFS service/one-shot bucket initializer; never put it in the app's S3 variables. `S3_BUCKET` defaults to `blog-media`; if changed, update **both** bucket ARNs in `infrastructure/storage/blog-media-policy.json` to match before provisioning the application identity. Then use the RustFS console at `http://127.0.0.1:9001` to create a user with that policy (it grants only list/location and object read/write/delete in the configured bucket). Put that user's credentials in `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` in `.env`. Do not expose these variables with a `NEXT_PUBLIC_` prefix.
+La aplicación y el worker RAG son perfiles opcionales si quieres ejecutarlos
+dentro de Docker en lugar de usar `pnpm dev`:
 
 ```bash
-docker compose -f compose.dev.yaml up -d --wait
+docker compose -f compose.dev.yaml --profile app up -d --wait
+docker compose -f compose.dev.yaml --profile worker up -d --wait
 ```
 
-Compose binds the S3 API and console to loopback; the app container uses `http://rustfs:9000`, while a process running on the host uses `http://127.0.0.1:9000`. `rustfs-init` idempotently creates the private `blog-media` bucket. No anonymous/public-read policy is applied. RustFS persists data in the `rustfs_data` volume; a volume is not a backup. Back up PostgreSQL and RustFS objects together and test restoring both. Production endpoint, TLS, private networking, credentials, and backup schedule must be configured by the operator; they are not verifiable from this repository.
+Dentro del contenedor la app usa `http://rustfs:9000`; desde el host usa el
+endpoint publicado en `127.0.0.1`. `rustfs-init` crea el bucket configurado. Las
+credenciales root de RustFS son solo para el servicio/initializer; la app debe
+usar una identidad S3 restringida. La configuración local no incluye BTCPay,
+Bitcoin Core ni NBXplorer.
 
-The contract is `infrastructure/prisma/contract.prisma`; the server-only client is exported as `db` from `@/infrastructure/prisma/db`. Prisma 8 uses `@prisma/orm-postgres`, not `@prisma/client`. Commit the emitted `contract.json` and `contract.d.ts` alongside the contract. Blog, staff/guest accounts, catalogue, bookings and payment attempts use PostgreSQL.
+## Compose con forma de producción
 
-New image uploads and imports use the shared Sharp optimizer to store WebP only.
-For existing RustFS images, run `pnpm images:optimize` to preview or
-`pnpm images:optimize --apply` to convert and delete verified originals while
-preserving media IDs and URLs. See [image optimization](docs/image-optimization.md).
+`compose.prod.yaml` declara `app`, `rag-worker`, `rustfs` y `rustfs-init`.
+PostgreSQL es externo y llega mediante `DATABASE_URL`; la app solo expone el
+puerto 3000 dentro de la red de Compose. RustFS conserva un volumen persistente
+y sus bindings de host son de loopback. BTCPay y su wallet/webhook son externos
+a este stack.
 
-The recovery migration CLI is `pnpm listings:import <source-root>` (read-only inventory),
-`pnpm listings:import <source-root> --apply` (explicit import) and `pnpm listings:import <source-root> --verify`
-(read-only source/database/S3 comparison). Back up the database and objects and
-stop application writers before applying. Existing differences abort instead of
-overwriting edits. See [plan 2 and local evidence](docs/plans/catalogo-y-medios/README.md).
+Que un servicio aparezca en Compose no demuestra que exista un VPS, proxy, DNS,
+TLS, base externa, bucket, backup o despliegue accesible. La [guía de
+producción](./docs/produccion.md) es una lista de preparación y verificación
+pendiente; los detalles de topología y guardas están en
+[datos y operación](./docs/arquitectura/datos-y-operacion.md#topología-declarada-de-desarrollo-y-producción).
 
-Original blog/catalogue JSON has been retired from the active tree. Import tools
-require an explicit source folder containing `data/` and `public/media/`, not the
-running application's data. Blog dry-run/conversion also require `<source-root>`;
-blog approval/import retain their existing explicit source arguments. See the
-[verified originals archive](backups/README.md#originales-previos-a-la-limpieza-selectiva--2026-11-07).
+## Comandos de entrada
 
-After editing the contract, emit it and plan a versioned migration from the actual database marker; review and rehearse it on an isolated copy before applying. Do not run `db:init` against an existing database. The development client cache is invalidated when the contract or connection URL changes.
+Los comandos de abajo son puntos de entrada; sus efectos, precondiciones y
+guardas están en [checks y operaciones](./docs/arquitectura/datos-y-operacion.md#checks-y-operaciones-con-guardas).
 
-`pnpm test:db` checks a real SQL query and client reuse across module reloads. The normal test suite skips this check so it does not require PostgreSQL.
+| Propósito | Comando | Nota breve |
+| --- | --- | --- |
+| Desarrollo / producción local | `pnpm dev`, `pnpm build`, `pnpm start` | `build` emite el contrato Prisma como prebuild. |
+| Contrato de base de datos | `pnpm db:generate`, `pnpm db:check` | No uses `db:init` contra una base existente. |
+| Administrador | `pnpm admin:user bootstrap` o `pnpm admin:user recover` | Terminal interactiva; nunca pases contraseñas como argumentos o variables. |
+| Importar catálogo | `pnpm listings:import <source-root>` | Por defecto dry-run; `--apply` escribe y `--verify` compara. |
+| Importar blog | `pnpm blog:dry-run <source-root>`; `pnpm blog:import <source-root> <final-conversion.json> <approval.json> [--execute]` | El último modo escribe solo con `--execute`. |
+| Indexar RAG | `pnpm rag:reconcile [--enqueue]`; `pnpm rag:worker` | `--enqueue` y el worker escriben la cola/índice. |
+| Optimizar imágenes | `pnpm images:optimize [--apply]` | Dry-run salvo `--apply`; verifica hashes antes de limpiar originales. |
+| Verificar BTCPay | `./scripts/verify-btcpay-testnet.sh` | Comprueba su stack externo de Testnet, no el despliegue de esta app. |
 
-### Operator account provisioning
+Para respaldos coordinados del Compose local usa
+`node scripts/backup-progress.mjs "nota"`; para el procedimiento completo,
+exclusiones y restauración consulta [backups/README.md](./backups/README.md).
 
-After the reviewed users migration has been applied, run `docker exec -it gateways-dev-app-1 pnpm admin:user bootstrap` in an interactive terminal for the local Docker environment. Outside Docker, `pnpm admin:user bootstrap` requires `DATABASE_URL` to be configured. Bootstrap only succeeds when the user table is empty. For operational recovery, use `docker exec -it gateways-dev-app-1 pnpm admin:user recover`; it asks for an existing account email, explicit confirmation and a new password, then activates it as ADMIN and revokes its sessions. Restrict server and database access: recovery bypasses web authentication. Password entry is hidden; never put passwords in arguments, environment variables or shell history. Deliver credentials separately over a secure channel. Passwords do not expire automatically.
+## Límites operativos que conviene conocer
 
-Guest registration and reauthentication use PostgreSQL rate limits; login is not rate-limited and is exposed to automated password guessing. Without a trusted proxy, all clients share the same global budget; enable `AUTH_TRUST_PROXY=1` only behind a non-bypassable proxy that overwrites `X-Real-IP`.
+- El [índice](./docs/arquitectura/README.md#límites-y-guardas) documenta los
+  guards de sesión/rol, `no-store`/noindex y límites de las rutas. No confundas
+  cabeceras de privacidad con autorización.
+- `GET /api/checkout/status` devuelve únicamente `booking.status`. La lectura de
+  detalles de pago y las instrucciones del checkout pasan por la ruta BTCPay,
+  que valida la identidad persistida, la reserva, la tienda, la red, el cargo de
+  prueba y el total real antes de exponerlos; la reconciliación autoritativa se
+  explica en [flujos, pago](./docs/arquitectura/flujos.md#reconciliación-confirmación-y-conflictos-tardíos).
+- La elegibilidad RAG excluye trabajos `pending`/`processing` y trabajos
+  `failed` que conservan `lastError`; un `failed` sin `lastError` no coincide con
+  esa exclusión SQL. La revalidación posterior a la generación puede fallar
+  cerrada; el detalle está en [flujos, RAG](./docs/arquitectura/flujos.md#rag-extracción-cola-búsqueda-y-respuesta).
+- PostgreSQL y los objetos RustFS deben respaldarse juntos y restaurarse en
+  destinos identificados y aislados. Un volumen de Compose no es un respaldo.
 
-### Admin statistics and Umami
+## Mapa breve del proyecto
 
-The `/admin` overview reads reservations from PostgreSQL and basic traffic from Umami.
-Set `UMAMI_API_KEY` in the server environment. Optionally set `UMAMI_API_URL` to the
-Umami service's internal base URL, for example `http://umami:3000` (without `/api`).
-Both containers must already share a Docker network and the hostname must resolve
-there; `localhost` inside the app container refers to the app, not Umami. Compose
-forwards both variables to the app. In separately managed deployments, configure
-them in the app service's runtime environment and recreate/redeploy that service.
-If the URL is unset, the API uses `https://uma.mauriciodmo.com`.
-
-These variables are server-only: the browser tracking script and “Ver más en Umami”
-link always use the public domain. Never add a `NEXT_PUBLIC_` prefix or commit the key.
-Missing credentials or unavailable Umami leave the reservation overview usable.
-
-### Checks
-
-```bash
-npx tsc --noEmit -p .   # type check
-npx vitest run          # tests
-npx next build          # production build
-```
-
-## Project map
-
-| Where | What lives there |
+| Ruta | Responsabilidad |
 | --- | --- |
-| `app/(site)/` | Public pages: home, properties, listing detail, blog, about, concierge. |
-| `app/(site)/[...segments]/` | Catch-all route that renders content pages from `data/pages.json`. |
-| `app/(site)/listing/[slug]/` | One property page, with photos, quote box and booking widget. |
-| `app/checkout/page.tsx` | Checkout: itemized bill and the payment method. |
-| `app/(site)/booking-confirmation/` | Confirmation page, read from the booking store. |
-| `app/api/bookings/` | Creates a booking with its quoted total. |
-| `app/api/checkout/quote/` | Price quote: nights, cleaning, extra guests, pets, IVA 13%, tourism tax 5%. |
-| `app/api/checkout/status/` | Reads booking status. |
-| `app/api/checkout/btc/` | BTCPay Testnet invoice creation, persisted status and authoritative reconciliation. |
-| `app/api/listings/[id]/availability/` | Availability for a listing (confirmed bookings only). |
-| `modules/bookings/booking-quote.ts` | Real pricing logic. Keep it. |
-| `modules/bookings/server/booking-store.ts` | PostgreSQL bookings and guarded payment/cancellation transitions. |
-| `modules/bookings/server/bookings.ts`, `modules/checkout/checkout-session.ts` | Booking helpers used by the pages and routes. |
-| `modules/coupons/` | Retired coupon rules retained for historical compatibility; checkout does not apply coupons. |
-| `modules/payments/types.ts` | Payment evidence and the USD 1.00 new-test-charge constant. |
-| `modules/payments/btcpay-testnet.ts` | BTCPay Testnet invoice creation and settlement verification. |
-| `modules/payments/index.ts` | Explicit BTCPay selection; missing/obsolete configuration fails closed. |
-| `components/organisms/BitcoinPanel.tsx` | BTCPay payment instructions and reconciliation; no simulation. |
-| `components/organisms/CheckoutExtras.tsx`, `components/organisms/CheckoutMethods.tsx` | Checkout bill and payment-method area. |
-| `infrastructure/data/local-client.ts` | Read-only JSON client for static pages and site artwork only. |
-| `modules/content/server/content.ts`, `modules/listings/server/listings.ts`, `shared/media/server/media.ts` | Editorial, catalogue and media queries, with unchanged function signatures. |
-| `shared/media/media.ts` | Static media URLs and persisted `/api/media/{id}` or blog media URLs. |
-| `data/*.json` | Static pages, site media index and coupons; blog/catalogue originals retired. |
-| `public/media/` | Photos and files referenced by `data/media.json`. |
-| `_test_/support/` | Test-only stand-in for `server-only`. |
+| `app/(site)/`, `app/checkout/` | Páginas públicas, cuenta, checkout y confirmación. |
+| `app/api/checkout/`, `app/api/webhooks/btcpay/` | Cotización, estado, BTCPay y webhook firmado. |
+| `app/admin/`, `app/api/admin/` | Panel y operaciones con comprobaciones de rol. |
+| `modules/bookings/`, `modules/checkout/` | Cotización, disponibilidad, sesión de checkout y transiciones. |
+| `modules/content/`, `modules/listings/` | Blog/publicación y catálogo PostgreSQL. |
+| `modules/auth/`, `modules/guests/`, `modules/users/` | Sesiones y administración de cuentas. |
+| `modules/payments/`, `modules/referrals/` | Intentos BTCPay y atribución de referidos. |
+| `modules/rag/`, `ai/embedding.ts` | Extracción, cola, embeddings, búsqueda y agente. |
+| `infrastructure/prisma/`, `infrastructure/storage/` | Contrato/migraciones PostgreSQL y adaptador S3/RustFS. |
+| `infrastructure/data/local-client.ts`, `data/`, `public/` | Lectura de snapshots/arte estático, no almacén operativo del catálogo/blog. |
+| `scripts/` | Importaciones, mantenimiento, provisión, RAG y verificaciones. |
 
-### Organization and boundaries
+## Secretos, respaldos y desconocidos explícitos
 
-- `app/` owns URLs, route handlers, layouts, metadata and route configuration (`dynamic`, etc.). Large routes compose a server data loader with a template; route files still export Next.js configuration directly.
-- `components/atoms/` contains primitives (`ui/`), icons and the active navigation link. `molecules/` contains small compositions such as date/phone fields, post cards and contact details. `organisms/` contains navigation, forms, galleries, checkout and archive blocks; organisms may compose other organisms. `components/seo/` contains JSON-LD rendering.
-- `components/templates/` composes home, listing detail, checkout, editorial content and booking confirmation. Their data preparation lives in `modules/site/server/home.ts`, `modules/listings/server/detail.ts`, `modules/checkout/server/checkout.ts`, `modules/content/server/editorial.ts` and `modules/bookings/server/bookings.ts` respectively.
-- `modules/` groups business rules by listings, bookings, checkout, payments, coupons, content, concierge and site. Booking date context lives in `modules/bookings/providers/BookingDates.tsx`, not in the visual hierarchy.
-- `modules/listings/server/listings.ts` reads the catalogue and its taxonomy joins; `modules/content/server/content.ts` reads editorial pages, posts and site copy; `shared/media/server/media.ts` reads media. Pure category ordering, content descriptions and URL helpers do not depend on server queries.
-- `shared/` contains utilities, UI class merging, media helpers, HTML/CSS sanitization and structured data. Server-specific files live under `server/`; existing `server-only` and `use client` boundaries are retained. Import client-safe helpers/types directly, not through mixed barrels.
-- `infrastructure/data/local-client.ts` is a local JSON reader, not a Supabase connection. Its historical `publicSupabaseClient` / `hasPublicSupabaseConfig` names remain only to preserve the small internal query API without changing query behavior. JSON imports use `@/data`.
-- Tests live in an area's `_test_/` folder. `vitest.config.mts` explicitly discovers those folders; `_test_/organization.test.ts` prevents misplaced tests and obsolete imports. Run `npm test`, `npx tsc --noEmit --incremental false` and `npm run lint` from this directory.
-- Static snapshots stay in `data/`, static images in `public/`, and tool/Docker/environment configuration remains at the project root. Operational data lives in PostgreSQL/private S3.
+Mantén `.env` privado y nunca confirmes credenciales de PostgreSQL, claves S3,
+tokens o secretos webhook de BTCPay, datos de wallet ni claves Anthropic. Usa la
+identidad root de RustFS solo para el servicio/initializer y una identidad de
+aplicación restringida para la app. Respalda PostgreSQL y los objetos RustFS en
+conjunto y ensaya la restauración; revisa las [exclusiones de backups](./backups/README.md#guardar-el-progreso-completo).
 
-### Styling
+El repositorio no puede demostrar estado de despliegue, DNS/TLS, comportamiento
+del proxy, configuración de PostgreSQL externo, sincronización o entrega del
+webhook BTCPay, red/credenciales de RustFS, calendario de backups ni responsable
+operativo. Confirma esos puntos fuera del repositorio antes de desplegar.
 
-Tailwind CSS 4 is loaded by `app/globals.css` through `@tailwindcss/postcss`.
-Use complete utility classes in pages and components, including responsive and interaction variants; do not construct utility names from runtime values.
-The global entry contains only design tokens, element defaults and animation keyframes.
-Stored Gutenberg blocks receive static utilities in `shared/security/server/sanitize-html.ts`; dynamic images and editor preferences keep their runtime values.
-
-## How data works
-
-- Blog and property catalogue readers, including checkout, use PostgreSQL without JSON fallback. Prices are typed cents/basis points, adapted to the existing presentation shape.
-- `infrastructure/data/local-client.ts` remains a read-only JSON interface for static pages and site artwork. Blog/catalogue source JSON and its local query tables have been retired; a verified private archive preserves the originals for recovery.
-- Catalogue/blog photos are immutable objects in the existing private S3 bucket, served through authorized media routes. Static site images remain in `public/media/`, preserved along with their shared media index.
-- Bookings and payment attempts persist in PostgreSQL. Historical payment references remain untouched; retiring the old mock does not convert them or open replacement invoices.
-- The public data has no guest data, no staff data and no keys.
-
-## Secrets
-
-The example database URL contains local development credentials only. Put real configuration in `.env` (already gitignored), never in source control. Do not add real API keys, wallet seeds or private data to this repo.
-
-## Notes
-
-- This is Next.js 16. Read [AGENTS.md](./AGENTS.md) before you write code, and check `node_modules/next/dist/docs/` when unsure about an API.
-- Photos, texts and the brand belong to Getaways El Salvador. See [LICENSE-NOTE.md](./LICENSE-NOTE.md).
+La configuración de pagos requiere opt-in explícito de BTCPay Testnet y falla
+cerrada si falta o es obsoleta. Consulta también la [configuración y límites de
+pagos](./docs/plans/pagos/infraestructura-local.md), la [optimización de
+imágenes](./docs/image-optimization.md), las [notas de importación del
+catálogo](./docs/plans/catalogo-y-medios/README.md), [AGENTS.md](./AGENTS.md) y
+[LICENSE-NOTE.md](./LICENSE-NOTE.md).
