@@ -239,6 +239,32 @@ equivale por sí sola a autorizar producción ni acredita una restauración ensa
   modificó el repositorio original ni se inició/reinició ningún contenedor.
 - Reintentar el respaldo completo cuando RustFS esté activo por operación autorizada.
 
+### Ensayo aislado de fencing de generación PostgreSQL (2026-11-08)
+
+- Comprobación mínima ejecutada en un contenedor temporal `postgres:18-alpine`,
+  usuario/base sintéticos y puerto publicado exclusivamente en `127.0.0.1`; sin
+  volúmenes, credenciales reales, datos del respaldo, RustFS ni proveedor. El
+  contenedor fue eliminado al terminar.
+- Comando de aislamiento: `docker run -d --name "$name" -e
+  POSTGRES_PASSWORD=synthetic -e POSTGRES_USER=synthetic -e
+  POSTGRES_DB=synthetic -p 127.0.0.1::5432 postgres:18-alpine`; se obtuvo el
+  puerto con `docker port "$name" 5432/tcp` y se ejecutó el SQL con `psql`.
+  Se creó `RagSourceQueue` con las columnas y restricciones de la migración
+  `20261108T0508_rag_source_queue_contract`, más una tabla `RagSource` sintética.
+- Secuencia: trabajo generación 1 reclamado con lease antiguo; se encoló una
+  actualización que incrementó generación a 2, dejó estado `pending` y limpió
+  el lease; luego se intentó finalizar el trabajo antiguo con el mismo predicado
+  de fencing (`sourceType`, `sourceId`, generación, `processing`, `leaseToken`)
+  usado por `ownsLease`/`finish`. Un bloque `DO` aborta si el update obsoleto
+  afecta filas, si se altera la fuente sintética o si generación 2 no queda
+  pendiente. Resultado observado: `PASS: generation 1 stale lease could not
+  publish; generation 2 remains pending`.
+- Esto verifica en PostgreSQL el contrato SQL de generación/lease frente a una
+  actualización atrasada; **no** ejecuta `runRagQueueBatch`, Prisma runtime,
+  embeddings, publicación/retirada de una fuente real ni la migración completa.
+  Tampoco es prueba de concurrencia multi-sesión, despublicación o aceptación
+  integral. R2 y la aceptación general siguen pendientes.
+
 ### Reintento de reconciliación y worker local (2026-11-08)
 
 - Se verificó el destino antes de operar: contenedor `gateways-dev-db-1` en ejecución,
@@ -300,7 +326,92 @@ equivale por sí sola a autorizar producción ni acredita una restauración ensa
   ejecutó una evaluación integral ni se declara aceptación de R4 o del plan.
 - La validez estructural de una cita no demuestra que su contenido respalde
   semánticamente la afirmación; esa limitación requiere evaluación de calidad aparte.
-- No hay una prueba aislada del fencing transaccional. La cobertura/verificación de
-  concurrencia y fencing permanece pendiente; no inferirla de la prueba enfocada.
-- El respaldo disponible contiene objetos de RustFS, pero no se ensayó su restauración.
-  Respaldo verificado no equivale a recuperación demostrada.
+- La comprobación real del worker cubre la retirada de una fuente; el recorrido integral
+  del worker Prisma y la concurrencia entre sesiones siguen pendientes.
+- En el momento de esta revisión aún no se había ensayado la restauración de RustFS;
+  el ensayo aislado posterior y sus límites se registran más abajo.
+
+### Worker real: retirada de fuente con trabajo pendiente (2026-11-08)
+
+- Se ejecutó `runRagQueueBatch(1)` real desde `src/modules/rag/queue-worker.ts` contra
+  un PostgreSQL temporal `postgres:18-alpine`, publicado solo en `127.0.0.1` con puerto
+  aleatorio. El contenedor no montó volúmenes y se eliminó mediante `trap` al finalizar.
+  No se conectó ni alteró `gateways-dev-db-1`, RustFS, backups ni otros contenedores.
+- Comando de infraestructura: `docker run -d --name "$name" -e
+  POSTGRES_PASSWORD=synthetic -e POSTGRES_USER=synthetic -e
+  POSTGRES_DB=synthetic -p 127.0.0.1::5432 postgres:18-alpine`; se esperó a que
+  `psql -c 'SELECT 1'` respondiera, y se obtuvo el puerto con
+  `docker port "$name" 5432/tcp`. Usuario/base/fila eran sintéticos.
+- Para el recorrido de retirada se creó únicamente el esquema mínimo que consulta el
+  cliente Prisma en esta ruta: `RagSourceQueue`, `RagSource` y tablas relacionadas de
+  publicación de blog (`BlogPost`, `BlogPublication`, `BlogCategory`,
+  `BlogPublicationCategory`), con columnas/restricciones relevantes de los contratos
+  locales. No se aplicó la cadena completa de migraciones ni se instaló `pgvector`;
+  no era necesario porque el fixture no indexa ni accede a vectores.
+- Fixture: fuente blog `91001` con una fila previamente indexada sintética y trabajo
+  pendiente generación 7, sin publicación vigente. Ejecución directa, sin cargar `.env`
+  ni usar secretos: `DATABASE_URL="postgresql://synthetic:synthetic@127.0.0.1:${port}/synthetic"
+  NODE_ENV=test node --conditions=react-server --experimental-strip-types --input-type=module
+  -e 'const {runRagQueueBatch}=await import("./modules/rag/queue-worker.ts"); const {db}=await
+  import("./infrastructure/prisma/db.ts"); try { console.log(JSON.stringify(await
+  runRagQueueBatch(1))); } finally { await db.close(); }'`.
+- Evidencia observada: reporte `claimed=1, indexed=0, unchanged=0, invalidated=1,
+  superseded=0, failed=0`; consulta posterior `RagSourceQueue` = `failed`, generación
+  `7`, `attempts=1`, `lastError IS NULL`; conteo de `RagSource` para `blog/91001` = `0`.
+  Así se comprobó que el worker reclama trabajo real, detecta la retirada, borra el
+  índice obsoleto y cierra el lease sin embeddings ni proveedor externo. Node emitió
+  solo la advertencia conocida `MODULE_TYPELESS_PACKAGE_JSON`.
+- Límite: prueba aislada del camino real de retirada, no de concurrencia multi-sesión,
+  sincronización de una fuente que cambia durante el cálculo, aplicación de migraciones
+  completas, vectorización, recuperación ni aceptación integral. No se simuló una
+  carrera: el trabajo pendiente era obsoleto porque su publicación ya no existía.
+  Para recrearla se requiere Docker con `postgres:18-alpine` disponible y dependencias
+  instaladas; el puerto efímero se descubre con `docker port`, y al terminar debe
+  confirmarse que el contenedor `$name` ya no existe (`docker inspect "$name"`).
+
+### Ensayo mínimo de restauración aislada (2026-11-08)
+
+- Checkpoint: `src/backups/progreso-20261108T120939643Z-KhemK5.tar.gz`; SHA-256
+  `9e28e7342ec67696ca8f696c69c658c5af170996f9f93295cb222deb60956fd5`, coincidente
+  con el sidecar y permisos `0600`. Se verificó antes de extraer/restaurar con
+  `sha256sum -c src/backups/progreso-20261108T120939643Z-KhemK5.tar.gz.sha256`.
+- Aislamiento: contenedores nuevos, etiquetados para este ensayo, en una red Docker
+  nueva `--internal`; sin puertos publicados ni acceso por red a servicios operativos.
+  PostgreSQL `pgvector/pgvector:0.8.7-pg18` usó base/rol sintéticos y `PGDATA=/tmp/pgdata`
+  en tmpfs de 3 GiB. La imagen declara además un volumen anónimo padre no usado para
+  datos; se eliminó junto con el contenedor mediante `docker rm -fv`.
+  RustFS `rustfs/rustfs:1.0.4` usó únicamente tmpfs nuevo de 1 GiB (UID/GID 10001),
+  credenciales sintéticas y el bucket nuevo `recovery-empty`. El cliente Node se ejecutó
+  como contenedor efímero en esa misma red, con backup y dependencias montados en solo
+  lectura. Antes de restaurar se inspeccionaron nombres/etiquetas, red interna,
+  tmpfs, ausencia de puertos publicados y disponibilidad de ambos servicios.
+- Comandos esenciales (usar nombres únicos propios, verificar `docker inspect` antes
+  de `pg_restore`/`--execute`; jamás apuntar a Compose o endpoints operativos):
+  `docker network create --internal "$net"`;
+  `docker run ... --network "$net" --tmpfs /tmp:rw,size=3g -e PGDATA=/tmp/pgdata ... pgvector/pgvector:0.8.7-pg18`;
+  `docker run ... --network "$net" --network-alias rustfs --tmpfs /data:rw,size=1g,uid=10001,gid=10001 ... rustfs/rustfs:1.0.4`;
+  `docker exec -i "$pg" pg_restore --exit-on-error --no-owner --no-privileges -U "$synthetic_user" -d "$synthetic_db" < postgres.dump`.
+  Para RustFS se creó el bucket con el SDK usando solo DNS interno `rustfs:9000`,
+  se ejecutó el helper empaquetado `node restore-objects.mjs --execute` (verifica
+  hashes/tamaños del backup y exige bucket vacío), y luego se descargaron todos los
+  objetos para recalcular y comparar sus SHA-256. No se usaron `.env`, credenciales
+  reales, proveedor AI ni servicios del proyecto.
+- Resultado PostgreSQL: restore sin errores; 20 `RagSource` (9 blog, 11 listing),
+  548 `RagChunk`, extensión `vector` 0.8.7 y columna `embedding vector(768)`, de acuerdo
+  con `checkpoint.json`. Se encontró el índice `RagChunk_sourceId_idx`; no hay índice
+  ANN sobre `embedding` en este checkpoint (`vector_indexes=0`), y no se creó uno.
+- Resultado RustFS: helper restauró 179 objetos; listado y descarga posterior
+  confirmaron 179 objetos, 54 227 190 bytes agregados y todos los SHA-256/tamaños
+  iguales al manifest. El bucket de destino estaba vacío antes de cargar.
+- Limpieza: se eliminaron explícitamente solo los dos contenedores del ensayo (incluido
+  el volumen anónimo temporal de PostgreSQL), la red `--internal` propia y el directorio
+  temporal privado. Verificación posterior: ninguno de esos nombres de contenedor/red
+  existe. No se alteraron los contenedores, volúmenes, buckets ni endpoints operativos.
+- Alcance: evidencia de restauración lógica del dump y objetos en destinos efímeros,
+  con comprobación de conteos, esquema vectorial e integridad de objetos. El dump no
+  incluye roles globales/credenciales y el checkpoint excluye políticas/versionado del
+  bucket y código fuente. No se probó recuperación de host, permisos/roles reales,
+  políticas/versionado S3, tráfico de aplicación, consultas RAG tras restaurar,
+  conmutación ni reconstrucción del índice; la ausencia de índice ANN queda pendiente
+  de decisión/perfilado. Esto no acredita recuperación integral, R6 ni aceptación de
+  producción.
