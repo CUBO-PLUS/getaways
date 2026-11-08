@@ -18,6 +18,8 @@ type BookingDatePickerProps = {
   /** Shown while no date is chosen. The booking form asks you to "Select date";
       the homepage search bar invites you to "Add dates". */
   placeholder?: string;
+  blocked?: { start_date: string; end_date: string }[];
+  checkout?: boolean;
 };
 
 function isoToDate(value?: string) {
@@ -67,7 +69,7 @@ function formatDate(value: string | undefined, placeholder: string) {
   );
 }
 
-export default function BookingDatePicker({ id, value, min, onChange, className, placeholder = "Select date" }: BookingDatePickerProps) {
+export default function BookingDatePicker({ id, value, min, onChange, className, placeholder = "Select date", blocked = [], checkout = false }: BookingDatePickerProps) {
   const [open, setOpen] = useState(false);
   const selectedDate = isoToDate(value);
   const minDate = isoToDate(min);
@@ -101,13 +103,19 @@ export default function BookingDatePicker({ id, value, min, onChange, className,
           mode="single"
           selected={selectedDate}
           defaultMonth={selectedDate ?? minDate}
-          disabled={minDate ? { before: minDate } : undefined}
+          disabled={(date) => {
+            const day = dateToIso(date);
+            return Boolean((min && day < min) || blocked.some((range) => (checkout ? day > range.start_date : day >= range.start_date) && day < range.end_date));
+          }}
+          modifiers={{ booked: (date) => blocked.some((range) => dateToIso(date) >= range.start_date && dateToIso(date) < range.end_date) }}
+          modifiersClassNames={{ booked: "[&>button]:bg-red-100 [&>button]:text-red-800 [&>button]:line-through" }}
           onSelect={(date) => {
             if (!date) return;
             onChange(dateToIso(date));
             setOpen(false);
           }}
         />
+        {blocked.length > 0 && <p className="mt-2 text-xs text-red-800">Marked dates have booked nights.</p>}
       </PopoverContent>
     </Popover>
   );

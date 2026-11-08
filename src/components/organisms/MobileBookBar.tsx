@@ -31,7 +31,7 @@ export default function MobileBookBar({
   minNights?: string;
 }) {
   const minStay = Math.max(1, Number(minNights || 1) || 1);
-  const { checkIn, checkOut, setCheckIn, setCheckOut } = useBookingDates(minStay);
+  const { checkIn, checkOut, setCheckIn, setCheckOut, blocked } = useBookingDates(minStay);
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const bar = useRef<HTMLDivElement | null>(null);
@@ -148,7 +148,7 @@ export default function MobileBookBar({
           </div>
           <div className="flex min-w-0 flex-col text-[12px] text-body-text gap-1">
             <label className="text-[11px] font-bold tracking-[0.06em] uppercase text-muted-text" htmlFor="mobile-check-in">Check-in</label>
-            <BookingDatePicker id="mobile-check-in" min={todayIso()} value={checkIn} onChange={setCheckIn} />
+            <BookingDatePicker id="mobile-check-in" min={todayIso()} value={checkIn} onChange={setCheckIn} blocked={blocked} />
           </div>
           <div className="flex min-w-0 flex-col text-[12px] text-body-text gap-1">
             <label className="text-[11px] font-bold tracking-[0.06em] uppercase text-muted-text" htmlFor="mobile-check-out">Check-out</label>
@@ -157,6 +157,8 @@ export default function MobileBookBar({
               min={addDaysIso(checkIn || todayIso(), minStay)}
               value={checkOut}
               onChange={setCheckOut}
+              blocked={blocked}
+              checkout
             />
           </div>
         </div>

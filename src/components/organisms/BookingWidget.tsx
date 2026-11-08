@@ -76,8 +76,7 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
   const minStay = Math.max(1, Number(minNights || 1) || 1);
   /* Shared with the phone booking bar when one is on the page, local
      otherwise. See modules/bookings/providers/BookingDates.tsx. */
-  const { checkIn, checkOut, setCheckIn: updateCheckIn, setCheckOut } = useBookingDates(minStay);
-  const [blocked, setBlocked] = useState<BlockedRange[]>([]);
+  const { checkIn, checkOut, setCheckIn: updateCheckIn, setCheckOut, blocked, setBlocked } = useBookingDates(minStay);
   const [availability, setAvailability] = useState<"loading" | "ready" | "failed">("loading");
   const loadingAvailability = availability === "loading";
   const [submitting, setSubmitting] = useState(false);
@@ -110,7 +109,7 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
     return () => {
       active = false;
     };
-  }, [listingId]);
+  }, [listingId, setBlocked]);
 
   /* The retry button, and the refresh after somebody else took the dates. */
   async function reloadAvailability() {
@@ -231,11 +230,11 @@ export default function BookingWidget({ listingId, listingTitle, listingSlug, pr
           <div className="grid grid-cols-2 gap-3 [@container_(max-width:_300px)]:grid-cols-1 max-[560.001px]:grid-cols-1">
             <div className="flex flex-col text-heading text-[13px] font-semibold leading-[1.35] min-w-0 gap-1.5">
               <Label htmlFor={`check-in-${listingId}`}>Check-in</Label>
-              <BookingDatePicker className="font-body leading-[1.35]" id={`check-in-${listingId}`} min={todayIso()} value={checkIn} onChange={updateCheckIn} />
+              <BookingDatePicker className="font-body leading-[1.35]" id={`check-in-${listingId}`} min={todayIso()} value={checkIn} onChange={updateCheckIn} blocked={blocked} />
             </div>
             <div className="flex flex-col text-heading text-[13px] font-semibold leading-[1.35] min-w-0 gap-1.5">
               <Label htmlFor={`check-out-${listingId}`}>Check-out</Label>
-              <BookingDatePicker className="font-body leading-[1.35]" id={`check-out-${listingId}`} min={addDaysIso(checkIn || todayIso(), minStay)} value={checkOut} onChange={setCheckOut} />
+              <BookingDatePicker className="font-body leading-[1.35]" id={`check-out-${listingId}`} min={addDaysIso(checkIn || todayIso(), minStay)} value={checkOut} onChange={setCheckOut} blocked={blocked} checkout />
             </div>
           </div>
 

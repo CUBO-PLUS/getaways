@@ -24,6 +24,8 @@ export type BookingDates = {
   setCheckIn: (value: string) => void;
   setCheckOut: (value: string) => void;
   minStay: number;
+  blocked: { start_date: string; end_date: string }[];
+  setBlocked: (ranges: { start_date: string; end_date: string }[]) => void;
 };
 
 const BookingDatesContext = createContext<BookingDates | null>(null);
@@ -31,6 +33,7 @@ const BookingDatesContext = createContext<BookingDates | null>(null);
 function useDatesState(minStay: number): BookingDates {
   const [checkIn, setCheckInState] = useState(() => addDaysIso(todayIso(), 1));
   const [checkOut, setCheckOut] = useState(() => addDaysIso(addDaysIso(todayIso(), 1), minStay));
+  const [blocked, setBlocked] = useState<BookingDates["blocked"]>([]);
 
   const setCheckIn = useCallback(
     (next: string) => {
@@ -41,8 +44,8 @@ function useDatesState(minStay: number): BookingDates {
   );
 
   return useMemo(
-    () => ({ checkIn, checkOut, setCheckIn, setCheckOut, minStay }),
-    [checkIn, checkOut, setCheckIn, minStay]
+    () => ({ checkIn, checkOut, setCheckIn, setCheckOut, minStay, blocked, setBlocked }),
+    [checkIn, checkOut, setCheckIn, minStay, blocked]
   );
 }
 
