@@ -44,7 +44,18 @@ Para revisar el contenido, extraer en una carpeta temporal privada bajo `backups
 verificar `SHA256SUMS`, `checkpoint.json`, `postgres.list` y el helper sin `--execute`;
 eliminar después únicamente esa extracción temporal.
 
-### Último checkpoint verificado — 2026-11-07
+### Último checkpoint verificado — 2026-11-08
+
+`progreso-20261108T024343326Z-Cv3kMb.tar.gz`
+
+SHA-256: `ded69af06efca556b0926bc51a7d1b59d88190f60b1953d65c5a6f839dec18d6`.
+Completado a las 02:43:46 UTC: BD local `gateways` completa y 179 objetos del
+bucket `blog-media` (54 227 190 bytes). Hash exterior e internos comprobados,
+listado del dump disponible y helper de objetos verificado sin escritura. Las
+referencias de medios y la estabilidad del listado se comprobaron al crear el
+paquete. **Restauración no ensayada; no incluye código sin commit ni credenciales.**
+
+### Checkpoint anterior — 2026-11-07
 
 `progreso-20261107T053706375Z-QYKRN6.tar.gz`
 
