@@ -16,10 +16,11 @@ describe("RAG agent input", () => {
 
   it("detects URL and title changes even when the content hash is unchanged", () => {
     const source = { contentHash: "same", url: "/stay/", title: "Stay" };
-    const latest = { ...source, sourceType: "listing" as const, sourceId: "1", section: "Description", text: "Text", score: 1 };
+    const latest = { ...source, imageUrl: null, sourceType: "listing" as const, sourceId: "1", section: "Description", text: "Text", score: 1 };
     expect(ragSourceChanged(source, latest)).toBe(false);
     expect(ragSourceChanged(source, { ...latest, url: "/renamed/" })).toBe(true);
     expect(ragSourceChanged(source, { ...latest, title: "New title" })).toBe(true);
+    expect(ragSourceChanged({ ...source, imageUrl: "/api/media/1" }, latest)).toBe(true);
     expect(ragSourceChanged(source, undefined)).toBe(true);
   });
 });

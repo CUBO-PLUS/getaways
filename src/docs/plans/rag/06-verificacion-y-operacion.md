@@ -200,7 +200,7 @@ equivale por sí sola a autorizar producción ni acredita una restauración ensa
 - RAG ya contenía 20 fuentes y 506 chunks. Se ejecutó con el código del worktree `rag:reconcile --enqueue`: `eligible=20`, `queued=0`, `unchanged=20`, `omitted=0`, `failed=0`.
 - Se inició el worker y se detuvo con SIGTERM tras confirmar que no había trabajo; salida 0. Verificación final: `RagSource` blog 9/listing 11, `RagChunk` 506 con dimensiones 768, cola 20 trabajos terminales, 0 `pending`/`processing` y 0 filas con `lastError`.
 - Nota de contrato: las 20 filas terminales de cola usan `status='failed'` con `lastError=NULL` también tras éxito; no se interpretan como errores. No se reconstruyó ni modificó contenido cuando el reconcile lo encontró sin cambios.
-- El repositorio original `/home/mauriciodmo/core/cubo/cubo-plus/gateways-project/src` todavía no contiene el código RAG ni la migración del worktree; por ello no hay sincronización automática. La operación se ejecutó con el código del worktree contra la DB local identificada, no con el código del repo original. Sin despliegue remoto, cambios RustFS, commits ni suite de pruebas.
+- **Estado histórico al momento de esa operación:** el repositorio original aún no contenía el código RAG y la reconciliación se ejecutó desde el worktree. Ya no describe el estado actual: la implementación está en `main` (ver “Estado actual de ejecución local”).
 
 ### Respaldo fresco previo al apagado — 2026-11-08
 
@@ -251,3 +251,18 @@ equivale por sí sola a autorizar producción ni acredita una restauración ensa
   temporal con permisos privados; extracción eliminada tras verificar.
 - El código sin commit sigue en este worktree y no forma parte del respaldo; la
   sincronización al repositorio original está pendiente. Restauración no ensayada.
+
+### Estado actual de ejecución local
+
+- La implementación RAG está en `main`. Compose app/worker están activos; los logs del
+  worker confirman reconciliación de 20 fuentes sin cambios.
+- Estado del índice local: 20 fuentes (9 blogs, 11 listings), 548 chunks; cero trabajos
+  pendientes/en proceso y cero filas con `lastError`. El estado terminal `failed` con
+  `lastError = NULL` es el comportamiento de éxito del contrato actual.
+- Los filtros nullable se corrigieron. El usuario confirmó que la respuesta funciona;
+  se agregaron imágenes públicas a cards y hay cambios sin commit.
+- HTTPS público para huéspedes está permitido por `src/modules/guests/server/auth.ts`;
+  no aplica el bloqueo histórico a localhost que aparecía en notas anteriores.
+- Sigue sin verificarse evaluación multilingüe, seguridad integral, recuperación o
+  restauración ensayada, despliegue/operación de producción y aceptación integral.
+  Estos datos de ejecución no marcan R1–R6 como aceptadas.

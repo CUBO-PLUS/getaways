@@ -2,10 +2,29 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 type Citation = { id: string; title: string; url: string };
-type Card = Citation & { excerpt: string; type: "blog" | "listing" };
+type Card = Citation & { excerpt: string; type: "blog" | "listing"; imageUrl?: string | null };
 type Turn = { question: string; answer: string; citations: Citation[]; cards: Card[] };
+
+function SourceCard({ card }: { card: Card }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(card.imageUrl && !imageFailed);
+  return <li className="overflow-hidden rounded-lg border border-border bg-background">
+    <a href={card.url} className="group block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+      <div className="relative aspect-[16/9] bg-button-bg/10">
+        {showImage ? <Image src={card.imageUrl!} alt="" fill sizes="(max-width: 640px) 100vw, 50vw" unoptimized className="object-cover transition-transform group-hover:scale-[1.02]" onError={() => setImageFailed(true)} />
+          : <div aria-hidden="true" className="grid size-full place-items-center text-muted-text"><span className="text-3xl">{card.type === "listing" ? "⌂" : "▤"}</span></div>}
+      </div>
+      <div className="p-4">
+        <p className="m-0 text-xs uppercase tracking-wide text-muted-text">{card.type === "listing" ? "Stay" : "Journal"}</p>
+        <h2 className="mb-2 mt-1 font-heading text-lg text-heading">{card.title}</h2>
+        <p className="m-0 text-sm leading-6 text-body-text">{card.excerpt}</p>
+      </div>
+    </a>
+  </li>;
+}
 
 export default function RagAssistant() {
   const [question, setQuestion] = useState("");
@@ -56,11 +75,7 @@ export default function RagAssistant() {
         <article className="max-w-3xl">
           <p className="whitespace-pre-wrap leading-7 text-body-text">{turn.answer}</p>
           {turn.cards.length > 0 && <ul aria-label="Related sources" className="grid list-none gap-3 p-0 sm:grid-cols-2">
-            {turn.cards.map((card) => <li key={card.id} className="rounded-lg border border-border p-4">
-              <p className="m-0 text-xs uppercase tracking-wide text-muted-text">{card.type === "listing" ? "Stay" : "Journal"}</p>
-              <h2 className="mb-2 mt-1 font-heading text-lg text-heading"><a href={card.url}>{card.title}</a></h2>
-              <p className="m-0 text-sm leading-6 text-body-text">{card.excerpt}</p>
-            </li>)}
+            {turn.cards.map((card) => <SourceCard key={card.id} card={card} />)}
           </ul>}
           {turn.citations.length > 0 && <p className="mb-0 mt-4 text-sm text-muted-text">Sources: {turn.citations.map((source, i) => <span key={source.id}>{i > 0 ? ", " : ""}<a href={source.url}>{source.title}</a></span>)}</p>}
         </article>

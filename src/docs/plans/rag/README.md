@@ -28,19 +28,22 @@ Las fases se entregan en ese orden; la verificación acompaña cada una. No marc
 casilla sin evidencia y aceptación. Crear este plan no autoriza aplicar migraciones,
 indexar datos reales, cambiar la política de cuentas ni desplegar en producción.
 
-## Situación de partida y límites
+## Estado actual
 
-- `BlogPublication` contiene el snapshot público; `BlogPost` también contiene borradores.
-- El catálogo público selecciona `Listing.active = true` y `archivedAt IS NULL`.
-- `src/ai/embedding.ts` ya carga EmbeddingGemma localmente, pero su prefijo actual es
-  de consulta; verificar el formato documental, dimensiones, límite de tokens y modelo
-  realmente instalado antes de diseñar el almacenamiento.
-- Existe configuración Anthropic; verificar disponibilidad, costes y modelo antes del uso.
-- pgvector se habilitó localmente; su disponibilidad y permisos en la base externa de
-  producción no están verificados.
-- Las cuentas de huéspedes están restringidas a localhost y fuera de producción en
-  `src/modules/guests/server/auth.ts`. No retirar ese bloqueo sin resolver los requisitos
-  de seguridad y recuperación de cuentas y aprobar su habilitación por separado.
+- La implementación RAG está en `main`; el código actual también conserva cambios sin
+  commit. El asistente recibió confirmación del usuario de que la respuesta funciona.
+- El índice local contiene 9 blogs y 11 listings (20 fuentes), con 548 chunks. La cola
+  no tiene trabajos activos ni filas con error (`lastError`); el estado terminal
+  `failed` con `lastError = NULL` no representa un fallo según el contrato actual.
+- Compose tiene activos app y worker. Los logs recientes del worker muestran una
+  reconciliación de 20 fuentes sin cambios.
+- Se añadieron imágenes públicas a las cards; los cambios relacionados están sin commit.
+- `src/modules/guests/server/auth.ts` permite origen HTTPS para huéspedes; el antiguo
+  bloqueo histórico de producción/localhost ya no describe la implementación y no debe
+  usarse como impedimento del plan.
+- El índice local y una respuesta funcional no equivalen a evaluación multilingüe,
+  revisión de seguridad integral, recuperación ensayada, despliegue productivo ni
+  aceptación del plan. Esos puntos siguen explícitamente pendientes.
 
 ## Aceptación del plan
 
@@ -50,3 +53,6 @@ indexar datos reales, cambiar la política de cuentas ni desplegar en producció
 - [ ] El agente cita fuentes válidas, respeta su alcance y responde en varios idiomas.
 - [ ] La página exige sesión para consultar y presenta resultados visuales verificables.
 - [ ] Se registra evidencia, limitaciones, recuperación y aceptación por entorno.
+
+El estado funcional confirmado no constituye aceptación formal del plan; no se marca
+ninguna fase como aceptada.

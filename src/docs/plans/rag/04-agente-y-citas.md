@@ -4,6 +4,10 @@
 
 ## Comportamiento
 
+La implementación está disponible y el usuario confirmó que la respuesta es funcional.
+Esto no verifica todavía la seguridad integral, las citas/calidad en un conjunto
+representativo ni la evaluación multilingüe; la aceptación de R4 continúa pendiente.
+
 - [ ] Conectar el agente configurado a la búsqueda validada del servidor, con contexto
   acotado y fuentes identificadas; no exponer credenciales al cliente.
 - [ ] Escribir instrucciones, mensajes de configuración y reglas operativas en español;

@@ -28,3 +28,18 @@ it("sends up to six recent real messages within the API history limits", async (
   ]);
   expect(history.reduce((total: number, message: { content: string }) => total + message.content.length, "final question".length)).toBeLessThanOrEqual(4000);
 });
+
+it("shows verified source photos and keeps an accessible visual fallback", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ answer: "Here are two sources.", citations: [], cards: [
+    { id: "s1", title: "Coastal stay", url: "/listing/coast/", excerpt: "A place by the sea.", type: "listing", imageUrl: "/api/media/12" },
+    { id: "s2", title: "Travel notes", url: "/blog/notes/", excerpt: "Published advice.", type: "blog", imageUrl: null },
+  ] }), { status: 200 })));
+  const { container } = render(<RagAssistant />);
+  fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "Places by the coast" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Ask" }).closest("form")!);
+
+  await screen.findByText("Coastal stay");
+  expect(container.querySelector("img")?.getAttribute("src")).toContain("/api/media/12");
+  expect(screen.getByText("▤")).toBeTruthy();
+  expect(screen.getByRole("link", { name: /Travel notes/ }).getAttribute("href")).toBe("/blog/notes/");
+});

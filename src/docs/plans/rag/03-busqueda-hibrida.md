@@ -4,11 +4,13 @@
 
 ## Recuperación
 
-- [x] Combinar búsqueda semántica por contexto y búsqueda textual por nombre y términos;
-  evaluar ambas por separado y combinadas con preguntas reales y multilingües.
+- [x] Combinar búsqueda semántica por contexto y búsqueda textual por nombre y términos.
+  La evaluación comparativa con preguntas reales y multilingües sigue pendiente.
 - [x] Convertir requisitos inequívocos a filtros estructurados validados con un
   vocabulario permitido: servicios, ubicación, capacidad y otros datos confirmados.
-- [ ] Reutilizar las claves y convenciones del catálogo; auditar datos heredados y
+- [x] Reutilizar las claves y convenciones del catálogo; corregir el manejo de filtros
+  nullable para distinguir valores conocidos de desconocidos.
+- [ ] Auditar datos heredados y
   distinguir verdadero, falso y desconocido donde la fuente lo permita. La ausencia de
   una casilla de servicio sigue la semántica vigente del catálogo, no una inferencia.
 - [x] Aplicar todos los filtros obligatorios antes del ranking: `wifi` **y** `hammocks`
@@ -51,5 +53,5 @@
   fuentes con trabajo R2 pendiente, procesándose o agotado con error registrado. Esta
   última condición evita servir snapshots viejos tras un fallo terminal de reindexación.
 - Quedan pendientes filtros estructurados adicionales (ubicación/edificio y métricas),
-  autorización del llamador en la futura API R4/R5, evaluación multilingüe/calidad,
+  evaluación multilingüe/calidad,
   medición de latencia y comprobación de precio/disponibilidad en tiempo real.

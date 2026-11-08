@@ -24,7 +24,7 @@ export type RagAgentInput = {
 export type RagAgentResponse = {
   answer: string;
   citations: Array<{ id: string; title: string; url: string }>;
-  cards: Array<{ id: string; title: string; url: string; excerpt: string; type: "blog" | "listing" }>;
+  cards: Array<{ id: string; title: string; url: string; excerpt: string; type: "blog" | "listing"; imageUrl: string | null }>;
 };
 
 type ModelAnswer = { answer: string; citations: string[]; cards: string[] };
@@ -99,13 +99,13 @@ function publicResults(results: RagSearchResult[]) {
   return results.flatMap((result, index) => {
     const url = canonicalPath(result.url);
     if (!url) return [];
-    return [{ id: `s${index + 1}`, sourceType: result.sourceType, sourceId: result.sourceId, contentHash: result.contentHash, url, title: result.title.slice(0, 300),
+    return [{ id: `s${index + 1}`, sourceType: result.sourceType, sourceId: result.sourceId, contentHash: result.contentHash, imageUrl: result.imageUrl ?? null, url, title: result.title.slice(0, 300),
       section: result.section.slice(0, 200), text: result.text.slice(0, 1800) }];
   });
 }
 
-export function ragSourceChanged(source: { contentHash: string; url: string; title: string }, latest: RagSearchResult | undefined) {
-  return !latest || latest.contentHash !== source.contentHash || latest.url !== source.url || latest.title.slice(0, 300) !== source.title;
+export function ragSourceChanged(source: { contentHash: string; url: string; title: string; imageUrl?: string | null }, latest: RagSearchResult | undefined) {
+  return !latest || latest.contentHash !== source.contentHash || latest.url !== source.url || latest.title.slice(0, 300) !== source.title || (latest.imageUrl ?? null) !== (source.imageUrl ?? null);
 }
 
 async function clarifyCatalogConstraint(question: string, excluded: boolean): Promise<string> {
@@ -185,7 +185,7 @@ export async function answerWithRag(input: RagAgentInput): Promise<RagAgentRespo
     return {
       answer: answer.answer,
       citations: answer.citations.map((id) => { const source = byId.get(id)!; return { id, title: source.title, url: source.url }; }),
-      cards: answer.cards.map((id) => { const source = byId.get(id)!; return { id, title: source.title, url: source.url, excerpt: source.text.slice(0, 320), type: source.sourceType }; }),
+      cards: answer.cards.map((id) => { const source = byId.get(id)!; return { id, title: source.title, url: source.url, excerpt: source.text.slice(0, 320), type: source.sourceType, imageUrl: source.imageUrl }; }),
     };
   } catch {
     throw new Error("No pude completar la consulta con seguridad. Inténtalo de nuevo más tarde.");
