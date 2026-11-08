@@ -49,7 +49,7 @@ export function guardCatalogAmenities(question: string): CatalogAmenityGuard {
         // A stated exclusion cannot safely be converted to the positive-only
         // amenity filter. "I don't need wifi" is absence of a requirement, not
         // a request for a property without wifi.
-        const noNeed = /(?:no\s+necesito|no\s+requiere|not\s+(?:need|require)|don't\s+need|do\s+not\s+need|no\s+es\s+necesari[oa])\s+(?:tener\s+)?$/u.test(before);
+        const noNeed = /(?:\bno\s+necesito|\bno\s+requiere|\bnot\s+(?:need|require)|\bdon't\s+(?:need|require)|\bdo\s+not\s+(?:need|require)|\bno\s+need\s+for|\bno\s+es\s+necesari[oa])\s+(?:(?:tener|the|a|an|el|la|un|una)\s+)?$/u.test(before);
         const noNeedAfter = /^\s*(?:(?:is|are)\s+)?(?:not\s+(?:needed|required|necessary|essential)|isn't\s+(?:needed|required|necessary|essential)|no\s+es\s+necesari[oa]|no\s+hace\s+falta)/u.test(after);
         if (noNeed || noNeedAfter) continue;
         if (/(?:\bsin|\bwithout|\bno|\bnot|\bni)\s+(?:(?:tener|with|con)\s+)?(?:the\s+|a\s+|an\s+|el\s+|la\s+|un\s+|una\s+)?$/u.test(before)) excluded.add(key);

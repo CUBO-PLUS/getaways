@@ -81,8 +81,8 @@ texto de preguntas, corpus, tokens, URL de conexión, credenciales ni payloads.
 - No guardar valores en docs. Inyectar secretos desde el gestor aprobado, limitar acceso
   al proceso/host y rotarlos según política. Requests y corpus pueden contener datos
   personales: solo fuentes publicables se indexan; patrones comunes de correo/teléfono se
-  redactan antes de enviar contexto/historial al modelo, pero la redacción no es completa
-  ni sustituye revisión de privacidad. El proveedor recibe consulta/contexto redactados;
+  redactan antes de enviar contexto/historial al modelo, pero esta heurística no anonimiza
+  nombres ni direcciones y no es completa ni sustituye revisión de privacidad. El proveedor recibe consulta/contexto redactados;
   no se persisten conversaciones por diseño. Logs de worker y reportes identifican
   fuentes por tipo/ID y errores truncados, aun así deben protegerse como logs operativos.
 - Verificar en PostgreSQL destino versión/soporte de `pgvector`, disponibilidad de la
@@ -172,6 +172,30 @@ equivale por sí sola a autorizar producción ni acredita una restauración ensa
   reconciliación de corpus real, concurrencia/recuperación DB, restauración, llamadas al
   proveedor, revisión en navegador ni aceptación integral. Estos puntos continúan
   pendientes y ninguna evidencia local los sustituye.
+
+### Revisión estática de privacidad y negaciones (2026-11-08)
+
+- La revisión estática corrigió la redacción sobre extracción, aclaración y fuentes para
+  precisar que la heurística redacta patrones comunes de correo/teléfono, pero no anonimiza
+  nombres ni direcciones. No equivale a una auditoría de privacidad ni demuestra anonimización
+  completa.
+- Se corrigieron negaciones representativas en español e inglés. Las 7 pruebas enfocadas
+  correspondientes pasan. No se ejecutó una evaluación multilingüe integral ni una revisión
+  de auditoría; ambas siguen pendientes, al igual que la aceptación y recuperación completas.
+
+### Comprobación manual local mínima (2026-11-08)
+
+- Se hicieron dos consultas sintéticas, una en español y otra en inglés, ejecutando el agente
+  directamente. Se confirmó `DATABASE_URL` con host loopback `127.0.0.1` y base `gateways`;
+  el índice local tenía 20 fuentes y 548 fragmentos según el estado operativo previo. La
+  búsqueda consultó el índice sin escrituras; no se crearon cuentas ni se modificaron DB o
+  RustFS. Las respuestas se generaron con el proveedor Anthropic configurado.
+- Español: se citaron seis listados y se devolvieron tres tarjetas; inglés: se citaron tres
+  listados y se devolvieron tres tarjetas. Ambas respuestas evitaron afirmar precio o
+  disponibilidad. Los resultados no fueron equivalentes en amplitud ni detalle.
+- Esta comprobación pequeña acredita únicamente que ambas rutas respondieron con resultados
+  observables en este entorno local. No es una evaluación de calidad, privacidad, cobertura
+  multilingüe o aceptación integral; R3/R4 y la aceptación general siguen pendientes.
 
 ### Respaldo local antes de revisión RAG (2026-11-08)
 

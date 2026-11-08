@@ -14,6 +14,10 @@ describe("catalog amenity filter guard", () => {
       .toEqual({ required: [], excluded: ["swimmingpool"], ambiguous: false });
     expect(guardCatalogAmenities("No necesito wifi; piscina no es necesaria; wifi isn't essential"))
       .toEqual({ required: [], excluded: [], ambiguous: false });
+    expect(guardCatalogAmenities("no necesito una piscina; I don't need a pool"))
+      .toEqual({ required: [], excluded: [], ambiguous: false });
+    expect(guardCatalogAmenities("I don't require a pool; no need for a pool"))
+      .toEqual({ required: [], excluded: [], ambiguous: false });
     expect(guardCatalogAmenities("Maybe a pool or beach access"))
       .toEqual({ required: [], excluded: [], ambiguous: true });
   });

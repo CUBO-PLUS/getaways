@@ -43,8 +43,9 @@
 - La API R4 `/api/rag/answer` detecta explícitamente `wifi`/`wi-fi` y `hamacas`/`hammocks`
   como filtros obligatorios del esquema permitido antes de ranking; no delega esta
   extracción al modelo. Si no hay coincidencias, informa que no halló alojamientos que
-  confirmen todos los servicios. Negaciones y términos no mapeados no se convierten en
-  requisitos positivos.
+  confirmen todos los servicios. Las negaciones representativas corregidas en español e
+  inglés no deben convertirse en requisitos positivos; esto no acredita cobertura exhaustiva
+  de negaciones ni evaluación multilingüe integral.
 - La consulta combina coseno pgvector con ranking textual `simple` y deduplica a un
   fragmento mejor posicionado por fuente. Amenidades (claves `AMENITY_KEYS`), slugs de
   categorías existentes y capacidad mínima se validan; todos los filtros aplican con
@@ -55,3 +56,27 @@
 - Quedan pendientes filtros estructurados adicionales (ubicación/edificio y métricas),
   evaluación multilingüe/calidad,
   medición de latencia y comprobación de precio/disponibilidad en tiempo real.
+
+### Revisión estática enfocada (2026-11-08)
+
+- Se corrigieron negaciones representativas en español e inglés; las 7 pruebas enfocadas
+  pasan. No se ejecutó evaluación multilingüe integral. La revisión estática no acepta la
+  auditoría ni la recuperación completa; siguen pendientes también la evaluación amplia y
+  los criterios de aceptación de esta fase.
+
+### Comprobación manual local mínima (2026-11-08)
+
+- Se ejecutó `answerWithRag` directamente con dos consultas sintéticas sin datos personales,
+  sobre la DB local `127.0.0.1/gateways`; el flujo de búsqueda solo leyó el índice. No se
+  crearon cuentas ni se modificaron DB/RustFS. Se usó el proveedor Anthropic ya configurado.
+- «¿Qué alojamientos publicados ofrecen servicios para una estancia cómoda?» devolvió seis
+  listados (entre ellos The Nomad Getaway, Salty Soul, The Zonte Sol Getaway y Solaris),
+  citados con URLs locales; se generaron tres tarjetas. La respuesta señaló que precio y
+  disponibilidad no estaban confirmados.
+- “Which published accommodations offer amenities for a comfortable stay?” priorizó Solaris,
+  y también citó The Nomad Getaway y Salty Soul; devolvió tres tarjetas. La respuesta listó
+  servicios concretos de Solaris y también señaló que precio y disponibilidad no estaban
+  confirmados.
+- Es solo una lectura por idioma: los resultados y el nivel de detalle difirieron. No demuestra
+  equivalencia entre idiomas, precisión del corpus, calidad integral ni aceptación de R3/R4.
+  La evaluación amplia sigue pendiente.
