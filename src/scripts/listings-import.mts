@@ -6,10 +6,12 @@ import { isDeepStrictEqual } from "node:util";
 import nextEnv from "@next/env";
 import sharp from "sharp";
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { optimizeImage, optimizedImageKey } from "../infrastructure/images/optimize.ts";
 import { normalizeLegacyListing } from "../modules/listings/listing-import-normalization.ts";
 
 type Term = { id: number; wp_id: string | null; taxonomy: string; slug: string; name: string };
 type Media = { id: number; wp_id: string | null; storage_path: string; original_filename: string; alt_text: string | null };
+type PreparedMedia = { id: number; wpId: string | null; item: Media; sourceBytes: Buffer; sourceHash: string; sourceKey: string; bytes: Buffer; digest: string; key: string; mime: string; width: number; height: number; sourceMime: string; sourceWidth: number; sourceHeight: number; blogSourceKeys: string[] };
 let s3Client: { destroy(): void } | undefined;
 const json = async <T,>(root: string, name: string) => (JSON.parse as (text: string, reviver: (this: unknown, key: string, value: unknown, context?: { source?: string }) => unknown) => unknown)(
   await readFile(path.join(root, "data", `${name}.json`), "utf8"),
@@ -20,7 +22,7 @@ const assertEqual = (expected: unknown, actual: unknown, label: string) => {
   if (!isDeepStrictEqual(expected, actual)) throw new Error(`destination differs: ${label}`);
 };
 
-async function run(root: string, apply: boolean, verify: boolean) {
+export async function importListings(root: string, apply: boolean, verify: boolean) {
   const [{ db }, storage] = await Promise.all([
     import("../infrastructure/prisma/db.ts"), import("../infrastructure/storage/s3.ts"),
   ]);
@@ -37,7 +39,8 @@ async function run(root: string, apply: boolean, verify: boolean) {
   const byMedia = new Map(media.map(m => [m.id, m]));
   // Only Media.id is the local legacyMediaId; wp_id is a separate source identity and never a MediaAsset.id.
   const referenced = new Set(normalized.flatMap(l => [...l.galleryMediaIds, ...(l.featuredMediaId ? [l.featuredMediaId] : [])]));
-  const prepared = await Promise.all([...referenced].map(async id => {
+  const prepared: PreparedMedia[] = [];
+  for (const id of referenced) {
     const item = byMedia.get(id);
     if (!item) throw new Error(`missing source media ${id}`);
     const mediaRoot = path.resolve(root, "public/media");
@@ -47,9 +50,13 @@ async function run(root: string, apply: boolean, verify: boolean) {
     const meta = await sharp(bytes, { limitInputPixels: 100_000_000 }).metadata();
     if (!meta.width || !meta.height || !meta.format) throw new Error(`invalid media ${id}`);
     const digest = hash(bytes);
-    const key = `listings-import/legacy/${id}/sha256/${digest}.${meta.format}`;
-    return { id, wpId: item.wp_id, item, bytes, digest, key, mime: `image/${meta.format}`, width: meta.width, height: meta.height };
-  }));
+    const sourceKey = `listings-import/legacy/${id}/sha256/${digest}.${meta.format}`;
+    const optimized = await optimizeImage(bytes, { limitInputPixels: 100_000_000, maxInputBytes: 100 * 1024 * 1024 });
+    const key = optimizedImageKey(sourceKey, optimized.sha256);
+    const blogExt = meta.format === "jpeg" ? "jpg" : meta.format === "heif" && meta.compression === "av1" ? "avif" : meta.format;
+    const blogKey = `blog-import/sha256/${digest}.${blogExt}`;
+    prepared.push({ id, wpId: item.wp_id, item, sourceBytes: bytes, sourceHash: digest, sourceKey, bytes: optimized.bytes, digest: optimized.sha256, key, mime: optimized.mimeType, width: optimized.width, height: optimized.height, sourceMime: `image/${meta.format === "heif" && meta.compression === "av1" ? "avif" : meta.format}`, sourceWidth: meta.width, sourceHeight: meta.height, blogSourceKeys: [blogKey, `blog-import/source/${id}/sha256/${digest}.${blogExt}`] });
+  }
   const catalogTerms = terms.filter(t => ["hp_listing_category", "hp_listing_pets"].includes(t.taxonomy));
   const expectedTermIds = [15, 16, 17, 19, 23, 24];
   if (catalogTerms.length !== expectedTermIds.length || new Set(catalogTerms.map(t => t.id)).size !== expectedTermIds.length || expectedTermIds.some(id => !catalogTerms.some(t => t.id === id))) throw new Error(`unexpected catalogue term inventory: ${catalogTerms.map(t => t.id).join(",")}`);
@@ -67,6 +74,7 @@ async function run(root: string, apply: boolean, verify: boolean) {
   const mappingsBySourceId = new Map(mappings.map(m => [m.sourceId, m]));
   const assetsById = new Map(existingAssets.map(a => [a.id, a]));
   const assetBySource = new Map<number, (typeof existingAssets)[number]>();
+  const objectSourceKeyBySource = new Map<number, string>();
   for (const item of prepared) {
     const blogMapping = blogMediaMappings.get(item.id);
     const sourceMapping = mappingsBySourceId.get(`media:${item.id}`);
@@ -75,11 +83,19 @@ async function run(root: string, apply: boolean, verify: boolean) {
     const asset = blogMapping ? assetsById.get(blogMapping.targetId) : legacyAsset;
     if (blogMapping && !asset) throw new Error(`blog media mapping target missing: legacy ${item.id}`);
     if (blogMapping && asset?.legacyMediaId != null && asset.legacyMediaId !== BigInt(item.id)) throw new Error(`blog media mapping has conflicting legacy id: ${item.id}`);
-    if (legacyAsset && !blogMapping && legacyAsset.objectKey !== item.key) throw new Error(`destination media key differs: legacy ${item.id}`);
     if (blogMapping && blogMapping.targetKind !== "media") throw new Error(`invalid blog media mapping ${item.id}`);
-    if (asset && (Number(asset.sizeBytes) !== item.bytes.length || asset.width !== item.width || asset.height !== item.height || asset.mimeType !== item.mime || asset.defaultAlt !== item.item.alt_text || asset.originalName !== path.basename(item.item.original_filename || item.item.storage_path))) throw new Error(`destination media metadata differs: legacy ${item.id}`);
+    const blogSourceKey = blogMapping && asset ? item.blogSourceKeys.find(sourceKey => {
+      const optimizedKey = optimizedImageKey(sourceKey, item.digest);
+      return asset.objectKey === sourceKey || asset.objectKey === optimizedKey;
+    }) : undefined;
+    const expectedSourceKey = blogSourceKey ?? item.sourceKey;
+    const expectedOptimizedKey = blogSourceKey ? optimizedImageKey(blogSourceKey, item.digest) : item.key;
+    const legacy = (asset?.objectKey === item.sourceKey || (!!blogSourceKey && asset?.objectKey === blogSourceKey)) && Number(asset.sizeBytes) === item.sourceBytes.length && asset.width === item.sourceWidth && asset.height === item.sourceHeight && asset.mimeType === item.sourceMime;
+    const optimized = (asset?.objectKey === item.key || (!!blogSourceKey && asset?.objectKey === expectedOptimizedKey)) && Number(asset.sizeBytes) === item.bytes.length && asset.width === item.width && asset.height === item.height && asset.mimeType === item.mime;
+    if (legacyAsset && !blogMapping && !legacy && !optimized) throw new Error(`destination media key differs: legacy ${item.id}`);
+    if (asset && ((!legacy && !optimized) || asset.defaultAlt !== item.item.alt_text || asset.originalName !== path.basename(item.item.original_filename || item.item.storage_path))) throw new Error(`destination media metadata differs: legacy ${item.id}`);
     if (verify && !asset) throw new Error(`destination media missing: legacy ${item.id}`);
-    if (asset) assetBySource.set(item.id, asset);
+    if (asset) { assetBySource.set(item.id, asset); objectSourceKeyBySource.set(item.id, expectedSourceKey); }
   }
   for (const t of catalogTerms) {
     const old = existingTerms.find(x => x.id === t.id);
@@ -121,10 +137,15 @@ async function run(root: string, apply: boolean, verify: boolean) {
     for (const item of prepared) {
       const asset = assetBySource.get(item.id);
       if (!asset) throw new Error(`destination media missing: legacy ${item.id}`);
+      const sourceKey = objectSourceKeyBySource.get(item.id) ?? item.sourceKey;
+      const oldRepresentation = asset.objectKey === item.sourceKey || item.blogSourceKeys.includes(asset.objectKey);
+      const expectedHash = oldRepresentation ? item.sourceHash : item.digest;
+      const expectedMime = oldRepresentation ? item.sourceMime : item.mime;
+      const expectedBytes = oldRepresentation ? item.sourceBytes : item.bytes;
       const head = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: asset.objectKey }));
-      if (head.Metadata?.sha256 !== item.digest || head.ContentType !== item.mime || Number(head.ContentLength) !== item.bytes.length) throw new Error(`S3 hash/size/type mismatch: ${asset.objectKey}`);
+      if (head.Metadata?.sha256 !== expectedHash || (!oldRepresentation && (head.Metadata?.["source-sha256"] !== item.sourceHash || head.Metadata?.["source-key"] !== sourceKey)) || head.ContentType !== expectedMime || Number(head.ContentLength) !== expectedBytes.length) throw new Error(`S3 hash/size/type mismatch: ${asset.objectKey}`);
       const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: asset.objectKey }));
-      if (!obj.Body || hash(await obj.Body.transformToByteArray()) !== item.digest) throw new Error(`S3 bytes mismatch: ${asset.objectKey}`);
+      if (!obj.Body || hash(await obj.Body.transformToByteArray()) !== expectedHash) throw new Error(`S3 bytes mismatch: ${asset.objectKey}`);
     }
     return { mode: "verified", listings: normalized.length, media: prepared.length, terms: catalogTerms.length, ignoredOrphanListingRelations: orphanTermRelations };
   }
@@ -139,7 +160,15 @@ async function run(root: string, apply: boolean, verify: boolean) {
       const key = existingAsset?.objectKey ?? item.key;
       try {
         const head = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
-        if (head.Metadata?.sha256 !== item.digest || head.ContentType !== item.mime || Number(head.ContentLength) !== item.bytes.length) throw new Error(`S3 hash/size/type mismatch: ${key}`);
+        const sourceKey = objectSourceKeyBySource.get(item.id) ?? item.sourceKey;
+        const oldRepresentation = existingAsset && (key === item.sourceKey || item.blogSourceKeys.includes(key));
+        if (oldRepresentation) {
+          if (head.Metadata?.sha256 !== item.sourceHash || head.ContentType !== item.sourceMime || Number(head.ContentLength) !== item.sourceBytes.length) throw new Error(`S3 hash/size/type mismatch: ${key}`);
+          const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+          if (!obj.Body || hash(await obj.Body.transformToByteArray()) !== item.sourceHash) throw new Error(`S3 bytes mismatch: ${key}`);
+          continue;
+        }
+        if (head.Metadata?.sha256 !== item.digest || head.Metadata?.["source-sha256"] !== item.sourceHash || head.Metadata?.["source-key"] !== sourceKey || head.ContentType !== item.mime || Number(head.ContentLength) !== item.bytes.length) throw new Error(`S3 hash/size/type mismatch: ${key}`);
         const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
         if (!obj.Body || hash(await obj.Body.transformToByteArray()) !== item.digest) throw new Error(`S3 bytes mismatch: ${key}`);
       } catch (e) {
@@ -151,14 +180,16 @@ async function run(root: string, apply: boolean, verify: boolean) {
     }
     for (const item of toUpload) {
       try {
-        await s3.send(new PutObjectCommand({ Bucket: bucket, Key: item.key, Body: item.bytes, ContentLength: item.bytes.length, ContentType: item.mime, IfNoneMatch: "*", Metadata: { sha256: item.digest } }));
+        await s3.send(new PutObjectCommand({ Bucket: bucket, Key: item.key, Body: item.bytes, ContentLength: item.bytes.length, ContentType: item.mime, IfNoneMatch: "*", Metadata: { sha256: item.digest, "source-sha256": item.sourceHash, "source-key": item.sourceKey } }));
         uploadedKeys.push(item.key);
       } catch (e) {
         const status = (e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
         if (status !== 412 && (e as { name?: string }).name !== "PreconditionFailed") throw e;
       }
       const head = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: item.key }));
-      if (head.Metadata?.sha256 !== item.digest || head.ContentType !== item.mime || Number(head.ContentLength) !== item.bytes.length) throw new Error(`uploaded S3 object verification failed: ${item.key}`);
+      if (head.Metadata?.sha256 !== item.digest || head.Metadata?.["source-sha256"] !== item.sourceHash || head.Metadata?.["source-key"] !== item.sourceKey || head.ContentType !== item.mime || Number(head.ContentLength) !== item.bytes.length) throw new Error(`uploaded S3 object verification failed: ${item.key}`);
+      const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: item.key }));
+      if (!obj.Body || hash(await obj.Body.transformToByteArray()) !== item.digest) throw new Error(`uploaded S3 object content verification failed: ${item.key}`);
     }
     const result = await db.transaction(async tx => {
       const lock = db.raw.sql`WITH lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(72190426)) SELECT 1 AS locked FROM lock`.returnsRow({ locked: "pg/int4@1" }).build();
@@ -210,7 +241,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     nextEnv.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
     const [{ db }] = await Promise.all([import("../infrastructure/prisma/db.ts")]);
     dbClient = db;
-    process.stdout.write(`${JSON.stringify(await run(path.resolve(sourceRoot), args.includes("--apply"), args.includes("--verify")), null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(await importListings(path.resolve(sourceRoot), args.includes("--apply"), args.includes("--verify")), null, 2)}\n`);
   } catch (error) {
     process.stderr.write(`listings import aborted: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import sharp from "sharp";
+import { InvalidImageError, optimizeImage } from "@/infrastructure/images/optimize";
 import { db } from "@/infrastructure/prisma/db";
 import { getBlogMediaBucket, getS3Client } from "@/infrastructure/storage/s3";
 import { assertSameOrigin } from "@/modules/auth/server/auth";
@@ -46,23 +46,20 @@ async function receiveUpload(request: Request, actor: Awaited<ReturnType<typeof 
   if (!(file instanceof File) || !types.has(file.type) || file.size === 0 || file.size > LIMIT) return new Response(null, { status: 415 });
   const bytes = Buffer.from(await file.arrayBuffer());
   if (bytes.length > LIMIT) return new Response(null, { status: 413 });
-  let metadata;
+  let optimized;
   try {
-    metadata = await sharp(bytes, { limitInputPixels: 40_000_000, failOn: "error" }).metadata();
-    await sharp(bytes, { limitInputPixels: 40_000_000, failOn: "error" }).toBuffer();
+    optimized = await optimizeImage(bytes, { declaredMime: file.type });
   }
-  catch { return new Response(null, { status: 415 }); }
-  const mime = metadata.format === "jpeg" ? "image/jpeg" : metadata.format === "png" ? "image/png" : metadata.format === "webp" ? "image/webp" : null;
-  if (!mime || mime !== file.type || !metadata.width || !metadata.height || metadata.width * metadata.height > 40_000_000) return new Response(null, { status: 415 });
-  const objectKey = `blog/${randomUUID()}`;
+  catch (error) { if (error instanceof InvalidImageError) return new Response(null, { status: 415 }); throw error; }
+  const objectKey = `blog/${randomUUID()}.${optimized.extension}`;
   const s3 = getS3Client();
   const bucket = getBlogMediaBucket();
-  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: bytes, ContentType: mime }));
+  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: optimized.bytes, ContentType: optimized.mimeType }));
   try {
-    const { width, height } = metadata;
+    const { width, height } = optimized;
     const asset = await db.transaction(async tx => {
       await recheckBlogAccess(tx, actor);
-      return tx.orm.public.MediaAsset.create({ objectKey, originalName: file.name.slice(0, 255), mimeType: mime, sizeBytes: BigInt(bytes.length), width, height });
+      return tx.orm.public.MediaAsset.create({ objectKey, originalName: file.name.slice(0, 255), mimeType: optimized.mimeType, sizeBytes: BigInt(optimized.bytes.length), width, height });
     });
     return Response.json({ id: asset.id, url: `/api/blog/media/${asset.id}` }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {

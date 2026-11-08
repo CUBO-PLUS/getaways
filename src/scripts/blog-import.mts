@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { optimizeImage, optimizedImageKey } from "../infrastructure/images/optimize.ts";
 import { db } from "../infrastructure/prisma/db.ts";
 import { getBlogMediaBucket, getS3Client } from "../infrastructure/storage/s3.ts";
 import { BLOG_DOCUMENT_SCHEMA_VERSION, validateBlogDocument } from "../modules/content/blog-schema.ts";
@@ -22,7 +23,7 @@ type Article = {
   sourceBlockers?: unknown[];
 };
 type Conversion = { articles: Article[]; sourceJsonSha256: string; sourceSha256: string };
-type PreparedMedia = { source: Media; bytes: Buffer; hash: string; sourceFingerprint: string; key: string; mime: string; width: number; height: number };
+type PreparedMedia = { source: Media; bytes: Buffer; hash: string; sourceHash: string; sourceBytes: Buffer; sourceMime: string; sourceWidth: number; sourceHeight: number; sourceKey: string; sourceFingerprint: string; key: string; mime: string; width: number; height: number };
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 const SOURCE = "wordpress-v1";
 
@@ -55,7 +56,7 @@ function remapDocument(node: unknown, mediaIds: Map<string, number>): unknown {
 
 async function verifyObject(s3: ReturnType<typeof getS3Client>, bucket: string, item: PreparedMedia): Promise<void> {
   const head = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: item.key }));
-  if (head.Metadata?.sha256 !== item.hash || Number(head.ContentLength) !== item.bytes.length) throw new Error(`object metadata mismatch: ${item.key}`);
+  if (head.Metadata?.sha256 !== item.hash || head.Metadata?.["source-sha256"] !== item.sourceHash || head.Metadata?.["source-key"] !== item.sourceKey || head.ContentType !== item.mime || Number(head.ContentLength) !== item.bytes.length) throw new Error(`object metadata mismatch: ${item.key}`);
   const result = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: item.key }));
   if (!result.Body || digest(await result.Body.transformToByteArray()) !== item.hash) throw new Error(`object content hash mismatch: ${item.key}`);
 }
@@ -122,22 +123,20 @@ export async function importBlog(root: string, conversionBytes: Uint8Array, appr
   if (new Set(conversion.articles.map(({ source }) => source.slug)).size !== conversion.articles.length) throw new Error("conversion contains duplicate slugs");
 
   const prepared: PreparedMedia[] = [];
-  const usedObjectKeys = new Set<string>();
+  const sourceObjectKeys = new Set<string>();
   for (const item of sourceMedia) {
     const bytes = sourceMediaSnapshot.bytesById.get(item.id);
     if (!bytes) throw new Error(`source media was not included in the verified snapshot: ${item.id}`);
-    const metadata = await sharp(bytes, { limitInputPixels: 100_000_000 }).metadata();
-    const formats = { jpeg: ["jpg", "image/jpeg"], png: ["png", "image/png"], webp: ["webp", "image/webp"] } as const;
-    const format = metadata.format as keyof typeof formats;
-    const descriptor = metadata.format === "heif" && metadata.compression === "av1"
-      ? ["avif", "image/avif"] as const
-      : formats[format];
-    if (!descriptor || !metadata.width || !metadata.height) throw new Error(`unsupported/corrupt source media ${item.storage_path}`);
-    const hash = digest(bytes);
-    let key = `blog-import/sha256/${hash}.${descriptor[0]}`;
-    if (usedObjectKeys.has(key)) key = `blog-import/source/${item.id}/sha256/${hash}.${descriptor[0]}`;
-    usedObjectKeys.add(key);
-    prepared.push({ source: item, bytes, hash, sourceFingerprint: fingerprint({ id: item.id, wpId: item.wp_id, storagePath: item.storage_path, filename: item.original_filename, alt: item.alt_text, hash }), key, mime: descriptor[1], width: metadata.width, height: metadata.height });
+    const sourceHash = digest(bytes);
+    const optimized = await optimizeImage(bytes, { limitInputPixels: 100_000_000, maxInputBytes: 100 * 1024 * 1024 });
+    const sourceMeta = await sharp(bytes, { limitInputPixels: 100_000_000 }).metadata();
+    if (!sourceMeta.format || !sourceMeta.width || !sourceMeta.height) throw new Error(`unsupported/corrupt source media ${item.storage_path}`);
+    const sourceExt = sourceMeta.format === "jpeg" ? "jpg" : sourceMeta.format === "heif" && sourceMeta.compression === "av1" ? "avif" : sourceMeta.format;
+    let sourceKey = `blog-import/sha256/${sourceHash}.${sourceExt}`;
+    if (sourceObjectKeys.has(sourceKey)) sourceKey = `blog-import/source/${item.id}/sha256/${sourceHash}.${sourceExt}`;
+    sourceObjectKeys.add(sourceKey);
+    const key = optimizedImageKey(sourceKey, optimized.sha256);
+    prepared.push({ source: item, bytes: optimized.bytes, hash: optimized.sha256, sourceHash, sourceBytes: bytes, sourceMime: `image/${sourceMeta.format === "heif" && sourceMeta.compression === "av1" ? "avif" : sourceMeta.format}`, sourceWidth: sourceMeta.width, sourceHeight: sourceMeta.height, sourceKey, sourceFingerprint: fingerprint({ id: item.id, wpId: item.wp_id, storagePath: item.storage_path, filename: item.original_filename, alt: item.alt_text, hash: sourceHash }), key, mime: optimized.mimeType, width: optimized.width, height: optimized.height });
   }
 
   // Resolve existing IDs and reject all collisions before the first object upload.
@@ -152,7 +151,9 @@ export async function importBlog(root: string, conversionBytes: Uint8Array, appr
     if (row.targetKind !== "media" || row.fingerprint !== item.sourceFingerprint) throw new Error(`source media mapping changed: ${item.source.id}`);
     const asset = existingAssets.find((candidate) => candidate.id === row.targetId);
     const originalName = path.basename(item.source.original_filename || item.source.storage_path);
-    if (!asset || asset.objectKey !== item.key || asset.mimeType !== item.mime || Number(asset.sizeBytes) !== item.bytes.length || asset.width !== item.width || asset.height !== item.height || asset.defaultAlt !== item.source.alt_text || asset.originalName !== originalName) throw new Error(`mapped destination media changed: ${item.source.id}`);
+    const legacy = asset?.objectKey === item.sourceKey && asset.mimeType === item.sourceMime && Number(asset.sizeBytes) === item.sourceBytes.length && asset.width === item.sourceWidth && asset.height === item.sourceHeight;
+    const optimized = asset?.objectKey === item.key && asset.mimeType === item.mime && Number(asset.sizeBytes) === item.bytes.length && asset.width === item.width && asset.height === item.height;
+    if (!asset || (!legacy && !optimized) || asset.defaultAlt !== item.source.alt_text || asset.originalName !== originalName) throw new Error(`mapped destination media changed: ${item.source.id}`);
     idsByWp.set(item.source.wp_id, row.targetId);
   }
   const categoryRows = new Map<number, number>();
@@ -210,12 +211,23 @@ export async function importBlog(root: string, conversionBytes: Uint8Array, appr
   try {
     for (const item of prepared) {
       let created = false;
+      const mappedRow = mappings.get(`media:${item.source.id}`);
+      const mappedAsset = mappedRow && existingAssets.find((candidate) => candidate.id === mappedRow.targetId);
+      const stored = mappedAsset?.objectKey === item.sourceKey
+        ? { ...item, key: item.sourceKey, bytes: item.sourceBytes, hash: item.sourceHash, mime: item.sourceMime, width: item.sourceWidth, height: item.sourceHeight }
+        : item;
       try {
-        await verifyObject(s3, bucket, item);
+        if (mappedAsset && stored.key === item.sourceKey) {
+          const head = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: stored.key }));
+          if (head.Metadata?.sha256 !== stored.hash || head.ContentType !== stored.mime || Number(head.ContentLength) !== stored.bytes.length) throw new Error(`object metadata mismatch: ${stored.key}`);
+          const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: stored.key }));
+          if (!obj.Body || digest(await obj.Body.transformToByteArray()) !== stored.hash) throw new Error(`object content hash mismatch: ${stored.key}`);
+        } else await verifyObject(s3, bucket, stored);
       } catch (error) {
         if ((error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode !== 404 && (error as { name?: string }).name !== "NotFound") throw error;
+        if (mappedAsset) throw new Error(`mapped media object missing: ${stored.key}`);
         if (!execute) { uploaded.push({ item, created: false }); continue; }
-        await s3.send(new PutObjectCommand({ Bucket: bucket, Key: item.key, Body: item.bytes, ContentLength: item.bytes.length, ContentType: item.mime, IfNoneMatch: "*", Metadata: { sha256: item.hash } }));
+        await s3.send(new PutObjectCommand({ Bucket: bucket, Key: item.key, Body: item.bytes, ContentLength: item.bytes.length, ContentType: item.mime, IfNoneMatch: "*", Metadata: { sha256: item.hash, "source-sha256": item.sourceHash, "source-key": item.sourceKey } }));
         uploadedKeys.push(item.key);
         await verifyObject(s3, bucket, item);
         created = true;
