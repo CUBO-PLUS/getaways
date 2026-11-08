@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Lexend, Montserrat } from "next/font/google";
 import "./globals.css";
 import { mediaPublicUrl } from "@/shared/media/media";
+import { Suspense } from "react";
+import AssistantLink from "@/components/organisms/AssistantLink";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -94,7 +96,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={` ${inter.variable} ${lexend.variable} ${montserrat.variable} h-full max-w-screen overflow-x-hidden has-[[data-blog-editor]]:overflow-x-clip`}>
-      <body className="flex min-h-full max-w-screen flex-col overflow-x-hidden bg-background font-body text-[16px] leading-[30px] text-body-text antialiased has-[[data-blog-editor]]:overflow-x-clip">{children}</body>
+      <body className="flex min-h-full max-w-screen flex-col overflow-x-hidden bg-background font-body text-[16px] leading-[30px] text-body-text antialiased has-[[data-blog-editor]]:overflow-x-clip">
+        {children}
+        <Suspense fallback={null}><AssistantLink /></Suspense>
+      </body>
     </html>
   );
 }
