@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'6056f5828c7832d63fc2f10a5cd28d4eff3831a36ff2e75ad5a3b97b72e3709a'>;
+  StorageHashBase<'94ab05f313f0df2e8a84ea005e5bab69cd92f0ae5ed837e095da64475a9943c4'>;
 export type ExecutionHash =
   ExecutionHashBase<'65c95db6daa7e56d6326e347254e9b8b1c002c5f50420791ca7784ed53ef1d47'>;
 export type ProfileHash =
@@ -257,6 +257,10 @@ export type FieldOutputTypes = {
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly slug: CodecTypes['pg/text@1']['output'];
     };
+    readonly BlogCategorySlugAlias: {
+      readonly categoryId: CodecTypes['pg/int4@1']['output'];
+      readonly slug: CodecTypes['pg/text@1']['output'];
+    };
     readonly BlogImportMapping: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly fingerprint: CodecTypes['pg/text@1']['output'];
@@ -375,6 +379,11 @@ export type FieldOutputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly version: CodecTypes['pg/int4@1']['output'];
       readonly wpId: CodecTypes['pg/int8@1']['output'] | null;
+    };
+    readonly ListingCategorySlugAlias: {
+      readonly categoryId: CodecTypes['pg/int4@1']['output'];
+      readonly slug: CodecTypes['pg/text@1']['output'];
+      readonly taxonomy: CodecTypes['pg/text@1']['output'];
     };
     readonly ListingMedia: {
       readonly alt: CodecTypes['pg/text@1']['output'] | null;
@@ -463,6 +472,10 @@ export type FieldInputTypes = {
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly slug: CodecTypes['pg/text@1']['input'];
     };
+    readonly BlogCategorySlugAlias: {
+      readonly categoryId: CodecTypes['pg/int4@1']['input'];
+      readonly slug: CodecTypes['pg/text@1']['input'];
+    };
     readonly BlogImportMapping: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly fingerprint: CodecTypes['pg/text@1']['input'];
@@ -582,6 +595,11 @@ export type FieldInputTypes = {
       readonly version: CodecTypes['pg/int4@1']['input'];
       readonly wpId: CodecTypes['pg/int8@1']['input'] | null;
     };
+    readonly ListingCategorySlugAlias: {
+      readonly categoryId: CodecTypes['pg/int4@1']['input'];
+      readonly slug: CodecTypes['pg/text@1']['input'];
+      readonly taxonomy: CodecTypes['pg/text@1']['input'];
+    };
     readonly ListingMedia: {
       readonly alt: CodecTypes['pg/text@1']['input'] | null;
       readonly listingId: CodecTypes['pg/int4@1']['input'];
@@ -667,6 +685,10 @@ export type StorageColumnTypes = {
     readonly BlogCategory: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
+      readonly slug: CodecTypes['pg/text@1']['output'];
+    };
+    readonly BlogCategorySlugAlias: {
+      readonly categoryId: CodecTypes['pg/int4@1']['output'];
       readonly slug: CodecTypes['pg/text@1']['output'];
     };
     readonly BlogImportMapping: {
@@ -788,6 +810,11 @@ export type StorageColumnTypes = {
       readonly version: CodecTypes['pg/int4@1']['output'];
       readonly wpId: CodecTypes['pg/int8@1']['output'] | null;
     };
+    readonly ListingCategorySlugAlias: {
+      readonly categoryId: CodecTypes['pg/int4@1']['output'];
+      readonly slug: CodecTypes['pg/text@1']['output'];
+      readonly taxonomy: CodecTypes['pg/text@1']['output'];
+    };
     readonly ListingMedia: {
       readonly alt: CodecTypes['pg/text@1']['output'] | null;
       readonly listingId: CodecTypes['pg/int4@1']['output'];
@@ -873,6 +900,10 @@ export type StorageColumnInputTypes = {
     readonly BlogCategory: {
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
+      readonly slug: CodecTypes['pg/text@1']['input'];
+    };
+    readonly BlogCategorySlugAlias: {
+      readonly categoryId: CodecTypes['pg/int4@1']['input'];
       readonly slug: CodecTypes['pg/text@1']['input'];
     };
     readonly BlogImportMapping: {
@@ -993,6 +1024,11 @@ export type StorageColumnInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly version: CodecTypes['pg/int4@1']['input'];
       readonly wpId: CodecTypes['pg/int8@1']['input'] | null;
+    };
+    readonly ListingCategorySlugAlias: {
+      readonly categoryId: CodecTypes['pg/int4@1']['input'];
+      readonly slug: CodecTypes['pg/text@1']['input'];
+      readonly taxonomy: CodecTypes['pg/text@1']['input'];
     };
     readonly ListingMedia: {
       readonly alt: CodecTypes['pg/text@1']['input'] | null;
@@ -1084,7 +1120,14 @@ export namespace Models {
     slug: CodecTypes['pg/text@1']['output'];
     posts: public_BlogPostCategory[];
     publications: public_BlogPublicationCategory[];
-    readonly [RelationKeys]?: 'posts' | 'publications';
+    slugAliases: public_BlogCategorySlugAlias[];
+    readonly [RelationKeys]?: 'posts' | 'publications' | 'slugAliases';
+  };
+  export type public_BlogCategorySlugAlias = {
+    categoryId: CodecTypes['pg/int4@1']['output'];
+    slug: CodecTypes['pg/text@1']['output'];
+    category: public_BlogCategory;
+    readonly [RelationKeys]?: 'category';
   };
   export type public_BlogImportMapping = {
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -1230,6 +1273,13 @@ export namespace Models {
     terms: public_ListingTermAssignment[];
     readonly [RelationKeys]?: 'coverMedia' | 'media' | 'terms';
   };
+  export type public_ListingCategorySlugAlias = {
+    categoryId: CodecTypes['pg/int4@1']['output'];
+    slug: CodecTypes['pg/text@1']['output'];
+    taxonomy: CodecTypes['pg/text@1']['output'];
+    category: public_ListingTerm;
+    readonly [RelationKeys]?: 'category';
+  };
   export type public_ListingMedia = {
     alt: CodecTypes['pg/text@1']['output'] | null;
     listingId: CodecTypes['pg/int4@1']['output'];
@@ -1247,7 +1297,8 @@ export namespace Models {
     taxonomy: CodecTypes['pg/text@1']['output'];
     wpId: CodecTypes['pg/int8@1']['output'] | null;
     assignments: public_ListingTermAssignment[];
-    readonly [RelationKeys]?: 'assignments';
+    categorySlugAliases: public_ListingCategorySlugAlias[];
+    readonly [RelationKeys]?: 'assignments' | 'categorySlugAliases';
   };
   export type public_ListingTermAssignment = {
     listingId: CodecTypes['pg/int4@1']['output'];
@@ -1314,6 +1365,7 @@ export declare const models: {
     AdminLoginThrottle: Models.public_AdminLoginThrottle;
     AdminUser: Models.public_AdminUser;
     BlogCategory: Models.public_BlogCategory;
+    BlogCategorySlugAlias: Models.public_BlogCategorySlugAlias;
     BlogImportMapping: Models.public_BlogImportMapping;
     BlogPost: Models.public_BlogPost;
     BlogPostCategory: Models.public_BlogPostCategory;
@@ -1322,6 +1374,7 @@ export declare const models: {
     Booking: Models.public_Booking;
     GuestAccount: Models.public_GuestAccount;
     Listing: Models.public_Listing;
+    ListingCategorySlugAlias: Models.public_ListingCategorySlugAlias;
     ListingMedia: Models.public_ListingMedia;
     ListingTerm: Models.public_ListingTerm;
     ListingTermAssignment: Models.public_ListingTermAssignment;
@@ -1504,6 +1557,46 @@ type ContractBase = Omit<
               uniques: readonly [{ readonly columns: readonly ['slug'] }];
               indexes: readonly [];
               foreignKeys: readonly [];
+            };
+            readonly BlogCategorySlugAlias: {
+              columns: {
+                readonly categoryId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly slug: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['slug'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'BlogCategorySlugAlias_categoryId_idx_15c304f2';
+                  readonly prefix: 'BlogCategorySlugAlias_categoryId_idx';
+                  readonly columns: readonly ['categoryId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'BlogCategorySlugAlias';
+                    readonly columns: readonly ['categoryId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'BlogCategory';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
             };
             readonly BlogImportMapping: {
               columns: {
@@ -2462,6 +2555,62 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly ListingCategorySlugAlias: {
+              columns: {
+                readonly categoryId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly slug: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly taxonomy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'hp_listing_category'>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['slug'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'ListingCategorySlugAlias_categoryId_idx_15c304f2';
+                  readonly prefix: 'ListingCategorySlugAlias_categoryId_idx';
+                  readonly columns: readonly ['categoryId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92';
+                  readonly prefix: 'ListingCategorySlugAlias_categoryId_taxonomy_idx';
+                  readonly columns: readonly ['categoryId', 'taxonomy'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'ListingCategorySlugAlias';
+                    readonly columns: readonly ['categoryId', 'taxonomy'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'ListingTerm';
+                    readonly columns: readonly ['id', 'taxonomy'];
+                  };
+                },
+              ];
+            };
             readonly ListingMedia: {
               columns: {
                 readonly alt: {
@@ -2582,7 +2731,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['taxonomy', 'slug'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['taxonomy', 'slug'] },
+                { readonly columns: readonly ['id', 'taxonomy'] },
+              ];
               indexes: readonly [];
               foreignKeys: readonly [];
             };
@@ -2956,6 +3108,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'BlogCategory';
     };
+    readonly BlogCategorySlugAlias: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'BlogCategorySlugAlias';
+    };
     readonly BlogImportMapping: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'BlogImportMapping';
@@ -2979,6 +3135,10 @@ type ContractBase = Omit<
       readonly model: 'GuestAccount';
     };
     readonly Listing: { readonly namespace: 'public' & NamespaceId; readonly model: 'Listing' };
+    readonly ListingCategorySlugAlias: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ListingCategorySlugAlias';
+    };
     readonly ListingMedia: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ListingMedia';
@@ -3157,6 +3317,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['categoryId'];
                 };
               };
+              readonly slugAliases: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'BlogCategorySlugAlias';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['categoryId'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'BlogCategory';
@@ -3164,6 +3335,40 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly id: { readonly column: 'id' };
                 readonly name: { readonly column: 'name' };
+                readonly slug: { readonly column: 'slug' };
+              };
+            };
+          };
+          readonly BlogCategorySlugAlias: {
+            readonly fields: {
+              readonly categoryId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly slug: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly category: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'BlogCategory';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['categoryId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'BlogCategorySlugAlias';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly categoryId: { readonly column: 'categoryId' };
                 readonly slug: { readonly column: 'slug' };
               };
             };
@@ -4019,6 +4224,45 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly ListingCategorySlugAlias: {
+            readonly fields: {
+              readonly categoryId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly slug: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly taxonomy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly category: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ListingTerm';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['categoryId', 'taxonomy'];
+                  readonly targetFields: readonly ['id', 'taxonomy'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'ListingCategorySlugAlias';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly categoryId: { readonly column: 'categoryId' };
+                readonly slug: { readonly column: 'slug' };
+                readonly taxonomy: { readonly column: 'taxonomy' };
+              };
+            };
+          };
           readonly ListingMedia: {
             readonly fields: {
               readonly alt: {
@@ -4113,6 +4357,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['termId'];
+                };
+              };
+              readonly categorySlugAliases: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ListingCategorySlugAlias';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id', 'taxonomy'];
+                  readonly targetFields: readonly ['categoryId', 'taxonomy'];
                 };
               };
             };

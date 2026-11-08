@@ -1,0 +1,323 @@
+[
+  {
+    "id": "table.BlogCategorySlugAlias",
+    "label": "Create table \"BlogCategorySlugAlias\"",
+    "summary": "Creates table \"BlogCategorySlugAlias\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "BlogCategorySlugAlias"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"BlogCategorySlugAlias\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogCategorySlugAlias\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"BlogCategorySlugAlias\"",
+        "sql": "CREATE TABLE \"public\".\"BlogCategorySlugAlias\" (\n  \"categoryId\" int4 NOT NULL,\n  \"slug\" text NOT NULL,\n  PRIMARY KEY (\"slug\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"BlogCategorySlugAlias\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogCategorySlugAlias\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ListingCategorySlugAlias",
+    "label": "Create table \"ListingCategorySlugAlias\"",
+    "summary": "Creates table \"ListingCategorySlugAlias\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ListingCategorySlugAlias"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ListingCategorySlugAlias\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingCategorySlugAlias\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ListingCategorySlugAlias\"",
+        "sql": "CREATE TABLE \"public\".\"ListingCategorySlugAlias\" (\n  \"categoryId\" int4 NOT NULL,\n  \"slug\" text NOT NULL,\n  \"taxonomy\" text DEFAULT 'hp_listing_category' NOT NULL,\n  PRIMARY KEY (\"slug\"),\n  CONSTRAINT \"listing_category_alias_taxonomy_d40a471a\" CHECK (taxonomy = 'hp_listing_category')\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ListingCategorySlugAlias\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingCategorySlugAlias\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.ListingTerm.ListingTerm_id_taxonomy_key",
+    "label": "Add unique constraint on \"ListingTerm\" (id, taxonomy)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "ListingTerm_id_taxonomy_key",
+        "table": "ListingTerm"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ListingTerm_id_taxonomy_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingTerm_id_taxonomy_key",
+          "public",
+          "\"public\".\"ListingTerm\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"ListingTerm_id_taxonomy_key\"",
+        "sql": "ALTER TABLE \"public\".\"ListingTerm\" ADD CONSTRAINT \"ListingTerm_id_taxonomy_key\" UNIQUE (\"id\", \"taxonomy\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ListingTerm_id_taxonomy_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingTerm_id_taxonomy_key",
+          "public",
+          "\"public\".\"ListingTerm\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BlogCategorySlugAlias.BlogCategorySlugAlias_categoryId_idx_15c304f2",
+    "label": "Create index \"BlogCategorySlugAlias_categoryId_idx_15c304f2\" on \"BlogCategorySlugAlias\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BlogCategorySlugAlias_categoryId_idx_15c304f2",
+        "table": "BlogCategorySlugAlias"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BlogCategorySlugAlias_categoryId_idx_15c304f2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogCategorySlugAlias_categoryId_idx_15c304f2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BlogCategorySlugAlias_categoryId_idx_15c304f2\"",
+        "sql": "CREATE INDEX \"BlogCategorySlugAlias_categoryId_idx_15c304f2\" ON \"public\".\"BlogCategorySlugAlias\" (\"categoryId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BlogCategorySlugAlias_categoryId_idx_15c304f2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BlogCategorySlugAlias_categoryId_idx_15c304f2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ListingCategorySlugAlias.ListingCategorySlugAlias_categoryId_idx_15c304f2",
+    "label": "Create index \"ListingCategorySlugAlias_categoryId_idx_15c304f2\" on \"ListingCategorySlugAlias\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ListingCategorySlugAlias_categoryId_idx_15c304f2",
+        "table": "ListingCategorySlugAlias"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ListingCategorySlugAlias_categoryId_idx_15c304f2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingCategorySlugAlias_categoryId_idx_15c304f2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ListingCategorySlugAlias_categoryId_idx_15c304f2\"",
+        "sql": "CREATE INDEX \"ListingCategorySlugAlias_categoryId_idx_15c304f2\" ON \"public\".\"ListingCategorySlugAlias\" (\"categoryId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ListingCategorySlugAlias_categoryId_idx_15c304f2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingCategorySlugAlias_categoryId_idx_15c304f2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ListingCategorySlugAlias.ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92",
+    "label": "Create index \"ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92\" on \"ListingCategorySlugAlias\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92",
+        "table": "ListingCategorySlugAlias"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92\"",
+        "sql": "CREATE INDEX \"ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92\" ON \"public\".\"ListingCategorySlugAlias\" (\"categoryId\", \"taxonomy\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.BlogCategorySlugAlias.BlogCategorySlugAlias_categoryId_fkey",
+    "label": "Add foreign key \"BlogCategorySlugAlias_categoryId_fkey\" on \"BlogCategorySlugAlias\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "BlogCategorySlugAlias_categoryId_fkey",
+        "table": "BlogCategorySlugAlias"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"BlogCategorySlugAlias_categoryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogCategorySlugAlias_categoryId_fkey",
+          "public",
+          "\"public\".\"BlogCategorySlugAlias\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"BlogCategorySlugAlias_categoryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"BlogCategorySlugAlias\"\nADD CONSTRAINT \"BlogCategorySlugAlias_categoryId_fkey\"\nFOREIGN KEY (\"categoryId\")\nREFERENCES \"public\".\"BlogCategory\" (\"id\")\nON DELETE CASCADE\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"BlogCategorySlugAlias_categoryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "BlogCategorySlugAlias_categoryId_fkey",
+          "public",
+          "\"public\".\"BlogCategorySlugAlias\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ListingCategorySlugAlias.ListingCategorySlugAlias_categoryId_taxonomy_fkey",
+    "label": "Add foreign key \"ListingCategorySlugAlias_categoryId_taxonomy_fkey\" on \"ListingCategorySlugAlias\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ListingCategorySlugAlias_categoryId_taxonomy_fkey",
+        "table": "ListingCategorySlugAlias"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ListingCategorySlugAlias_categoryId_taxonomy_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingCategorySlugAlias_categoryId_taxonomy_fkey",
+          "public",
+          "\"public\".\"ListingCategorySlugAlias\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ListingCategorySlugAlias_categoryId_taxonomy_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ListingCategorySlugAlias\"\nADD CONSTRAINT \"ListingCategorySlugAlias_categoryId_taxonomy_fkey\"\nFOREIGN KEY (\"categoryId\", \"taxonomy\")\nREFERENCES \"public\".\"ListingTerm\" (\"id\", \"taxonomy\")\nON DELETE CASCADE\nON UPDATE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ListingCategorySlugAlias_categoryId_taxonomy_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ListingCategorySlugAlias_categoryId_taxonomy_fkey",
+          "public",
+          "\"public\".\"ListingCategorySlugAlias\""
+        ]
+      }
+    ]
+  }
+]

@@ -80,6 +80,15 @@ model BlogCategory {
   slug          String                      @unique
   posts         BlogPostCategory[]
   publications  BlogPublicationCategory[]
+  slugAliases   BlogCategorySlugAlias[]
+}
+
+model BlogCategorySlugAlias {
+  slug       String       @id
+  categoryId Int
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([categoryId])
 }
 
 model BlogPostCategory {
@@ -288,8 +297,20 @@ model ListingTerm {
   slug        String
   name        String
   assignments ListingTermAssignment[]
+  categorySlugAliases ListingCategorySlugAlias[]
 
   @@unique([taxonomy, slug])
+  @@unique([id, taxonomy])
+}
+
+model ListingCategorySlugAlias {
+  slug       String      @id
+  categoryId Int
+  taxonomy   String      @default("hp_listing_category")
+  category   ListingTerm @relation(fields: [categoryId, taxonomy], references: [id, taxonomy], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([categoryId])
+  @@check(expression: sql`taxonomy = 'hp_listing_category'`, name: "listing_category_alias_taxonomy")
 }
 
 model ListingTermAssignment {

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getListingCategoriesWithCounts, getListingCategoryWithListings } from "@/modules/listings/server/listings";
 import { visibleListingCategories } from "@/modules/listings/categories";
 import { mediaPublicUrl } from "@/shared/media/media";
 import PropertyArchive from "@/components/organisms/PropertyArchive";
 import type { ArchiveSearchParams } from "@/modules/listings/properties-filter";
+import { listingCategoryAliasTarget } from "@/modules/categories/server/category-aliases";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const target = await listingCategoryAliasTarget(slug);
+  if (target) permanentRedirect(`/listing-category/${encodeURIComponent(target)}`);
   const result = await getListingCategoryWithListings(slug);
   if (!result || result.listings.length === 0) return { title: "Not Found" };
 
@@ -34,6 +37,8 @@ export default async function ListingCategoryPage({
   searchParams: Promise<ArchiveSearchParams>;
 }) {
   const { slug } = await params;
+  const target = await listingCategoryAliasTarget(slug);
+  if (target) permanentRedirect(`/listing-category/${encodeURIComponent(target)}`);
   const [result, sp, allCategories] = await Promise.all([
     getListingCategoryWithListings(slug),
     searchParams,

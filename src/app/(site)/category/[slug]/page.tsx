@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 
 import { getPostCategoriesWithCounts, getPostsByCategory } from "@/modules/content/server/content";
 import PostCard from "@/components/molecules/PostCard";
+import { blogCategoryAliasTarget } from "@/modules/categories/server/category-aliases";
 
 /*
  * Blog category archive (Task 27), the /category/<slug>/ URL WordPress gives
@@ -26,6 +27,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const target = await blogCategoryAliasTarget(slug);
+  if (target) permanentRedirect(`/category/${encodeURIComponent(target)}`);
   const result = await getPostsByCategory(slug);
   if (!result || result.posts.length === 0) return { title: "Not Found" };
 
@@ -38,6 +41,8 @@ export async function generateMetadata({
 
 export default async function JournalCategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const target = await blogCategoryAliasTarget(slug);
+  if (target) permanentRedirect(`/category/${encodeURIComponent(target)}`);
   const [result, categories] = await Promise.all([
     getPostsByCategory(slug),
     getPostCategoriesWithCounts(),

@@ -16,6 +16,10 @@
       "model": "BlogCategory",
       "namespace": "public"
     },
+    "BlogCategorySlugAlias": {
+      "model": "BlogCategorySlugAlias",
+      "namespace": "public"
+    },
     "BlogImportMapping": {
       "model": "BlogImportMapping",
       "namespace": "public"
@@ -46,6 +50,10 @@
     },
     "Listing": {
       "model": "Listing",
+      "namespace": "public"
+    },
+    "ListingCategorySlugAlias": {
+      "model": "ListingCategorySlugAlias",
       "namespace": "public"
     },
     "ListingMedia": {
@@ -322,6 +330,21 @@
                   "model": "BlogPublicationCategory",
                   "namespace": "public"
                 }
+              },
+              "slugAliases": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "categoryId"
+                  ]
+                },
+                "to": {
+                  "model": "BlogCategorySlugAlias",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -338,6 +361,54 @@
               },
               "namespaceId": "public",
               "table": "BlogCategory"
+            }
+          },
+          "BlogCategorySlugAlias": {
+            "fields": {
+              "categoryId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "slug": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "category": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "categoryId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "BlogCategory",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "categoryId": {
+                  "column": "categoryId"
+                },
+                "slug": {
+                  "column": "slug"
+                }
+              },
+              "namespaceId": "public",
+              "table": "BlogCategorySlugAlias"
             }
           },
           "BlogImportMapping": {
@@ -1732,6 +1803,66 @@
               "table": "Listing"
             }
           },
+          "ListingCategorySlugAlias": {
+            "fields": {
+              "categoryId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "slug": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "taxonomy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "category": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "categoryId",
+                    "taxonomy"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "taxonomy"
+                  ]
+                },
+                "to": {
+                  "model": "ListingTerm",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "categoryId": {
+                  "column": "categoryId"
+                },
+                "slug": {
+                  "column": "slug"
+                },
+                "taxonomy": {
+                  "column": "taxonomy"
+                }
+              },
+              "namespaceId": "public",
+              "table": "ListingCategorySlugAlias"
+            }
+          },
           "ListingMedia": {
             "fields": {
               "alt": {
@@ -1877,6 +2008,23 @@
                 },
                 "to": {
                   "model": "ListingTermAssignment",
+                  "namespace": "public"
+                }
+              },
+              "categorySlugAliases": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id",
+                    "taxonomy"
+                  ],
+                  "targetFields": [
+                    "categoryId",
+                    "taxonomy"
+                  ]
+                },
+                "to": {
+                  "model": "ListingCategorySlugAlias",
                   "namespace": "public"
                 }
               }
@@ -2635,6 +2783,59 @@
                   ]
                 }
               ]
+            },
+            "BlogCategorySlugAlias": {
+              "columns": {
+                "categoryId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "slug": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "BlogCategorySlugAlias_categoryId_idx_15c304f2"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "categoryId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "BlogCategorySlugAlias"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "BlogCategory"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "categoryId"
+                  ],
+                  "name": "BlogCategorySlugAlias_categoryId_idx_15c304f2",
+                  "prefix": "BlogCategorySlugAlias_categoryId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "slug"
+                ]
+              },
+              "uniques": []
             },
             "BlogImportMapping": {
               "columns": {
@@ -3802,6 +4003,86 @@
                 }
               ]
             },
+            "ListingCategorySlugAlias": {
+              "checks": [
+                {
+                  "expression": "taxonomy = 'hp_listing_category'",
+                  "name": "listing_category_alias_taxonomy_d40a471a",
+                  "prefix": "listing_category_alias_taxonomy"
+                }
+              ],
+              "columns": {
+                "categoryId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "slug": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "taxonomy": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "hp_listing_category"
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "restrict",
+                  "source": {
+                    "columns": [
+                      "categoryId",
+                      "taxonomy"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ListingCategorySlugAlias"
+                  },
+                  "target": {
+                    "columns": [
+                      "id",
+                      "taxonomy"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ListingTerm"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "categoryId"
+                  ],
+                  "name": "ListingCategorySlugAlias_categoryId_idx_15c304f2",
+                  "prefix": "ListingCategorySlugAlias_categoryId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "categoryId",
+                    "taxonomy"
+                  ],
+                  "name": "ListingCategorySlugAlias_categoryId_taxonomy_idx_ff766f92",
+                  "prefix": "ListingCategorySlugAlias_categoryId_taxonomy_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "slug"
+                ]
+              },
+              "uniques": []
+            },
             "ListingMedia": {
               "checks": [
                 {
@@ -3960,6 +4241,12 @@
                   "columns": [
                     "taxonomy",
                     "slug"
+                  ]
+                },
+                {
+                  "columns": [
+                    "id",
+                    "taxonomy"
                   ]
                 }
               ]
@@ -4397,7 +4684,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "6056f5828c7832d63fc2f10a5cd28d4eff3831a36ff2e75ad5a3b97b72e3709a"
+    "storageHash": "94ab05f313f0df2e8a84ea005e5bab69cd92f0ae5ed837e095da64475a9943c4"
   },
   "execution": {
     "executionHash": "65c95db6daa7e56d6326e347254e9b8b1c002c5f50420791ca7784ed53ef1d47",
