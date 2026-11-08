@@ -103,7 +103,7 @@ export default function CheckoutTemplate({ data }: { data: CheckoutData }) {
             This booking needs a price review before checkout. Please contact our team.
           </p>
         ) : (
-          /* The party size, the pet and any coupon come first, and the payment method is
+          /* The party size and the pet come first, and the payment method is
              handed to that component rather than rendered beside it: a guest who has not
              been quoted has not seen the price they would be charged. */
           <CheckoutExtras

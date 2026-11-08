@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, BadgeCheck, Loader2, PawPrint, Tag, Users } from "lucide-react";
+import { AlertCircle, Loader2, PawPrint, Users } from "lucide-react";
 
 import CheckoutMethods, { type CheckoutMethod } from "@/components/organisms/CheckoutMethods";
 import type { Quote } from "@/modules/bookings/booking-quote";
@@ -11,8 +11,8 @@ import type { Quote } from "@/modules/bookings/booking-quote";
  * The two questions that change the price, and the bill they produce.
  *
  * A booking is created from dates alone, so the total on the checkout was the
- * dates' worth and nothing else -- no party size, no pet, no way to use a
- * code. This asks, and the payment methods stay out of sight until it has an
+ * dates' worth and nothing else -- no party size or pet. This asks, and the
+ * payment methods stay out of sight until it has an
  * answer: somebody who has not said how many people are coming has not been
  * quoted the price they would be charged.
  *
@@ -30,8 +30,6 @@ type QuoteResponse = {
   /** The answers the server priced, echoed back so the screen shows what was charged. */
   guests: number;
   withPet: boolean;
-  couponCode: string | null;
-  couponError: string | null;
   maxGuests: number;
   baseGuests: number;
   petsAllowed: boolean;
@@ -41,7 +39,7 @@ type QuoteResponse = {
   ivaRate: number;
 };
 
-type Answers = { guests: number; withPet: boolean; couponCode: string };
+type Answers = { guests: number; withPet: boolean };
 
 /*
  * `unchanged` says whether the booking still carries the price the guest last
@@ -68,7 +66,6 @@ export default function CheckoutExtras({
   const router = useRouter();
   const [guests, setGuests] = useState(Math.max(1, initialGuests || 1));
   const [withPet, setWithPet] = useState(false);
-  const [code, setCode] = useState("");
   const [data, setData] = useState<QuoteResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +78,7 @@ export default function CheckoutExtras({
   const good = useRef<QuoteResponse | null>(null);
   /* What the newest question sent, so "Try again" repeats exactly that. Empty
      until the guest has asked anything: a retry of the first load sends no
-     answers either, so the booking's own party size, pet and coupon are kept
+     answers either, so the booking's own party size and pet are kept
      rather than overwritten with defaults. */
   const sent = useRef<Answers | undefined>(undefined);
   const initialQuote = useRef<{ sessionId: string; result: Promise<QuoteResult> } | null>(null);
@@ -104,7 +101,6 @@ export default function CheckoutExtras({
                 session_id: sessionId,
                 guests: answers.guests,
                 with_pet: answers.withPet,
-                coupon_code: answers.couponCode,
               }
               : { session_id: sessionId }
           ),
@@ -196,16 +192,12 @@ export default function CheckoutExtras({
     };
   }, [sessionId, requestQuote, commit]);
 
-  /* From the saved quote, so the chip can only say "applied" about a code the
-     booking actually carries. */
-  const appliedCode = data?.couponCode ?? "";
-
   function change(next: { guests?: number; withPet?: boolean }) {
     const guestsNext = next.guests ?? guests;
     const petNext = next.withPet ?? withPet;
     setGuests(guestsNext);
     setWithPet(petNext);
-    void apply({ guests: guestsNext, withPet: petNext, couponCode: appliedCode });
+    void apply({ guests: guestsNext, withPet: petNext });
   }
 
   const quote = data?.quote;
@@ -286,83 +278,6 @@ export default function CheckoutExtras({
         </div>
       )}
 
-      <div className="flex flex-col mb-4.5 pt-4 pb-4.5 bg-[rgba(15,_23,_39,_0.02)]
-        px-4 gap-2 rounded-[10px] border border-solid border-border">
-        <label className="inline-flex items-center text-[14px] font-semibold text-heading gap-1.75" htmlFor="checkout-coupon">
-          <Tag size={16} aria-hidden="true" /> Coupon code
-        </label>
-
-        {/* Once a code is on the booking the field is replaced by the code
-            itself: leaving an editable box holding text that has already been
-            spent reads as "not applied yet", and the discount is on the bill
-            below either way. */}
-        {appliedCode && !data?.couponError ? (
-          <p className="flex items-center min-h-11.5 bg-[rgba(28,_107,_63,_0.07)] text-[14px] text-[#1c6b3f] m-0 px-3.5 py-0 gap-2 rounded-lg border border-[rgba(28,_107,_63,_0.28)]">
-            <BadgeCheck className="flex-none" size={17} aria-hidden="true" />
-            <strong className="font-heading font-bold tracking-[1px]">{appliedCode}</strong>
-            <span>applied</span>
-            <button
-              type="button"
-              className="ml-auto bg-transparent [font-family:inherit] text-[13px] [font-weight:inherit] [font-style:inherit] leading-[inherit]
-                [font-variant:inherit] text-body-text underline underline-offset-[3px] cursor-pointer px-0.5 py-1 border-0
-                [&:hover:not(:disabled)]:text-text disabled:opacity-50 disabled:cursor-progress"
-              onClick={() => {
-                setCode("");
-                void apply({ guests, withPet, couponCode: "" });
-              }}
-              disabled={locked}
-            >
-              Remove
-            </button>
-          </p>
-        ) : (
-          <div className="grid grid-cols-[minmax(0,_1fr)_auto] gap-2 max-[560.001px]:grid-cols-1">
-            <input
-              className="min-h-11.5 bg-background font-heading text-[14px] font-semibold tracking-[1.2px] uppercase [font-style:inherit] leading-[inherit]
-                [font-variant:inherit] text-text [transition:border-color_160ms_ease,_box-shadow_160ms_ease] px-3.5 py-0 rounded-lg border border-input
-                placeholder:text-[rgba(15,_23,_39,_0.32)] placeholder:tracking-[0.5px] focus:outline-none
-                focus:shadow-[0_0_0_3px_rgba(3,_155,_229,_0.18)] focus:border-link focus-visible:[outline:none]
-                focus-visible:shadow-[0_0_0_3px_rgba(3,_155,_229,_0.18)] focus-visible:border-link"
-              id="checkout-coupon"
-              value={code}
-              onChange={(event) => setCode(event.target.value.toUpperCase())}
-              placeholder="GETAWAYS10"
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              readOnly={paying}
-              /* Enter applies the code instead of doing nothing: this is not
-                 inside a <form>, so there is no implicit submit to inherit. */
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" || !code.trim() || locked) return;
-                event.preventDefault();
-                void apply({ guests, withPet, couponCode: code });
-              }}
-            />
-            <button
-              type="button"
-              className="min-h-11.5 bg-button-bg text-button-text font-heading text-[14px] font-bold cursor-pointer
-                [transition:background-color_200ms_ease,_opacity_200ms_ease] px-5.5 py-0 rounded-[8px] border-0
-                [&:hover:not(:disabled)]:bg-[#2b3433] disabled:bg-transparent disabled:text-muted-text disabled:cursor-not-allowed disabled:border
-                disabled:border-solid disabled:border-border focus-visible:[outline:none] focus-visible:shadow-[0_0_0_3px_rgba(3,_155,_229,_0.3)]"
-              onClick={() => {
-                void apply({ guests, withPet, couponCode: code });
-              }}
-              disabled={locked || !code.trim()}
-            >
-              Apply
-            </button>
-          </div>
-        )}
-
-        {data?.couponError && (
-          <small className="flex items-start text-[13px] leading-[1.45] text-[#8a1c2b] gap-1.5">
-            <AlertCircle className="flex-none mt-0.75" size={14} aria-hidden="true" />
-            <span>{data.couponError}</span>
-          </small>
-        )}
-      </div>
-
       {quote && (
         <dl className="pt-4 pb-0 border-t border-solid border-t-border text-[15px] mx-0 my-5.5 px-0 [&>div]:flex [&>div]:items-baseline
           [&>div]:justify-between [&>div]:px-0 [&>div]:py-1.75 [&>div]:gap-4 [&_dt]:text-body-text [&_dd]:tabular-nums [&_dd]:text-heading
@@ -377,12 +292,6 @@ export default function CheckoutExtras({
             <dt>Subtotal</dt>
             <dd>{money(quote.subtotalCents)}</dd>
           </div>
-          {quote.discountCents > 0 && (
-            <div className="[&_dt]:text-[#1c6b3f] [&_dd]:text-[#1c6b3f]">
-              <dt>Discount{appliedCode ? ` (${appliedCode})` : ""}</dt>
-              <dd>−{money(quote.discountCents)}</dd>
-            </div>
-          )}
           {/* Two lines, not one "Taxes" figure. They are two different taxes
               at two different rates, the rate sheet quotes them as "13+5", and
               a guest asking what they paid should be able to read the answer

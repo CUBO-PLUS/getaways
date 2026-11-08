@@ -74,7 +74,7 @@ After editing the contract, emit it and plan a versioned migration from the actu
 
 After the reviewed users migration has been applied, run `docker exec -it gateways-dev-app-1 pnpm admin:user bootstrap` in an interactive terminal for the local Docker environment. Outside Docker, `pnpm admin:user bootstrap` requires `DATABASE_URL` to be configured. Bootstrap only succeeds when the user table is empty. For operational recovery, use `docker exec -it gateways-dev-app-1 pnpm admin:user recover`; it asks for an existing account email, explicit confirmation and a new password, then activates it as ADMIN and revokes its sessions. Restrict server and database access: recovery bypasses web authentication. Password entry is hidden; never put passwords in arguments, environment variables or shell history. Deliver credentials separately over a secure channel. Passwords do not expire automatically.
 
-Login and reauthentication use PostgreSQL rate limits. Without a trusted proxy, all clients share the same global budget; enable `AUTH_TRUST_PROXY=1` only behind a non-bypassable proxy that overwrites `X-Real-IP`.
+Guest registration and reauthentication use PostgreSQL rate limits; login is not rate-limited and is exposed to automated password guessing. Without a trusted proxy, all clients share the same global budget; enable `AUTH_TRUST_PROXY=1` only behind a non-bypassable proxy that overwrites `X-Real-IP`.
 
 ### Admin statistics and Umami
 
@@ -106,17 +106,17 @@ npx next build          # production build
 | `app/(site)/` | Public pages: home, properties, listing detail, blog, about, concierge. |
 | `app/(site)/[...segments]/` | Catch-all route that renders content pages from `data/pages.json`. |
 | `app/(site)/listing/[slug]/` | One property page, with photos, quote box and booking widget. |
-| `app/checkout/page.tsx` | Checkout: itemized bill, coupon and the payment method. |
+| `app/checkout/page.tsx` | Checkout: itemized bill and the payment method. |
 | `app/(site)/booking-confirmation/` | Confirmation page, read from the booking store. |
 | `app/api/bookings/` | Creates a booking with its quoted total. |
-| `app/api/checkout/quote/` | Price quote: nights, cleaning, extra guests, pets, coupon, IVA 13%, tourism tax 5%. |
+| `app/api/checkout/quote/` | Price quote: nights, cleaning, extra guests, pets, IVA 13%, tourism tax 5%. |
 | `app/api/checkout/status/` | Reads booking status. |
 | `app/api/checkout/btc/` | BTCPay Testnet invoice creation, persisted status and authoritative reconciliation. |
 | `app/api/listings/[id]/availability/` | Availability for a listing (confirmed bookings only). |
 | `modules/bookings/booking-quote.ts` | Real pricing logic. Keep it. |
 | `modules/bookings/server/booking-store.ts` | PostgreSQL bookings and guarded payment/cancellation transitions. |
 | `modules/bookings/server/bookings.ts`, `modules/checkout/checkout-session.ts` | Booking helpers used by the pages and routes. |
-| `modules/coupons/server/coupons.ts`, `modules/coupons/coupon-rules.ts` | Coupon lookup. The sample code is `GETAWAYS10` (10% off). |
+| `modules/coupons/` | Retired coupon rules retained for historical compatibility; checkout does not apply coupons. |
 | `modules/payments/types.ts` | Payment evidence and the USD 1.00 new-test-charge constant. |
 | `modules/payments/btcpay-testnet.ts` | BTCPay Testnet invoice creation and settlement verification. |
 | `modules/payments/index.ts` | Explicit BTCPay selection; missing/obsolete configuration fails closed. |

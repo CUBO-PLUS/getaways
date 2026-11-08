@@ -2,7 +2,6 @@ import { getBookingBySessionId, nightsForStay, saveQuote, ValidationError } from
 import { quoteStay } from "@/modules/bookings/booking-quote";
 import { isCheckoutSessionId } from "@/modules/checkout/checkout-session";
 import { privateCheckoutJson } from "@/modules/checkout/private-response";
-import { previewCoupon } from "@/modules/coupons/server/coupons";
 import { assertSameOrigin } from "@/modules/auth/server/auth";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +10,10 @@ export const dynamic = "force-dynamic";
  * What this stay costs, priced on the server.
  *
  * The checkout shows a breakdown that changes as the guest answers two
- * questions -- how many of you, and are you bringing a pet -- and possibly
- * types a coupon. The browser sends the ANSWERS, this computes the price, and
+ * questions -- how many of you, and are you bringing a pet. The browser sends
+ * the ANSWERS, this computes the price, and
  * it writes the new total onto the booking so the payment charges the figure
  * that was on screen. Never trust a total sent from the browser.
- *
- * Coupons are only previewed here (see modules/coupons/server/coupons.ts). Nothing is spent.
  *
  * Once a payment is open (booking.payment_reference is set), the price is
  * locked. A payment is open for a fixed amount, so the party size cannot change
@@ -27,7 +24,6 @@ type Body = {
   session_id?: unknown;
   guests?: unknown;
   with_pet?: unknown;
-  coupon_code?: unknown;
 };
 
 const PAYMENT_OPEN_MESSAGE = "A payment is already open for this booking, so the price can no longer change.";
@@ -77,7 +73,6 @@ export async function POST(request: Request) {
     const storedGuests = booking.guests;
     const defaultGuests = Number.isSafeInteger(storedGuests) && (storedGuests ?? 0) > 0 ? storedGuests! : 1;
     const defaultPet = (booking.pet_fee_cents ?? 0) > 0 && fields.petsAllowed;
-    const defaultCode = booking.coupon_code?.trim() ?? "";
 
     let guests: number;
     if (body?.guests === undefined || body.guests === null) {
@@ -97,8 +92,6 @@ export async function POST(request: Request) {
       return privateCheckoutJson({ ok: false, error: "This property does not take pets." }, { status: 400 });
     }
 
-    const code = typeof body?.coupon_code === "string" ? body.coupon_code.trim() : defaultCode;
-
     // The listing fields the client needs to draw the bill.
     const clientFields = {
       maxGuests: fields.maxGuests,
@@ -109,18 +102,6 @@ export async function POST(request: Request) {
       tourismRate: fields.tourismBasisPoints / 10_000,
       ivaRate: fields.ivaBasisPoints / 10_000,
     };
-
-    let discount: { kind: "percent" | "amount"; value: number } | null = null;
-    let couponError: string | null = null;
-    if (code) {
-      try {
-        const coupon = await previewCoupon(code, booking.listing_id);
-        discount = { kind: coupon.kind, value: coupon.value };
-      } catch (error) {
-        // A bad code is a message beside the field, not a failed request.
-        couponError = error instanceof Error ? error.message : "That coupon is not valid.";
-      }
-    }
 
     const quoteInput = {
       nights: booking.nights,
@@ -136,12 +117,7 @@ export async function POST(request: Request) {
       ivaRate: fields.ivaBasisPoints / 10_000,
     };
 
-    let quote = quoteStay({ ...quoteInput, discount });
-    if (quote.totalCents <= 0 && discount) {
-      couponError = "This stay still needs a payable amount.";
-      discount = null;
-      quote = quoteStay({ ...quoteInput, discount: null });
-    }
+    const quote = quoteStay(quoteInput);
 
     // The figure on screen becomes the figure the payment charges, and the row records why.
     const saved = await saveQuote(booking.id, booking.version, {
@@ -154,7 +130,7 @@ export async function POST(request: Request) {
       discount_cents: quote.discountCents,
       // Both taxes, so subtotal minus discount plus tax_cents is the total charged.
       tax_cents: quote.taxTotalCents,
-      coupon_code: discount ? code.trim().toUpperCase() : null,
+      coupon_code: null,
     });
     if (!saved) return bookingChangedResponse();
 
@@ -165,8 +141,6 @@ export async function POST(request: Request) {
         guests,
         version: saved.version,
         withPet,
-        couponCode: discount ? code.trim().toUpperCase() : null,
-        couponError,
         ...clientFields,
       },
     });

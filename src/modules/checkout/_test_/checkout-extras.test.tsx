@@ -17,7 +17,7 @@ const nextSession = "cko_2_73c89c14-e2a1-4df3-bd34-0a94606f8de7";
 function serverQuote(guests = 3, withPet = true, pricePerNightCents = 15000) {
   return { quote: quoteStay({ nights: 2, pricePerNightCents, cleaningFeeCents: 2000, baseGuests: 2,
     extraGuestFeeCents: 1500, petFeeCents: 3000, guests, withPet }),
-  guests, withPet, couponCode: null, couponError: null, maxGuests: 4, baseGuests: 2, petsAllowed: true,
+  guests, withPet, maxGuests: 4, baseGuests: 2, petsAllowed: true,
   petFeeCents: 3000, extraGuestFeeCents: 1500, tourismRate: 0.05, ivaRate: 0.13 };
 }
 
@@ -39,6 +39,7 @@ it("shows the saved bill and payment CTA on StrictMode mount instead of a self-i
   const confirm = await screen.findByRole("button", { name: "Confirm $444.80 and choose payment" });
   expect((confirm as HTMLButtonElement).disabled).toBe(false);
   expect(screen.getByText("Total")).toBeTruthy();
+  expect(screen.queryByText(/coupon/i)).toBeNull();
   expect((screen.getByRole("combobox", { name: "How many guests?" }) as HTMLSelectElement).value).toBe("3");
   expect((screen.getByRole("radio", { name: "Yes, one pet" }) as HTMLInputElement).checked).toBe(true);
   expect(screen.queryByRole("alert")).toBeNull();

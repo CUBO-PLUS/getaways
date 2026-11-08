@@ -166,7 +166,7 @@ export function rangesOverlapPublic(aStart: string, aEnd: string, bStart: string
  * Writes a new pending booking from the dates and the signed-in account. The
  * guest's name, email and phone come from that account, never from the request.
  * The price here is nights x nightly rate plus the cleaning fee. The checkout
- * quote adds the extra guests, pet, coupon and taxes later (see app/api/checkout/quote).
+ * quote adds the extra guests, pet and taxes later (see app/api/checkout/quote).
  */
 export async function createPendingBooking(input: BookingInput, guest: BookingGuest): Promise<Booking> {
   const maxInt4 = 2_147_483_647;

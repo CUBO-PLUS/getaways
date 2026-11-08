@@ -1,7 +1,5 @@
 import "server-only";
 import { Temporal } from "temporal-polyfill/full";
-import couponRows from "@/data/coupons.json";
-import type { CouponRow } from "@/data/types";
 import { db } from "@/infrastructure/prisma/db";
 import { enqueueRagSource } from "@/infrastructure/prisma/rag-source-queue";
 import type { Role, Session } from "@/modules/auth/server/auth";
@@ -304,8 +302,6 @@ export async function createListing(actor: Session, input: { title: string; slug
   });
 }
 
-const COUPONS = couponRows as CouponRow[];
-
 export async function deleteListing(actor: Session, id: number, version: number) {
   requireListingAccess(actor, "admin");
   return db.transaction(async (tx) => {
@@ -314,9 +310,6 @@ export async function deleteListing(actor: Session, id: number, version: number)
     await lockListing(tx, id, version);
     if (await bookingCount(tx, id) > 0) {
       throw new ListingAdminError(409, "This listing has bookings, so it cannot be deleted. Archive it instead to keep its history.");
-    }
-    if (COUPONS.some((coupon) => coupon.listing_id === id)) {
-      throw new ListingAdminError(409, "A coupon is tied to this listing, so it cannot be deleted. Archive it instead.");
     }
     // Associations go; the shared images themselves stay in the library.
     await enqueueRagSource(tx, "listing", id);
