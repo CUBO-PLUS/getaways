@@ -101,6 +101,7 @@ conservan la aceptación anterior y no certifican los nuevos alcances.
   - [ ] 4.1 — Gestión editorial y permisos por campo.
   - [ ] 4.2 — Gestión comercial de ADMIN.
   - [ ] 4.3 — Ciclo de vida, eliminación protegida y aceptación integrada.
+- [ ] **Plan RAG — [Índice y asistente de viajes](rag/README.md).** Planificado; indexación inicial, sincronización, búsqueda híbrida y agente visual con acceso de huéspedes autenticados. No autoriza migración ni despliegue por sí solo.
 
 ```text
 Preparación → Plan 1 → Plan 2 → 3.1 → 3.2 → 3.3/B2 ─┐
