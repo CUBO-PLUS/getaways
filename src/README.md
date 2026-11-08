@@ -35,6 +35,8 @@ pnpm test:db
 
 The application and Prisma CLI use the same `DATABASE_URL` from `.env`, with `127.0.0.1` and the published port for the host. Inside Compose, `DATABASE_COMPOSE_HOST=db` translates a loopback URL to `db:5432`; remote URLs are unchanged. PostgreSQL itself still needs `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` for initialization; keep them consistent with the URL. Changing these values does not change an existing database volume or its credentials. Keep `.env` private and never commit it. Do not keep an overriding `DATABASE_URL` in `.env.local`.
 
+The development PostgreSQL image includes pgvector 0.8.7 and enables `vector` when initializing a new database volume. For an existing volume, back up the cluster and stop application writers before replacing the database container, then run `CREATE EXTENSION IF NOT EXISTS vector;` as a PostgreSQL superuser in the application database. Initialization scripts do not run on existing volumes. This only configures the local database; an external production PostgreSQL server must be configured separately.
+
 ### Local RustFS for blog media
 
 Copy `.env.example` to `.env` and replace both RustFS root and application credential placeholders with unique random values. The root identity is only for the local RustFS service/one-shot bucket initializer; never put it in the app's S3 variables. `S3_BUCKET` defaults to `blog-media`; if changed, update **both** bucket ARNs in `infrastructure/storage/blog-media-policy.json` to match before provisioning the application identity. Then use the RustFS console at `http://127.0.0.1:9001` to create a user with that policy (it grants only list/location and object read/write/delete in the configured bucket). Put that user's credentials in `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` in `.env`. Do not expose these variables with a `NEXT_PUBLIC_` prefix.
@@ -46,6 +48,11 @@ docker compose -f compose.dev.yaml up -d --wait
 Compose binds the S3 API and console to loopback; the app container uses `http://rustfs:9000`, while a process running on the host uses `http://127.0.0.1:9000`. `rustfs-init` idempotently creates the private `blog-media` bucket. No anonymous/public-read policy is applied. RustFS persists data in the `rustfs_data` volume; a volume is not a backup. Back up PostgreSQL and RustFS objects together and test restoring both. Production endpoint, TLS, private networking, credentials, and backup schedule must be configured by the operator; they are not verifiable from this repository.
 
 The contract is `infrastructure/prisma/contract.prisma`; the server-only client is exported as `db` from `@/infrastructure/prisma/db`. Prisma 8 uses `@prisma/orm-postgres`, not `@prisma/client`. Commit the emitted `contract.json` and `contract.d.ts` alongside the contract. Blog, staff/guest accounts, catalogue, bookings and payment attempts use PostgreSQL.
+
+New image uploads and imports use the shared Sharp optimizer to store WebP only.
+For existing RustFS images, run `pnpm images:optimize` to preview or
+`pnpm images:optimize --apply` to convert and delete verified originals while
+preserving media IDs and URLs. See [image optimization](docs/image-optimization.md).
 
 The recovery migration CLI is `pnpm listings:import <source-root>` (read-only inventory),
 `pnpm listings:import <source-root> --apply` (explicit import) and `pnpm listings:import <source-root> --verify`

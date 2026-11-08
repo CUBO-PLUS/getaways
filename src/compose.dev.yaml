@@ -3,6 +3,7 @@ name: gateways-dev
 # BTCPay, Bitcoin Core y NBXplorer se gestionan en el VPS, no en este stack local.
 services:
   app:
+    profiles: ["app"]
     build:
       context: .
       target: development
@@ -34,7 +35,9 @@ services:
         condition: service_completed_successfully
 
   db:
-    image: postgres:18-alpine
+    build:
+      context: .
+      dockerfile: infrastructure/postgres/Dockerfile
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     environment:
