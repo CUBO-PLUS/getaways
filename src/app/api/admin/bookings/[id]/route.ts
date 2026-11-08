@@ -29,7 +29,7 @@ export async function POST(request: Request, context: RouteContext<"/api/admin/b
     if (!booking) return bookingReply(404, { error: "Reserva no encontrada." });
     if (!booking.payment_reference) return bookingReply(409, { error: "Esta reserva no tiene un pago abierto." });
     if (!(await isBtcpayTestnetEnabled())) {
-      return bookingReply(503, { error: "BTCPay no está habilitado o su verificación caducó. Renueva la verificación de despliegue y vuelve a intentar." });
+      return bookingReply(503, { error: "BTCPay testnet no está habilitado o configurado." });
     }
     const payment = await btcpayTestnetProvider.getPayment(booking.payment_reference);
     if (!payment || payment.id !== booking.payment_reference || payment.bookingId !== booking.id ||

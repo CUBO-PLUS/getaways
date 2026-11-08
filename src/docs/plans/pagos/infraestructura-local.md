@@ -1,5 +1,14 @@
 # BTCPay testnet — API remota en VPS
 
+> **Operación actual:** la aplicación ya no exige una prueba firmada temporal ni
+> bloquea testnet por `NODE_ENV=production`. Antes de crear cada factura comprueba
+> versión, sincronización, método BTC-CHAIN y la dirección `0/0` de la wallet
+> testnet esperada. El preflight y las referencias a la prueba de diez minutos
+> que aparecen abajo son históricas y ya no son requisito para operar. La URL,
+> tienda, clave API, red y dirección esperada siguen siendo obligatorias. El
+> webhook público requiere configuración aparte. Las cuentas de huéspedes admiten
+> HTTPS público con `BLOG_APP_ORIGIN` y `BLOG_SESSION_SECRET` configurados.
+
 ## Destino actual: VPS por HTTPS
 
 Por petición del operador se consume **`https://btcpay.mauriciodmo.com`**. El stack
@@ -37,8 +46,6 @@ BTCPAY_API_URL=https://btcpay.mauriciodmo.com
 BTCPAY_STORE_ID=<ID devuelto por la API de este VPS>
 BTCPAY_API_KEY=<clave restringida a esa tienda>
 BTCPAY_EXPECTED_WALLET_ADDRESS=<primera dirección SegWit testnet de Sparrow, ruta 0/0>
-BTCPAY_DEPLOYMENT_PROOF_PATH=<ruta privada al archivo de prueba>
-BTCPAY_DEPLOYMENT_PROOF_KEY=<32 bytes aleatorios en hexadecimal>
 ```
 
 El ID de tienda está ligado al origen de la API. No se migran ni reinterpretan

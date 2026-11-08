@@ -5,7 +5,6 @@ import type { PaymentProvider, PaymentSession } from "@/modules/payments/types";
 import { BTCPAY_TEST_AMOUNT_CENTS, BTCPAY_TEST_AMOUNT_USD } from "@/modules/payments/types";
 import { getBookingById } from "@/modules/bookings/server/booking-store";
 import { getAttemptByInvoice, getPaymentAttempt, recordSettledAttempt, reservePaymentAttempt, saveInvoice, saveInvoiceDetails, setAttemptStatus } from "@/modules/payments/server/payment-attempts";
-import { hasValidBtcpayDeploymentProof } from "@/modules/payments/deployment-proof";
 
 type Invoice = {
   id?: unknown; storeId?: unknown; amount?: unknown; paidAmount?: unknown; currency?: unknown; status?: unknown;
@@ -30,12 +29,12 @@ const apiKey = () => {
 };
 
 export async function isBtcpayTestnetEnabled() {
-  return process.env.NODE_ENV !== "production" && process.env.PAYMENT_PROVIDER === "btcpay-testnet" &&
-    process.env.BTCPAY_NETWORK === "testnet" && await hasValidBtcpayDeploymentProof();
+  return process.env.PAYMENT_PROVIDER === "btcpay-testnet" && process.env.BTCPAY_NETWORK === "testnet" &&
+    Boolean(process.env.BTCPAY_API_URL && process.env.BTCPAY_STORE_ID && process.env.BTCPAY_API_KEY && process.env.BTCPAY_EXPECTED_WALLET_ADDRESS);
 }
 
 async function assertBtcpayTestnetEnabled() {
-  if (!(await isBtcpayTestnetEnabled())) throw new Error("BTCPay testnet is unavailable: deployment proof is missing, invalid, expired, mismatched, or production is enabled.");
+  if (!(await isBtcpayTestnetEnabled())) throw new Error("BTCPay testnet is unavailable or not configured.");
 }
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -272,6 +271,12 @@ export const btcpayTestnetProvider: PaymentProvider = {
     if (!Array.isArray(methods) || !methods.some((m) => m.paymentMethodId === "BTC-CHAIN" && m.enabled === true)) {
       await setAttemptStatus(reservation.attempt.id, "review", "Store BTC-CHAIN wallet is not enabled/configured.");
       throw new Error("BTCPay store on-chain wallet is not enabled; attempt retained for manual review.");
+    }
+    const wallet = await api<{ addresses?: Array<{ index?: unknown; keyPath?: unknown; address?: unknown }> }>(`/api/v1/stores/${encodeURIComponent(store)}/payment-methods/BTC-CHAIN/wallet/preview?offset=0&count=1`);
+    const first = wallet.addresses?.find((address) => address.index === 0 && address.keyPath === "0/0");
+    if (!testnetAddressType(process.env.BTCPAY_EXPECTED_WALLET_ADDRESS) || first?.address !== process.env.BTCPAY_EXPECTED_WALLET_ADDRESS) {
+      await setAttemptStatus(reservation.attempt.id, "review", "BTCPay receiving wallet does not match the expected testnet wallet.");
+      throw new Error("BTCPay testnet wallet is not verified; attempt retained for manual review.");
     }
     // No network call is repeated after this durable reservation, including on timeout.
     await assertBtcpayTestnetEnabled();

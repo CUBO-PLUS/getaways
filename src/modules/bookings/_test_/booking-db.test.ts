@@ -116,6 +116,7 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
   function btcpayWorkerConfig() {
     return { PAYMENT_PROVIDER: "btcpay-testnet", BTCPAY_NETWORK: "testnet", BTCPAY_API_URL: btcpayUrl,
       BTCPAY_STORE_ID: "synthetic-store", BTCPAY_API_KEY: "synthetic-api-key", BTCPAY_WEBHOOK_SECRET: "synthetic-webhook-secret",
+      BTCPAY_EXPECTED_WALLET_ADDRESS: "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn",
       BTCPAY_DEPLOYMENT_PROOF_PATH: deploymentProofPath, BTCPAY_DEPLOYMENT_PROOF_KEY: deploymentProofKey };
   }
   async function testnetWorker(network: "testnet" | "mainnet" = "testnet") {
@@ -162,6 +163,7 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
       const send = (status: number, value: unknown) => { response.writeHead(status, { "content-type": "application/json" }); response.end(JSON.stringify(value)); };
       if (url.pathname === "/api/v1/server/info") return send(200, { version: "2.4.7", fullySynched: true, supportedPaymentMethods: ["BTC-CHAIN"], syncStatus: [{ paymentMethodId: "BTC-CHAIN", available: true }] });
       if (url.pathname === "/api/v1/stores/synthetic-store/payment-methods") return send(200, [{ paymentMethodId: "BTC-CHAIN", enabled: true }]);
+      if (url.pathname === "/api/v1/stores/synthetic-store/payment-methods/BTC-CHAIN/wallet/preview") return send(200, { addresses: [{ index: 0, keyPath: "0/0", address: "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn" }] });
       if (url.pathname === "/api/v1/stores/synthetic-store/invoices" && request.method === "POST") {
         invoicePosts++;
         const input = JSON.parse(body) as { amount: string; metadata: { orderId: string } };
@@ -360,7 +362,7 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect(invoicePosts).toBe(1);
   }, 30_000);
 
-  it("never opens an invoice on staff refresh or renews expired deployment proof", async () => {
+  it("refreshes settled payments with an expired deployment proof without creating another invoice", async () => {
     const worker = await testnetWorker();
     const booking = await create();
     const token = await worker.run<string>({ action: "adminToken", id: 1, authVersion: 1 });
@@ -377,15 +379,11 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     const signed = JSON.stringify({ ...expired, signature: signBtcpayDeploymentProof(expired, deploymentProofKey) });
     writeFileSync(expiredPath, signed, { mode: 0o600 });
     const disabled = await startWorker({ ...btcpayWorkerConfig(), BTCPAY_DEPLOYMENT_PROOF_PATH: expiredPath });
-    const before = await a.run<Booking>({ action: "get", id: booking.id });
-    const beforeRequests = btcpayPaths.length;
     const response = await disabled.run<{ status: number; body: { error: string } }>(message);
-    expect(response.status).toBe(503);
-    expect(response.body.error).toMatch(/verificación.*caducó/i);
-    expect(btcpayPaths).toHaveLength(beforeRequests);
+    expect(response.status).toBe(200);
     expect(readFileSync(expiredPath, "utf8")).toBe(signed);
-    expect(await a.run({ action: "get", id: booking.id })).toEqual(before);
-    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("pending");
+    expect((await a.run<Booking>({ action: "get", id: booking.id })).status).toBe("confirmed");
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("paid");
     expect(invoicePosts).toBe(1);
   }, 30_000);
 
@@ -651,15 +649,15 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect(invoicePosts).toBe(1);
   }, 30_000);
 
-  it("fails closed for production creation and mainnet create, reconciliation, and webhook paths", async () => {
+  it("allows production testnet creation but rejects mainnet create, reconciliation, and webhook paths", async () => {
     const booking = await create();
     await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
     const production = await testnetWorker();
     // Historical unowned rows remain capability-accessible in production, so auth cannot mask the provider guard.
     sql(`UPDATE "Booking" SET "guestAccountId" = NULL WHERE id = ${booking.id};`);
-    const disabled = await production.run<Api>({ action: "request", route: "btc", method: "POST", production: true, body: { session_id: booking.checkout_session_id } });
-    expect(disabled.status).toBe(404);
-    expect(invoicePosts).toBe(0);
+    const opened = await production.run<Api>({ action: "request", route: "btc", method: "POST", production: true, body: { session_id: booking.checkout_session_id } });
+    expect(opened.status).toBe(200);
+    expect(invoicePosts).toBe(1);
     sql(`UPDATE "Booking" SET "guestAccountId" = ${booking.guest_account_id} WHERE id = ${booking.id};`);
     const owner = await testnetWorker();
     expect((await owner.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } })).status).toBe(200);
@@ -672,17 +670,24 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     const rawBody = JSON.stringify({ storeId: "synthetic-store", invoiceId: attempt.invoiceId, type: "InvoiceSettled" });
     const signature = `sha256=${createHmac("sha256", "synthetic-webhook-secret").update(rawBody).digest("hex")}`;
     const webhook = await mainnet.run<Api>({ action: "request", route: "webhook", method: "POST", rawBody, signature });
-    const productionReconcile = await owner.run<Api>({ action: "request", route: "btc", method: "POST", production: true, body: { session_id: booking.checkout_session_id, action: "reconcile" } });
-    const productionWebhook = await owner.run<Api>({ action: "request", route: "webhook", method: "POST", production: true, rawBody, signature });
     expect(creation.status).toBe(404);
     expect(reconciliation.status).toBe(404);
     expect(webhook.status).toBe(503);
-    expect(productionReconcile.status).toBe(404);
-    expect(productionWebhook.status).toBe(503);
     expect(btcpayPaths).toHaveLength(before);
     sql(`UPDATE "Booking" SET "guestAccountId" = ${booking.guest_account_id} WHERE id = ${booking.id};`);
     expect(await a.run<Booking>({ action: "get", id: booking.id })).toMatchObject({ status: "pending_payment", payment_reference: attempt.id });
     expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("pending");
+  }, 30_000);
+
+  it("does not create an invoice when the receiving wallet differs from the configured testnet wallet", async () => {
+    const booking = await create();
+    await a.run({ action: "quote", id: booking.id, version: booking.version, quote });
+    const worker = await startWorker({ ...btcpayWorkerConfig(), BTCPAY_EXPECTED_WALLET_ADDRESS: "n2eMqTT929pb1RDNuqEnxdaLau1rxy3efi" });
+    expect((await worker.run<{ status: number }>({ action: "guestLogin", email: "shared-worker@example.test", password: "synthetic-password-123" })).status).toBe(200);
+    const response = await worker.run<Api>({ action: "request", route: "btc", method: "POST", body: { session_id: booking.checkout_session_id } });
+    expect(response.status).not.toBe(200);
+    expect(invoicePosts).toBe(0);
+    expect(sql(`SELECT status FROM "PaymentAttempt" WHERE "bookingId" = ${booking.id};`)).toBe("review");
   }, 30_000);
 
   it("holds mismatched store, dust and partial-payment evidence for review without confirming", async () => {
@@ -1073,10 +1078,12 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect((await fresh.run<{ status: number }>({ action: "guestLogin", email: "throttle@example.test", password: "wrong-password" })).status).toBe(429);
   }, 30_000);
 
-  it("rejects missing or hostile origins and disables guest auth in production", async () => {
+  it("rejects missing or hostile origins and insecure guest auth in production", async () => {
     expect((await a.run<{ status: number }>({ action: "guest", origin: "https://attacker.example" })).status).toBe(403);
     expect((await a.run<{ status: number }>({ action: "guest", origin: "" })).status).toBe(403);
     expect((await a.run<{ status: number }>({ action: "guest", production: true })).status).toBe(503);
+    const insecure = await startWorker({ BLOG_APP_ORIGIN: "http://demo.example.test" });
+    expect((await insecure.run<{ status: number }>({ action: "guest" })).status).toBe(503);
     const booking = await create();
     for (const route of ["quote", "btc"] as const) {
       expect((await a.run<Api>({ action: "request", route, method: "POST", sessionId: booking.checkout_session_id!, origin: "https://attacker.example",
@@ -1084,6 +1091,22 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     }
     expect(await a.run({ action: "get", id: booking.id })).toEqual(booking);
   });
+
+  it("supports production HTTPS guest accounts and keeps their bookings private", async () => {
+    const publicOrigin = "https://demo.example.test";
+    const guest = await startWorker({ ...btcpayWorkerConfig(), NODE_ENV: "production", BLOG_APP_ORIGIN: publicOrigin });
+    const registration = await guest.run<{ status: number; cookie: string }>({ action: "guest", email: "public-guest@example.test" });
+    expect(registration.status).toBe(200);
+    expect(registration.cookie).toContain("Secure");
+    expect(registration.cookie).toContain("HttpOnly");
+    expect(registration.cookie).toContain("SameSite=Strict");
+    const booking = await create(guest);
+    expect((await guest.run<{ checkout: CheckoutData }>({ action: "dto", sessionId: booking.checkout_session_id })).checkout.booking.id).toBe(booking.id);
+    expect((await b.run<{ checkout: CheckoutData | null }>({ action: "dto", sessionId: booking.checkout_session_id })).checkout).toBeNull();
+    expect((await guest.run<{ status: number }>({ action: "guestLogout" })).status).toBe(200);
+    expect((await guest.run<{ status: number }>({ action: "guestLogin", email: "public-guest@example.test", password: "synthetic-password-123" })).status).toBe(200);
+    expect((await guest.run<{ status: number }>({ action: "guest", origin: "https://attacker.example" })).status).toBe(403);
+  }, 30_000);
 
   it("GET never reconciles paid evidence; POST validates provider identity, booking, amount and currency before confirming", async () => {
     const booking = await payable(a, "SYNTHETIC-A");
@@ -1118,20 +1141,16 @@ describe.skipIf(process.env.PRISMA_TEST_DATABASE !== "1")("B2 bookings on dispos
     expect(await b.run({ action: "get", id: booking.id })).toEqual(confirmed);
   });
 
-  it("does not expose simulate_paid or open a testnet payment in production", async () => {
+  it("does not expose simulate_paid in production", async () => {
     const booking = await payable();
-    const uncharged = await create();
-    const priced = await a.run<Booking>({ action: "quote", id: uncharged.id, version: uncharged.version, quote });
-    for (const [current, action] of [[booking, "simulate_paid"], [priced, undefined]] as const) {
-      // Historical unowned rows intentionally remain capability-accessible; production guards must run beyond owner checks.
-      sql(`UPDATE "Booking" SET "guestAccountId" = NULL WHERE id = ${current.id};`);
-      const legacy = await b.run<Booking>({ action: "get", id: current.id });
-      const rejected = await a.run<Api>({ action: "request", route: "btc", method: "POST", production: true,
-        body: { session_id: current.checkout_session_id, action } });
-      expect(rejected.status).toBe(404);
-      privateResponse(rejected);
-      expect(await b.run({ action: "get", id: current.id })).toEqual(legacy);
-    }
+    // Historical unowned rows remain capability-accessible, even without a guest session.
+    sql(`UPDATE "Booking" SET "guestAccountId" = NULL WHERE id = ${booking.id};`);
+    const legacy = await b.run<Booking>({ action: "get", id: booking.id });
+    const rejected = await a.run<Api>({ action: "request", route: "btc", method: "POST", production: true,
+      body: { session_id: booking.checkout_session_id, action: "simulate_paid" } });
+    expect(rejected.status).toBe(404);
+    privateResponse(rejected);
+    expect(await b.run({ action: "get", id: booking.id })).toEqual(legacy);
   });
 
   it("attributes once across processes, ignores invalid/inactive codes and syncs only authoritative persisted states", async () => {

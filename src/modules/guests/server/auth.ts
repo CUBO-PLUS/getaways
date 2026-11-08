@@ -21,7 +21,8 @@ function config() {
   if (!secret || Buffer.byteLength(secret) < 32 || !origin) throw new GuestAccountsUnavailableError();
   let url: URL;
   try { url = new URL(origin); } catch { throw new GuestAccountsUnavailableError(); }
-  if (url.origin !== origin || !["http:", "https:"].includes(url.protocol) || process.env.NODE_ENV === "production" || !["localhost", "127.0.0.1", "[::1]", "::1"].includes(url.hostname)) throw new GuestAccountsUnavailableError();
+  const local = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(url.hostname);
+  if (url.origin !== origin || !["http:", "https:"].includes(url.protocol) || (url.protocol !== "https:" && (process.env.NODE_ENV === "production" || !local))) throw new GuestAccountsUnavailableError();
   return { secret: new TextEncoder().encode(secret), origin };
 }
 
