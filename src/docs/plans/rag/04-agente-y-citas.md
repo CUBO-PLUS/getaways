@@ -8,6 +8,14 @@ La implementación está disponible y el usuario confirmó que la respuesta es f
 Esto no verifica todavía la seguridad integral, las citas/calidad en un conjunto
 representativo ni la evaluación multilingüe; la aceptación de R4 continúa pendiente.
 
+La verificación estática detectó que una respuesta sin citas podía presentarse como
+respuesta normal. Se corrigió con comportamiento fail-closed: si faltan citas válidas,
+se devuelve el fallback seguro, localizado en español o inglés según el idioma de la
+consulta. La prueba enfocada de esta regresión y los fallbacks bilingües pasó (6
+aprobadas). Es evidencia acotada de la ruta implementada, no de evaluación integral.
+Que una cita sea válida (ID/fuente vigente y enlace canónico) no demuestra que la fuente
+respalde semánticamente la afirmación; esa comprobación requiere evaluación de calidad.
+
 - [ ] Conectar el agente configurado a la búsqueda validada del servidor, con contexto
   acotado y fuentes identificadas; no exponer credenciales al cliente.
 - [ ] Escribir instrucciones, mensajes de configuración y reglas operativas en español;
@@ -35,3 +43,6 @@ representativo ni la evaluación multilingüe; la aceptación de R4 continúa pe
   ni exponen secretos; fuentes inválidas o retiradas no aparecen.
 - [ ] Salidas malformadas, falta de contexto, errores del proveedor y límites de uso
   producen respuestas seguras y comprensibles.
+
+La prueba enfocada anterior no constituye aceptación de R4 ni prueba respaldo semántico
+de cada afirmación citada.

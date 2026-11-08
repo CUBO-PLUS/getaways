@@ -290,3 +290,17 @@ equivale por sí sola a autorizar producción ni acredita una restauración ensa
 - Sigue sin verificarse evaluación multilingüe, seguridad integral, recuperación o
   restauración ensayada, despliegue/operación de producción y aceptación integral.
   Estos datos de ejecución no marcan R1–R6 como aceptadas.
+
+### Verificación estática de respuesta sin citas (2026-11-08)
+
+- La revisión estática encontró que una respuesta sin citas podía salir como respuesta
+  normal. Se corrigió para fallar de forma cerrada: sin citas válidas el agente devuelve
+  el fallback seguro correspondiente al idioma, español o inglés.
+- La prueba enfocada de ausencia de citas y fallback bilingüe pasó: 6 aprobadas. No se
+  ejecutó una evaluación integral ni se declara aceptación de R4 o del plan.
+- La validez estructural de una cita no demuestra que su contenido respalde
+  semánticamente la afirmación; esa limitación requiere evaluación de calidad aparte.
+- No hay una prueba aislada del fencing transaccional. La cobertura/verificación de
+  concurrencia y fencing permanece pendiente; no inferirla de la prueba enfocada.
+- El respaldo disponible contiene objetos de RustFS, pero no se ensayó su restauración.
+  Respaldo verificado no equivale a recuperación demostrada.

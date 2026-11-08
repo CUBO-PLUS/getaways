@@ -58,6 +58,20 @@ describe("RAG agent input", () => {
     expect(response.cards[0].title).toBe(source.title);
   });
 
+  it("replaces an uncited model claim with a safe bilingual response and no cards", async () => {
+    searchRag.mockResolvedValue({ results: [{
+      sourceType: "listing", sourceId: "1", contentHash: "hash", imageUrl: null, url: "/stay/",
+      title: "Stay", section: "Description", text: "Details", score: 1,
+    }] });
+    generateText.mockImplementation(async (input: { prompt?: string }) => input.prompt
+      ? { output: emptyFilters }
+      : { output: { answer: "Arbitrary unsupported claim", citations: [], cards: ["s1"] } });
+
+    await expect(answerWithRag({ question: "Tell me about the stay" })).resolves.toEqual({
+      answer: "No encontré información publicada que responda a esa consulta. / I couldn't find published information that answers that question.", citations: [], cards: [],
+    });
+  });
+
   it("trims the question and keeps bounded user/assistant history", () => {
     expect(validateRagAgentInput({ question: "  alojamientos con wifi? ", history: [{ role: "user", content: "Hola" }] }))
       .toEqual({ question: "alojamientos con wifi?", history: [{ role: "user", content: "Hola" }] });

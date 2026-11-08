@@ -173,6 +173,10 @@ export async function answerWithRag(input: RagAgentInput): Promise<RagAgentRespo
       }) }),
     });
     const answer = validateModelAnswer(output, allowedIds);
+    if (!answer.citations.length) return {
+      answer: "No encontré información publicada que responda a esa consulta. / I couldn't find published information that answers that question.",
+      citations: [], cards: [],
+    };
     // Re-run the same eligibility and filter predicates after generation. A missing,
     // re-indexed, unpublished, queued, or no-longer-matching source fails closed.
     const current = await searchRag({ query: validated.question, filters, pageSize: MAX_SOURCES });
