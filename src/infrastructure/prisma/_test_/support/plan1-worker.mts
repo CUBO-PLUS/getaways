@@ -39,7 +39,7 @@ process.once("message", async (message: { action: string; actor: number; target:
         result = { error: (error as Error).message };
       }
     } else {
-      result = await Promise.all(Array.from({ length: message.attempts }, () => login(request, message.email, "Synthetic-pass-1")));
+      result = await Promise.all(Array.from({ length: message.attempts }, () => login(message.email, "Synthetic-pass-1")));
     }
     process.send!({ result, ...(message.action === "login" ? { comparisons } : {}) });
   } catch (error) {
