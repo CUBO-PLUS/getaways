@@ -1,4 +1,4 @@
-import { CalendarCheck, House, LayoutDashboard, Newspaper, Users, type LucideIcon } from "lucide-react";
+import { CalendarCheck, House, LayoutDashboard, Newspaper, Tags, Users, type LucideIcon } from "lucide-react";
 // Type-only import: erased at build time, so the server-only module never reaches the client.
 import type { Role } from "@/modules/auth/server/auth";
 
@@ -45,6 +45,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: "Operación",
     items: [
       { href: "/admin/bookings", label: "Reservas", description: "Estado, pagos y contacto con huéspedes.", icon: CalendarCheck, roles: ["ADMIN", "BOOKING_MANAGER"] },
+      { href: "/admin/referrals", label: "Códigos de referido", description: "Códigos, usos y reservas atribuidas.", icon: Tags, roles: ["ADMIN"] },
     ],
   },
   {

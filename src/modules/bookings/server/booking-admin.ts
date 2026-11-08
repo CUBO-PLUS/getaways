@@ -72,14 +72,16 @@ export async function staffBookingDetail(actor: Session, id: number) {
   if (!validId(id)) return null;
   const booking = await getBookingById(id);
   if (!booking) return null;
-  const [listing, attempt] = await Promise.all([
+  const [listing, attempt, attribution] = await Promise.all([
     db.orm.public.Listing.where({ id: booking.listing_id }).select("id", "title", "active", "archivedAt").first(),
     db.orm.public.PaymentAttempt.where({ bookingId: id }).first(),
+    db.orm.public.ReferralAttribution.where({ bookingId: id }).select("referralCode").first(),
   ]);
   return {
     id: booking.id,
     version: booking.version,
     status: booking.status,
+    referralCode: attribution?.referralCode ?? null,
     listing: { id: booking.listing_id, title: listing?.title ?? booking.agreed_listing_title, archived: !listing || listing.archivedAt !== null },
     checkIn: booking.check_in,
     checkOut: booking.check_out,

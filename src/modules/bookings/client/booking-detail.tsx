@@ -7,6 +7,7 @@ type Booking = {
   id: number;
   version: number;
   status: string;
+  referralCode: string | null;
   listing: { title: string; archived: boolean };
   checkIn: string;
   checkOut: string;
@@ -146,10 +147,11 @@ export default function BookingDetail({ booking }: { booking: Booking }) {
       <section className={`${card} mb-6 border-t-4 border-t-[#394342]`} aria-labelledby="stay-heading">
         <p className="m-0 text-xs text-slate-500">Hospedaje{booking.listing.archived ? " · archivado" : ""}</p>
         <h2 id="stay-heading" className="m-0 mt-2 font-heading text-xl font-medium">{booking.listing.title}</h2>
-        <dl className="m-0 mt-5 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-3">
+        <dl className="m-0 mt-5 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2 lg:grid-cols-4">
           <div><dt className="flex items-center gap-2 text-xs text-slate-500"><CalendarDays aria-hidden className="size-4" /> Entrada</dt><dd className="m-0 mt-2 font-medium">{date(booking.checkIn)}</dd></div>
           <div><dt className="text-xs text-slate-500">Salida</dt><dd className="m-0 mt-2 font-medium">{date(booking.checkOut)}</dd></div>
           <div><dt className="text-xs text-slate-500">Estancia</dt><dd className="m-0 mt-2 font-medium">{booking.nights} {booking.nights === 1 ? "noche" : "noches"} · {booking.guests ?? "—"} {booking.guests === 1 ? "huésped" : "huéspedes"}</dd></div>
+          <div><dt className="text-xs text-slate-500">Código de referido</dt><dd className="m-0 mt-2 break-words font-medium">{booking.referralCode ?? "Sin referido"}</dd></div>
         </dl>
       </section>
       {error && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</p>}

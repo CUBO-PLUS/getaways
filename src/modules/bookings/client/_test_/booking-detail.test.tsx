@@ -14,13 +14,14 @@ it("refreshes payment without losing edits and does not claim payment when verif
     .mockResolvedValueOnce(new Response(JSON.stringify({ error: "Booking changed" }), { status: 409 }));
   vi.stubGlobal("fetch", fetch);
   render(<BookingDetail booking={{
-    id: 7, version: 3, status: "pending_payment", listing: { title: "Synthetic stay", archived: false },
+    id: 7, version: 3, status: "pending_payment", referralCode: "SUMMER-REF", listing: { title: "Synthetic stay", archived: false },
     checkIn: "2099-06-10", checkOut: "2099-06-12", nights: 2, guests: 2,
     contact: { name: "Guest", email: "guest@example.test", phone: null }, guestNotes: null, internalNotes: null,
     quote: { currency: "USD", nightlyCents: 10000, cleaningCents: 2000, petCents: 0, extraGuestCents: 0, discountCents: 0, taxCents: 3600, totalCents: 25600 },
     paymentReferencePresent: true, paymentReviewRequired: false, testPayment: { amountCents: 100, status: "pending" },
     cancelledAt: null, cancellationReason: null, cancelledBy: null,
   }} />);
+  expect(screen.getByText("SUMMER-REF")).toBeTruthy();
   const name = screen.getByRole("textbox", { name: "Nombre" }) as HTMLInputElement;
   const notes = screen.getByRole("textbox", { name: "Solo personal" }) as HTMLTextAreaElement;
   fireEvent.change(name, { target: { value: "Unsaved guest" } });
