@@ -10,8 +10,7 @@ export async function POST(request: Request) {
   if (!body || typeof body !== "object" || Array.isArray(body) || !["email", "password"].every((key) => typeof (body as Record<string, unknown>)[key] === "string")) return privateCheckoutJson({ ok: false, error: "Invalid request." }, { status: 400 });
   try {
     const { email, password } = body as { email: string; password: string };
-    const result = await loginGuest(request, email, password);
-    if (result.error === "throttled") return privateCheckoutJson({ ok: false, error: "Too many attempts." }, { status: 429, headers: { "Retry-After": String(result.retryAfter) } });
+    const result = await loginGuest(email, password);
     if (!result.token) return privateCheckoutJson({ ok: false, error: "Invalid email or password." }, { status: 401 });
     return privateCheckoutJson({ ok: true }, { headers: { "Set-Cookie": guestSessionCookie(result.token) } });
   } catch { return privateCheckoutJson({ ok: false, error: "Unavailable." }, { status: 503 }); }

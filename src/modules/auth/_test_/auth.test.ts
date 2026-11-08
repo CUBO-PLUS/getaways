@@ -3,8 +3,10 @@ import { SignJWT } from "jose";
 
 const query = vi.fn();
 vi.mock("@/infrastructure/prisma/db", () => ({ db: { raw: { sql: () => ({ returnsRow: () => ({ build: () => ({}) }) }) }, runtime: () => ({ query }) } }));
+vi.mock("../server/login-throttle", () => ({ reserveLoginAttempt: vi.fn().mockResolvedValue(60) }));
 import { createSession, getSession, sessionCookie } from "../server/auth";
 import { POST as login } from "@/app/api/admin/login/route";
+import { POST as guestLogin } from "@/app/api/guest/login/route";
 
 const secret = process.env.BLOG_SESSION_SECRET;
 const origin = process.env.BLOG_APP_ORIGIN;
@@ -35,6 +37,19 @@ it("rejects hostile origins and oversized login bodies before authentication", a
   expect((await send("https://attacker.test", "{}" )).status).toBe(403);
   expect((await send("https://example.test", "x".repeat(2049))).status).toBe(413);
   expect(query).not.toHaveBeenCalled();
+});
+
+it("checks credentials even when the login attempt limit is exhausted", async () => {
+  process.env.BLOG_SESSION_SECRET = "s".repeat(32);
+  process.env.BLOG_APP_ORIGIN = "https://example.test";
+  query.mockResolvedValue([]);
+  for (const handler of [login, guestLogin]) {
+    const response = await handler(new Request("https://example.test/api/login", {
+      method: "POST", headers: { origin: "https://example.test" },
+      body: JSON.stringify({ email: "missing@example.test", password: "incorrect" }),
+    }));
+    expect(response.status).toBe(401);
+  }
 });
 
 it("rejects expired sessions and signed sessions without required identity claims", async () => {

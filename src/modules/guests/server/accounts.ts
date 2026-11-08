@@ -23,11 +23,9 @@ export async function registerGuest(request: Request, name: string, email: strin
   return rows[0] ? { token: await createGuestSession(rows[0].id, rows[0].authVersion) } : { error: "duplicate" as const };
 }
 
-export async function loginGuest(request: Request, email: string, password: string) {
+export async function loginGuest(email: string, password: string) {
   const normalized = email.trim().toLowerCase();
   if (!validEmail(normalized) || !password || Buffer.byteLength(password, "utf8") > 72) return { error: "credentials" as const };
-  const retryAfter = await reserveLoginAttempt(request, `guest:${normalized}`);
-  if (retryAfter) return { error: "throttled" as const, retryAfter };
   const rows = await db.runtime().query(db.raw.sql`SELECT "id", "passwordHash", "authVersion" FROM "GuestAccount" WHERE "email" = ${normalized} AND "active" = true`.returnsRow({ id: "pg/int4@1", passwordHash: "pg/text@1", authVersion: "pg/int4@1" }).build());
   const account = rows[0];
   const match = await bcrypt.compare(password, account?.passwordHash ?? dummyHash);

@@ -20,8 +20,7 @@ export async function POST(request: Request) {
     try { body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks))); }
     catch { return Response.json({ error: "Solicitud no válida" }, { status: 400, headers }); }
     if (!body || typeof body !== "object" || !("email" in body) || !("password" in body) || typeof body.email !== "string" || typeof body.password !== "string" || body.email.length > 254 || !body.email.trim() || Buffer.byteLength(body.password) > 72 || !body.password) return Response.json({ error: "Credenciales inválidas" }, { status: 401, headers });
-    const result = await login(request, body.email, body.password);
-    if (result.retryAfter) return Response.json({ error: "Demasiados intentos. Inténtalo más tarde." }, { status: 429, headers: { ...headers, "Retry-After": String(result.retryAfter) } });
+    const result = await login(body.email, body.password);
     if (!result.token) return Response.json({ error: "Credenciales inválidas" }, { status: 401, headers });
     return Response.json({ ok: true }, { headers: { ...headers, "Set-Cookie": sessionCookie(result.token) } });
   } catch { return Response.json({ error: "Servicio de acceso no disponible" }, { status: 503, headers }); }
