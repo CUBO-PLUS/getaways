@@ -5,12 +5,26 @@ services:
     build:
       context: .
       target: production
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set NEXT_PUBLIC_SITE_URL}
     restart: unless-stopped
     init: true
-    ports:
-      - "${APP_PORT:-3000}:3000"
+    expose:
+      - "3000"
     environment:
       DATABASE_URL: ${DATABASE_URL:?Set external DATABASE_URL for the app in .env}
+      BLOG_APP_ORIGIN: ${BLOG_APP_ORIGIN:?Set BLOG_APP_ORIGIN}
+      BLOG_SESSION_SECRET: ${BLOG_SESSION_SECRET:?Set BLOG_SESSION_SECRET}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set NEXT_PUBLIC_SITE_URL}
+      AUTH_TRUST_PROXY: ${AUTH_TRUST_PROXY:-0}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-}
+      BTCPAY_NETWORK: ${BTCPAY_NETWORK:-}
+      BTCPAY_API_URL: ${BTCPAY_API_URL:-}
+      BTCPAY_STORE_ID: ${BTCPAY_STORE_ID:-}
+      BTCPAY_API_KEY: ${BTCPAY_API_KEY:-}
+      BTCPAY_EXPECTED_WALLET_ADDRESS: ${BTCPAY_EXPECTED_WALLET_ADDRESS:-}
+      BTCPAY_WEBHOOK_SECRET: ${BTCPAY_WEBHOOK_SECRET:-}
       UMAMI_API_URL: ${UMAMI_API_URL:-https://uma.mauriciodmo.com}
       UMAMI_API_KEY: ${UMAMI_API_KEY:-}
       S3_ENDPOINT: http://rustfs:9000

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   logging: { incomingRequests: false },
   images: {
     remotePatterns: [new URL("https://i.ytimg.com/vi/*/hqdefault.jpg")],

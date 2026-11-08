@@ -11,6 +11,8 @@ EXPOSE 3000
 CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
 
 FROM dependencies AS build
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 COPY . .
 RUN pnpm build
 

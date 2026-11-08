@@ -4,6 +4,8 @@ import Footer from "@/components/organisms/Footer";
 import ReferralTracker from "@/modules/referrals/ReferralTracker";
 import Umami from "@/components/organisms/UmamiAnalytics";
 
+export const dynamic = "force-dynamic";
+
 export default function SiteLayout({
   children,
 }: {

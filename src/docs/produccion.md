@@ -15,19 +15,12 @@ claramente a los visitantes y no presentar una reserva de prueba como compra rea
       DNS, certificados, VPS, datos y BTCPay.
 - [ ] Publicar en Git el código de la versión aprobada: los cambios locales sin
       commit no estarán en una construcción remota.
-- [ ] Resolver el empaquetado: `Dockerfile` copia `.next/standalone`, pero
-      `next.config.ts` no declara `output: "standalone"`. Adaptar y probar la imagen
-      real antes del despliegue; no asumir que el Dockerfile actual funciona.
-- [ ] Adaptar `compose.prod.yaml` o la configuración equivalente del servicio:
-      actualmente el contenedor no recibe `BLOG_APP_ORIGIN`, `BLOG_SESSION_SECRET`,
-      `AUTH_TRUST_PROXY`, `NEXT_PUBLIC_SITE_URL` ni las variables `PAYMENT_PROVIDER`
-      y `BTCPAY_*`. Además fija `S3_ENDPOINT=http://rustfs:9000` y crea su propio
-      RustFS: decidir explícitamente si se usará ese servicio o uno existente.
-- [ ] Asegurar que la configuración pública necesaria esté disponible durante la
-      construcción y en ejecución; el Dockerfile actual no declara argumentos de
-      construcción para `NEXT_PUBLIC_SITE_URL`. Comprobar con la imagen construida
-      que las URLs y el botón de reserva funcionan. No incluir secretos en la imagen
-      ni en variables `NEXT_PUBLIC_*`.
+- [ ] Probar en el entorno de destino la imagen standalone y las URLs públicas.
+      El Compose pasa `NEXT_PUBLIC_SITE_URL` durante el build y la ejecución, y
+      pasa las variables de autenticación, pagos y Anthropic a la app. No incluir
+      secretos en argumentos de build ni en variables `NEXT_PUBLIC_*`.
+- [ ] El Compose fija `S3_ENDPOINT=http://rustfs:9000` y crea su propio RustFS:
+      confirmar que este es el destino y preparar su identidad de aplicación.
 - [ ] Revisar el fallo de la suite general en
       `modules/auth/_test_/credential-form-fallback.test.tsx`: espera el enlace
       «Editar», pero el nombre accesible observado es «EditarEditora». No dar la
@@ -39,9 +32,8 @@ claramente a los visitantes y no presentar una reserva de prueba como compra rea
 
 - [ ] Apuntar el dominio al VPS, configurar HTTPS válido en el proxy y comprobar
       renovación de certificados. Redirigir HTTP a HTTPS.
-- [ ] Conectar el proxy al puerto interno 3000 de la aplicación; evitar exponer ese
-      puerto directamente a Internet. El mapeo actual de `compose.prod.yaml` publica
-      `${APP_PORT:-3000}:3000`: ajustarlo según el proxy elegido.
+- [ ] Conectar el proxy al puerto interno 3000 de la aplicación; el Compose no lo
+      publica directamente en el host.
 - [ ] Mantener PostgreSQL, RustFS y sus consolas privados; usar redes internas,
       firewall y credenciales de mínimo privilegio. No interpretar `localhost` en
       el contenedor de la app como el VPS ni como otro contenedor.
@@ -81,8 +73,9 @@ Si se usa el RustFS incluido en `compose.prod.yaml`, `RUSTFS_ROOT_ACCESS_KEY` y
 `RUSTFS_ROOT_SECRET_KEY` son secretos del servicio/operador, no credenciales de app;
 configurar volumen persistente y una identidad de aplicación con la política
 `infrastructure/storage/blog-media-policy.json`, adaptando sus dos ARN si cambia
-el bucket. `APP_PORT`, `RUSTFS_API_PORT` y `RUSTFS_CONSOLE_PORT` solo aplican al
-Compose correspondiente. `DATABASE_COMPOSE_HOST` es una adaptación para Compose
+el bucket. `APP_PORT` aplica al Compose de desarrollo; `RUSTFS_API_PORT` y
+`RUSTFS_CONSOLE_PORT` configuran los puertos locales de RustFS en ambos Compose.
+`DATABASE_COMPOSE_HOST` es una adaptación para Compose
 local; no asumir que resuelve nombres de servicios del VPS.
 
 El archivo `.env.example` contiene ejemplos de desarrollo y comentarios históricos;
